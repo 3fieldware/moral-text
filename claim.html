@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim - 3D Text Body</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000000;
+            color: #ffffff;
+            font-family: Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .box-3d {
+            flex: 1;
+            min-width: 600px;
+            height: 600px;
+            background: #0000FF;
+            position: relative;
+            border: 2px solid #ffffff;
+        }
+
+        .box-3d canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .box-total-value {
+            flex: 1;
+            min-width: 400px;
+            max-width: 500px;
+            background: rgba(220, 220, 220, 0.95);
+            padding: 12px;
+            color: #000000;
+            border: 2px solid #ffffff;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        .box-total-value h2 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #000000;
+            padding-bottom: 5px;
+        }
+
+        .box-nodes-list {
+            flex: 1 1 100%;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border: 2px solid #ffffff;
+            max-height: 800px;
+            overflow-y: auto;
+        }
+
+        .box-nodes-list h2 {
+            font-size: 14px;
+            margin-bottom: 15px;
+            color: #000000;
+            border-bottom: 1px solid #000000;
+            padding-bottom: 5px;
+        }
+
+        .nodes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .node-item {
+            background: #f0f0f0;
+            padding: 10px;
+            border: 1px solid #cccccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .node-item h3 {
+            font-size: 12px;
+            color: #000000;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .node-item canvas {
+            width: 100%;
+            height: 140px;
+            background: #000000;
+            margin-bottom: 8px;
+        }
+
+        .node-item-info {
+            font-size: 9px;
+            color: #000000;
+            width: 100%;
+        }
+
+        .node-item-info div {
+            margin: 2px 0;
+        }
+
+        .purchase-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #808080;
+            color: #ffffff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 12px;
+            font-family: Helvetica, Arial, sans-serif;
+            cursor: pointer;
+            z-index: 10000;
+        }
+
+        .purchase-button:hover {
+            background: #707070;
+        }
+
+        #value-logic-content {
+            font-size: 11px;
+            line-height: 1.3;
+        }
+
+        #value-logic-overview-container {
+            width: 100%;
+            height: 150px;
+            background: #000000;
+            border: 1px solid #ffffff;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        #value-logic-overview-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #value-logic-total-box {
+            background: #000000;
+            border: 1px solid #ffffff;
+            padding: 8px;
+            margin-top: 10px;
+        }
+
+        #value-logic-total-box div {
+            color: #ffffff;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <button class="purchase-button" id="purchaseBtn">PURCHASE</button>
+    
+    <div class="container">
+        <div class="row">
+            <div class="box-3d" id="canvas-container-3d"></div>
+            <div class="box-total-value">
+                <h2>Total Value</h2>
+                <div id="value-logic-content"></div>
+                <div id="value-logic-overview-container" style="display: none;">
+                    <canvas id="value-logic-overview-canvas"></canvas>
+                </div>
+                <div id="value-logic-total-box" style="display: none;">
+                    <div><strong>Total Value:</strong> <span id="value-logic-total-display">-</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="box-nodes-list">
+            <h2>Top 12 Nodes</h2>
+            <div class="nodes-grid" id="nodes-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let scene, camera, renderer;
+        let nodes = [];
+        let connections = [];
+        let analyzedWords = [];
+        let claimData = null;
+        let nodeListScenes = [];
+        let nodeListRenderers = [];
+        let animationId = null;
+        let ethPriceUSD = null;
+        let valueLogicOverviewRenderer = null;
+        let valueLogicOverviewScene = null;
+        let valueLogicOverviewCamera = null;
+
+        // Cargar datos desde localStorage
+        function loadClaimData() {
+            try {
+                const dataStr = localStorage.getItem('claimData');
+                if (!dataStr) {
+                    alert('No se encontraron datos para reclamar. Por favor, genera una visualización primero.');
+                    window.location.href = 'endexer.html';
+                    return;
+                }
+                claimData = JSON.parse(dataStr);
+                analyzedWords = claimData.analyzedWords || [];
+                ethPriceUSD = claimData.ethPriceUSD || null;
+            } catch (e) {
+                console.error('Error loading claim data:', e);
+                alert('Error al cargar los datos. Por favor, intenta de nuevo.');
+                window.location.href = 'endexer.html';
+            }
+        }
+
+        // Inicializar escena 3D principal
+        function init3DScene() {
+            const container = document.getElementById('canvas-container-3d');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(claimData.backgroundColor || 0x0000FF);
+
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.set(0, 0, 10);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: false });
+            renderer.setSize(width, height);
+            renderer.setClearColor(claimData.backgroundColor || 0x0000FF, 1);
+            container.appendChild(renderer.domElement);
+
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+
+            // Recrear nodos
+            recreateNodes();
+            recreateConnections();
+
+            // Animación
+            animate();
+        }
+
+        // Recrear nodos desde datos serializados
+        function recreateNodes() {
+            nodes = [];
+            const baseSize = 0.06;
+
+            claimData.nodes.forEach(nodeData => {
+                const wordData = nodeData.userData.wordData;
+                const score = wordData.normalizedScore || 0;
+                
+                let color;
+                if (score > 0.85) {
+                    color = 0xffff00;
+                } else if (score > 0.7) {
+                    color = 0x4a6fa5;
+                } else if (score > 0.5) {
+                    color = 0x5a7fb5;
+                } else if (score > 0.3) {
+                    color = 0x6a8fc5;
+                } else if (score > 0.1) {
+                    color = 0x7a9fd5;
+                } else {
+                    color = 0xffffff;
+                }
+
+                const material = new THREE.MeshLambertMaterial({ 
+                    color: color,
+                    transparent: true,
+                    opacity: 0.9
+                });
+
+                let node;
+                if (wordData.isSerEstar) {
+                    // Cubo con base plana
+                    const cubeGeometry = new THREE.BoxGeometry(baseSize, baseSize, baseSize, 1, 1, 1);
+                    const cube = new THREE.Mesh(cubeGeometry, material);
+                    const flatRectGeometry = new THREE.BoxGeometry(baseSize, baseSize * 0.1, baseSize, 1, 1, 1);
+                    const flatRect = new THREE.Mesh(flatRectGeometry, material);
+                    flatRect.position.y = -baseSize * 2.0;
+                    node = new THREE.Group();
+                    node.add(cube);
+                    node.add(flatRect);
+                } else if (wordData.pos === 'noun') {
+                    // Esfera con base plana
+                    const sphereGeometry = new THREE.SphereGeometry(baseSize, 8, 8);
+                    const sphere = new THREE.Mesh(sphereGeometry, material);
+                    const flatSquareGeometry = new THREE.BoxGeometry(baseSize, baseSize * 0.1, baseSize, 1, 1, 1);
+                    const flatSquare = new THREE.Mesh(flatSquareGeometry, material);
+                    flatSquare.position.y = -baseSize * 2.0;
+                    node = new THREE.Group();
+                    node.add(sphere);
+                    node.add(flatSquare);
+                } else {
+                    // Esfera normal
+                    const geometry = new THREE.SphereGeometry(baseSize, 8, 8);
+                    node = new THREE.Mesh(geometry, material);
+                }
+
+                node.position.set(nodeData.position.x, nodeData.position.y, nodeData.position.z);
+                node.userData = nodeData.userData;
+                scene.add(node);
+                nodes.push(node);
+            });
+        }
+
+        // Recrear conexiones
+        function recreateConnections() {
+            connections = [];
+            claimData.connections.forEach(connData => {
+                const fromNode = nodes[connData.fromIndex];
+                const toNode = nodes[connData.toIndex];
+                if (!fromNode || !toNode) return;
+
+                const geometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(connData.fromPos.x, connData.fromPos.y, connData.fromPos.z),
+                    new THREE.Vector3(connData.toPos.x, connData.toPos.y, connData.toPos.z)
+                ]);
+
+                const avgValue = ((fromNode.userData.wordData.normalizedScore || 0) + 
+                                 (toNode.userData.wordData.normalizedScore || 0)) / 2;
+                let connectionColor = 0x808080;
+                if (avgValue > 0.85) {
+                    connectionColor = 0xffffff;
+                } else if (avgValue > 0.5) {
+                    connectionColor = 0xaaaaaa;
+                }
+
+                const material = new THREE.LineBasicMaterial({ color: connectionColor, opacity: 0.5, transparent: true });
+                const line = new THREE.Line(geometry, material);
+                line.userData = { fromNode, toNode };
+                scene.add(line);
+                connections.push(line);
+            });
+        }
+
+        // Animación
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        // Mostrar Total Value
+        function showTotalValue() {
+            const content = document.getElementById('value-logic-content');
+            const totalValueUSD = claimData.totalTextScore || 0;
+            let totalValueETH = 0;
+            if (ethPriceUSD) {
+                totalValueETH = totalValueUSD / ethPriceUSD;
+            }
+            const totalValueETHDisplay = totalValueETH >= 0.01 ? 
+                `${totalValueETH.toFixed(6)} ETH` : 
+                `${totalValueETH.toFixed(10)} ETH`;
+
+            const totalWords = analyzedWords.length;
+            const avgFinalValueUSD = totalValueUSD / totalWords;
+            let avgFinalValueETH = 0;
+            if (ethPriceUSD) {
+                avgFinalValueETH = avgFinalValueUSD / ethPriceUSD;
+            }
+            const avgFinalValueETHDisplay = avgFinalValueETH >= 0.01 ? 
+                `${avgFinalValueETH.toFixed(6)} ETH` : 
+                `${avgFinalValueETH.toFixed(10)} ETH`;
+
+            // Contar por POS
+            const posCounts = {};
+            analyzedWords.forEach(w => {
+                const pos = w.pos || 'other';
+                posCounts[pos] = (posCounts[pos] || 0) + 1;
+            });
+
+            let html = `
+                <div style="margin-bottom: 10px;">
+                    <div><strong>Total Words:</strong> ${totalWords}</div>
+                    <div><strong>Average Value per Word:</strong> ${avgFinalValueETHDisplay}</div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <strong>Distribution by Word Type:</strong><br>
+            `;
+            Object.keys(posCounts).forEach(pos => {
+                const count = posCounts[pos];
+                const percentage = (count / totalWords * 100).toFixed(1);
+                html += `${pos}: ${count} (${percentage}%)<br>`;
+            });
+            html += `</div>`;
+
+            // Top 20 words
+            const topWords = [...analyzedWords]
+                .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
+                .slice(0, 20);
+
+            html += `<div style="margin-top: 10px;"><strong>Top 20 Words by Value:</strong><br>`;
+            topWords.forEach((w, idx) => {
+                const wordValueUSD = w.finalValue || 0;
+                const wordValueETH = ethPriceUSD ? wordValueUSD / ethPriceUSD : 0;
+                const wordValueETHDisplay = wordValueETH >= 0.01 ? 
+                    `${wordValueETH.toFixed(6)} ETH` : 
+                    `${wordValueETH.toFixed(10)} ETH`;
+                html += `${idx + 1}. "${w.text}": ${wordValueETHDisplay}<br>`;
+            });
+            html += `</div>`;
+
+            content.innerHTML = html;
+
+            // Actualizar total value box
+            const totalBox = document.getElementById('value-logic-total-box');
+            const totalDisplay = document.getElementById('value-logic-total-display');
+            if (totalBox && totalDisplay) {
+                totalDisplay.textContent = totalValueETHDisplay;
+                totalBox.style.display = 'block';
+            }
+
+            // Crear overview 3D si es necesario (simplificado)
+            createValueLogicOverview();
+        }
+
+        // Crear overview 3D simplificado
+        function createValueLogicOverview() {
+            const container = document.getElementById('value-logic-overview-container');
+            const canvas = document.getElementById('value-logic-overview-canvas');
+            if (!container || !canvas) return;
+
+            const width = container.clientWidth;
+            const height = 150;
+            canvas.width = width;
+            canvas.height = height;
+
+            valueLogicOverviewScene = new THREE.Scene();
+            valueLogicOverviewScene.background = new THREE.Color(0x000000);
+            
+            valueLogicOverviewCamera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            valueLogicOverviewCamera.position.set(0, 0, 10);
+            valueLogicOverviewCamera.lookAt(0, 0, 0);
+
+            valueLogicOverviewRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
+            valueLogicOverviewRenderer.setSize(width, height);
+
+            // Añadir luces
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            valueLogicOverviewScene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(5, 5, 5);
+            valueLogicOverviewScene.add(directionalLight);
+
+            // Añadir una versión simplificada de los nodos
+            nodes.slice(0, 50).forEach(node => {
+                const clone = node.clone();
+                clone.scale.multiplyScalar(0.5);
+                valueLogicOverviewScene.add(clone);
+            });
+
+            valueLogicOverviewRenderer.render(valueLogicOverviewScene, valueLogicOverviewCamera);
+            container.style.display = 'block';
+        }
+
+        // Crear lista de nodos top 12
+        function createTop12NodesList() {
+            const grid = document.getElementById('nodes-grid');
+            const sortedNodes = [...nodes].sort((a, b) => {
+                const scoreA = a.userData.wordData ? (a.userData.wordData.finalValue || 0) : 0;
+                const scoreB = b.userData.wordData ? (b.userData.wordData.finalValue || 0) : 0;
+                return scoreB - scoreA;
+            });
+
+            const top12 = sortedNodes.slice(0, 12);
+
+            top12.forEach((node, index) => {
+                const wordData = node.userData.wordData;
+                if (!wordData) return;
+
+                const item = document.createElement('div');
+                item.className = 'node-item';
+
+                const h3 = document.createElement('h3');
+                h3.textContent = wordData.text;
+                item.appendChild(h3);
+
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 140;
+                item.appendChild(canvas);
+
+                const info = document.createElement('div');
+                info.className = 'node-item-info';
+                const totalValue = claimData.totalTextScore || 0;
+                const individualValue = wordData.finalValue || wordData.totalScore || 0;
+                const relativeValue = totalValue > 0 ? ((individualValue / totalValue) * 100).toFixed(2) + '%' : '0%';
+                
+                let individualValueETH = 0;
+                if (ethPriceUSD) {
+                    individualValueETH = individualValue / ethPriceUSD;
+                }
+                const individualValueETHDisplay = individualValueETH >= 0.01 ? 
+                    `${individualValueETH.toFixed(6)} ETH` : 
+                    `${individualValueETH.toFixed(10)} ETH`;
+
+                info.innerHTML = `
+                    <div><strong>Value:</strong> $${individualValue.toFixed(2)} USD</div>
+                    <div><strong>Value:</strong> ${individualValueETHDisplay}</div>
+                    <div><strong>Position:</strong> ${node.userData.index + 1} / ${analyzedWords.length}</div>
+                    <div><strong>Value / Total:</strong> ${relativeValue}</div>
+                    <div><strong>POS:</strong> ${wordData.pos}</div>
+                    <div><strong>Connections:</strong> ${node.userData.connectionCount || 0}</div>
+                `;
+                item.appendChild(info);
+
+                grid.appendChild(item);
+
+                // Crear escena 3D para este nodo
+                createNodeListItem3D(canvas, node, index);
+            });
+        }
+
+        // Crear escena 3D para item de lista
+        function createNodeListItem3D(canvas, node, index) {
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            
+            const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+            camera.position.set(0, 0, 0.3);
+            camera.lookAt(0, 0, 0);
+
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
+            renderer.setSize(canvas.width, canvas.height);
+
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+
+            // Clonar el nodo y centrarlo
+            const clone = node.clone();
+            clone.position.set(0, 0, 0);
+            scene.add(clone);
+
+            // Rotar continuamente
+            function animateNode() {
+                requestAnimationFrame(animateNode);
+                clone.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+            animateNode();
+
+            nodeListScenes.push(scene);
+            nodeListRenderers.push(renderer);
+        }
+
+        // Función para descargar pack (imagen + GLB)
+        async function downloadPurchasePack() {
+            try {
+                const zip = new JSZip();
+                let imageReady = false;
+                let glbReady = false;
+
+                // Función para verificar si ambas están listas y descargar
+                function checkAndDownload() {
+                    if (imageReady && glbReady) {
+                        zip.generateAsync({ type: 'blob' }).then((content) => {
+                            const link = document.createElement('a');
+                            link.href = URL.createObjectURL(content);
+                            link.download = `purchase-pack-${getTimestamp()}.zip`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            setTimeout(() => URL.revokeObjectURL(link.href), 100);
+                        });
+                    }
+                }
+
+                // 1. Capturar imagen del total value
+                const totalValueBox = document.querySelector('.box-total-value');
+                if (totalValueBox && typeof html2canvas !== 'undefined') {
+                    html2canvas(totalValueBox, {
+                        backgroundColor: '#dcdcdc',
+                        scale: 2
+                    }).then((canvas) => {
+                        canvas.toBlob((blob) => {
+                            zip.file('total-value-summary.jpg', blob);
+                            imageReady = true;
+                            checkAndDownload();
+                        }, 'image/jpeg', 1.0);
+                    }).catch(() => {
+                        imageReady = true;
+                        checkAndDownload();
+                    });
+                } else {
+                    imageReady = true;
+                    checkAndDownload();
+                }
+
+                // 2. Exportar GLB
+                if (typeof THREE.GLTFExporter === 'undefined') {
+                    alert('Error: GLTFExporter no está disponible.');
+                    glbReady = true;
+                    checkAndDownload();
+                    return;
+                }
+
+                const exportScene = new THREE.Scene();
+                nodes.forEach(node => {
+                    const clonedNode = node.isGroup ? node.clone(true) : node.clone();
+                    exportScene.add(clonedNode);
+                });
+                connections.forEach(connection => {
+                    const clonedConnection = connection.clone();
+                    exportScene.add(clonedConnection);
+                });
+
+                try {
+                    const exporter = new THREE.GLTFExporter();
+                    exporter.parse(exportScene, (result) => {
+                        let blob;
+                        if (result instanceof ArrayBuffer) {
+                            blob = new Blob([result], { type: 'model/gltf-binary' });
+                        } else {
+                            const output = JSON.stringify(result, null, 2);
+                            blob = new Blob([output], { type: 'application/json' });
+                        }
+                        zip.file('text-body.glb', blob);
+                        glbReady = true;
+                        checkAndDownload();
+                    }, {
+                        binary: true,
+                        trs: false,
+                        onlyVisible: true,
+                        truncateDrawRange: true,
+                        embedImages: true,
+                        animations: [],
+                        includeCustomExtensions: false
+                    });
+                } catch (error) {
+                    console.error('Error exporting GLB:', error);
+                    glbReady = true;
+                    checkAndDownload();
+                }
+            } catch (e) {
+                console.error('Error creating purchase pack:', e);
+                alert('Error al crear el pack. Por favor, intenta de nuevo.');
+            }
+        }
+
+        function getTimestamp() {
+            const now = new Date();
+            return now.getFullYear() + 
+                String(now.getMonth() + 1).padStart(2, '0') + 
+                String(now.getDate()).padStart(2, '0') + '-' +
+                String(now.getHours()).padStart(2, '0') + 
+                String(now.getMinutes()).padStart(2, '0') + 
+                String(now.getSeconds()).padStart(2, '0');
+        }
+
+        // Inicialización
+        window.addEventListener('DOMContentLoaded', () => {
+            loadClaimData();
+            if (claimData) {
+                init3DScene();
+                showTotalValue();
+                createTop12NodesList();
+            }
+        });
+
+        // Event listener para botón PURCHASE
+        document.getElementById('purchaseBtn').addEventListener('click', downloadPurchasePack);
+    </script>
+</body>
+</html>
+

@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -229,11 +230,20 @@
         }
 
         #max-value-panel-header {
-            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 5px;
             padding: 2px;
             flex-shrink: 0;
             min-height: 15px;
+        }
+        
+        #max-value-panel-hashtag {
+            color: #000000;
+            font-size: 11px;
+            font-family: Helvetica, Arial, sans-serif;
+            font-weight: bold;
         }
 
         #max-value-panel-canvas-container {
@@ -361,48 +371,110 @@
 
         #right-panel {
             position: fixed;
-            bottom: 360px;
-            right: 0;
+            bottom: 15px;
+            right: 5px;
             width: 200px;
-            max-height: 400px;
+            height: 350px;
             z-index: 1001;
             background: rgba(255, 255, 255, 0.95);
             border: none;
-            padding: 5px;
-            overflow-y: auto;
-            display: none;
+            padding: 0 5px 5px 5px !important;
+            display: none !important;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            visibility: hidden !important;
+            opacity: 0 !important;
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        #right-panel.visible {
+            display: flex !important;
         }
         
         #right-panel::-webkit-scrollbar {
             display: none; /* Chrome, Safari, Opera */
         }
 
-        #right-panel.visible {
-            display: block;
+        
+        /* Styles for cloned right panels */
+        .right-panel-clone {
+            position: fixed;
+            width: 200px;
+            height: 350px;
+            z-index: 1001;
+            background: rgba(255, 255, 255, 0.95);
+            border: none;
+            padding: 0 5px 5px 5px !important;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+            display: none;
+            visibility: hidden;
+            opacity: 0;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .right-panel-clone.visible {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .right-panel-clone.visible {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        .right-panel-clone::-webkit-scrollbar {
+            display: none;
         }
         
         #right-panel-header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5px;
-            flex-direction: row-reverse;
+            justify-content: flex-start;
+            align-items: flex-start;
+            margin: 0 5px 5px 5px !important;
+            margin-top: 0 !important;
+            padding: 0 !important;
+            padding-top: 0 !important;
+            flex-shrink: 0;
+            min-height: auto;
         }
         
         #right-panel-close {
-            background: #808080;
-            color: #ffffff;
-            border: none;
-            padding: 1px 3px;
+            background: #808080 !important;
+            color: #ffffff !important;
+            border: none !important;
+            padding: 0 !important;
+            border-radius: 0 !important;
             cursor: pointer;
-            font-family: Helvetica, Arial, sans-serif;
-            font-size: 9px;
-            display: flex;
-            align-items: center;
-            gap: 2px;
-            white-space: nowrap;
+            font-family: Helvetica, Arial, sans-serif !important;
+            font-size: 8px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 2px !important;
+            white-space: nowrap !important;
+            margin: 0 !important;
+            text-transform: uppercase !important;
+            line-height: 1 !important;
+            height: auto !important;
+            min-height: 0 !important;
+        }
+        
+        #right-panel-close span {
+            margin: 0 !important;
+            padding: 0 !important;
+            line-height: 1 !important;
+            display: inline !important;
+        }
+        
+        #right-panel-close span:first-child {
+            font-size: 8px !important;
+            margin-right: 2px !important;
         }
         
         #right-panel-close:hover {
@@ -410,13 +482,40 @@
         }
         
         #right-panel-canvas-container {
-            width: 100%;
-            height: 150px;
+            width: calc(100% - 10px);
+            height: 140px;
             background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            margin: 0 0 8px 0;
+            border: none;
+            margin-top: 8px !important;
+            margin-left: 5px !important;
+            margin-right: 5px !important;
+            margin-bottom: 8px !important;
             position: relative;
             overflow: hidden;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        
+        #node-details-content {
+            flex: 1;
+            overflow-y: visible;
+            color: #ffffff;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 9px;
+            line-height: 1.3;
+            margin: 0 !important;
+            margin-bottom: 0 !important;
+            padding: 8px;
+            background: #000000;
+            min-height: 0;
+            box-sizing: border-box;
+            display: block;
+        }
+        
+        #node-details-content div {
+            margin: 2px 0;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
         #right-panel-canvas {
@@ -602,11 +701,15 @@
             font-family: Helvetica, Arial, sans-serif;
             font-size: 4px;
             color: #000000;
-            display: none;
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
         }
         
         .node-info-panel.visible {
-            display: block;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
         
         .node-info-header {
@@ -657,9 +760,96 @@
             font-weight: normal;
             font-size: 3.5px;
         }
+        
+        #start-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0000FF;
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease;
+        }
+        
+        #start-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+            display: none;
+        }
+        
+        #start-button {
+            background: #808080;
+            color: #ffffff;
+            border: none;
+            padding: 0 2px !important;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            text-transform: uppercase;
+            line-height: 1;
+            margin: 0;
+        }
+        
+        #start-button:hover {
+            background: #707070;
+        }
+        
+        #start-button:active {
+            background: #606060;
+        }
+        
+        /* Ensure these panels are completely hidden until explicitly shown */
+        #node-info-panel:not(.visible),
+        #right-panel:not(.visible) {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+        
+        /* Ensure modals are hidden by default, but allow JavaScript to show them */
+        #value-logic-modal {
+            display: none;
+        }
+        
+        #fractal-modal {
+            display: none;
+        }
+        
+        /* When modals are explicitly shown via JavaScript, they will override the default */
+        #value-logic-modal[style*="display: block"],
+        #value-logic-modal[style*="display: flex"] {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        
+        #fractal-modal[style*="display: block"],
+        #fractal-modal[style*="display: flex"] {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+        
+        #value-logic-modal-container,
+        #fractal-modal > div {
+            visibility: inherit;
+            opacity: inherit;
+        }
     </style>
 </head>
 <body>
+    <div id="start-screen">
+        <button id="start-button">CONNECT</button>
+    </div>
     <div id="canvas-container"></div>
     
     <div id="node-info-panel" class="node-info-panel">
@@ -729,7 +919,8 @@
         <div class="top-bar-item black" id="total-value-display" style="cursor: pointer;">
             <span style="font-size: 9px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">Total Value: <span id="valueScore">0.00</span> <span id="valueETH"></span></span>
         </div>
-        <button class="top-bar-item grey" id="exportBtn" disabled style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Download GLB</button>
+        <button class="top-bar-item grey" id="exportBtn" disabled style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">CLAIM</button>
+        <button class="top-bar-item grey" id="galleryBtn" disabled style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">GALLERY</button>
         <button class="top-bar-item grey" id="toggleNametagsBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Show Nametags</button>
         <button class="top-bar-item grey" id="nodeListBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">TOP NODES</button>
         <button class="top-bar-item grey" id="resetCameraBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Reset View</button>
@@ -836,6 +1027,30 @@
         </div>
     </div>
 
+    <!-- Claim Modal -->
+    <div id="claim-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 30000; overflow-y: auto; pointer-events: auto;">
+        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 1600px; margin: 20px auto; padding: 20px; background: #000000;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 8px 16px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 10px; border-radius: 0;">← BACK</button>
+                <h2 style="color: #ffffff; font-family: Helvetica, Arial, sans-serif; font-size: 16px; margin: 0;">CLAIM</h2>
+                <div style="width: 100px;"></div>
+            </div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+                <div id="claim-3d-container" style="flex: 1; min-width: 600px; height: 600px; background: #0000FF; position: relative; border: 2px solid #ffffff;"></div>
+                <div id="claim-total-value-container" style="flex: 1; min-width: 400px; max-width: 500px; background: rgba(220, 220, 220, 0.95); padding: 4px 12px 12px 12px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; max-height: 600px; overflow-y: auto;">
+                    <div id="claim-total-value-content"></div>
+                </div>
+            </div>
+            <div id="claim-nodes-list-container" style="background: rgba(255, 255, 255, 0.95); padding: 15px; border: 2px solid #ffffff; margin-bottom: 20px; max-height: 600px; overflow-y: auto;">
+                <h3 style="font-size: 14px; margin-bottom: 15px; color: #000000; border-bottom: 1px solid #000000; padding-bottom: 5px;">Top 12 Nodes</h3>
+                <div id="claim-nodes-grid" class="nodes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;"></div>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button id="claim-purchase-btn" style="background: #808080; color: #ffffff; border: none; padding: 12px 24px; font-size: 12px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0;">PURCHASE</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Fractal Modal -->
     <div id="fractal-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 20000; overflow-y: auto; pointer-events: none;">
         <div style="position: relative; max-width: 400px; background: rgba(220, 220, 220, 0.76); padding: 4px 12px 12px 12px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; pointer-events: auto;">
@@ -853,6 +1068,7 @@
 
     <div id="max-value-panel">
         <div id="max-value-panel-header">
+            <span id="max-value-panel-hashtag">#1</span>
             <h3 id="max-value-panel-word" style="color: #000000; font-size: 11px; margin: 0; font-family: Helvetica, Arial, sans-serif;">-</h3>
         </div>
         <div id="max-value-panel-canvas-container">
@@ -874,12 +1090,12 @@
 
     <div id="right-panel">
         <div id="right-panel-header">
-            <h3 id="right-panel-word" style="color: #000000; font-size: 11px; margin: 0; font-family: Helvetica, Arial, sans-serif;">-</h3>
-            <button id="right-panel-close">
-                <span style="font-size: 12px;">×</span>
-                <span>CLOSE</span>
+            <button id="right-panel-close" style="padding: 0 !important; margin: 0 !important;">
+                <span style="font-size: 8px !important; padding: 0 !important; margin: 0 !important;">×</span>
+                <span style="padding: 0 !important; margin: 0 !important;">CLOSE</span>
             </button>
         </div>
+        <h3 id="right-panel-word" style="position: absolute; top: 2px; right: 5px; color: #000000; font-size: 11px; margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; z-index: 10;">-</h3>
         <div id="right-panel-canvas-container">
             <canvas id="right-panel-canvas"></canvas>
         </div>
@@ -941,6 +1157,12 @@
         let rightPanelCamera = null;
         let rightPanelMesh = null;
         let rightPanelAnimationId = null;
+        
+        // Multiple right panels system
+        let rightPanels = []; // Array of active panel objects: { id, element, node, scene, renderer, camera, mesh, animationId, offset }
+        let rightPanelCounter = 0; // Counter for unique panel IDs
+        const MAX_RIGHT_PANELS = 5;
+        let availableOffsets = []; // Stack of available offsets when panels are closed
         let maxValuePanelCanvas = null;
         let maxValuePanelRenderer = null;
         let maxValuePanelScene = null;
@@ -1117,7 +1339,7 @@
         function setupEventListeners() {
             // Buttons
             document.getElementById('generateBtn').addEventListener('click', generateVisualization);
-            document.getElementById('exportBtn').addEventListener('click', exportToGLB);
+            document.getElementById('exportBtn').addEventListener('click', navigateToClaim);
             document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
             document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
             document.getElementById('toggleNametagsBtn').addEventListener('click', toggleNametags);
@@ -1127,6 +1349,16 @@
             document.getElementById('right-panel-close').addEventListener('click', hideNodeDetails);
             document.getElementById('total-value-display').addEventListener('click', showValueLogicSummary);
             document.getElementById('close-value-logic-modal').addEventListener('click', hideValueLogicSummary);
+            
+            // Claim modal buttons
+            const claimBackBtn = document.getElementById('claim-back-btn');
+            const claimPurchaseBtn = document.getElementById('claim-purchase-btn');
+            if (claimBackBtn) {
+                claimBackBtn.addEventListener('click', hideClaimModal);
+            }
+            if (claimPurchaseBtn) {
+                claimPurchaseBtn.addEventListener('click', downloadClaimPurchasePack);
+            }
             const colorBtn = document.getElementById('value-logic-color-btn');
             if (colorBtn) {
                 colorBtn.addEventListener('click', toggleValueLogicColorMode);
@@ -4811,10 +5043,8 @@
         // ==================== GENERACIÓN DE VISUALIZACIÓN ====================
         function generateVisualization() {
             // Hide right panel if visible (since we're generating a new visualization)
-            const rightPanel = document.getElementById('right-panel');
-            if (rightPanel && rightPanel.classList.contains('visible')) {
-                hideNodeDetails();
-            }
+            // Hide all right panels
+            hideNodeDetails();
             
             const text = document.getElementById('textInput').value.trim();
             
@@ -4851,6 +5081,768 @@
             
             // Enable export button
             document.getElementById('exportBtn').disabled = false;
+        }
+
+        // ==================== NAVEGACIÓN A CLAIM ====================
+        // Variables para claim modal
+        let claimScene = null;
+        let claimCamera = null;
+        let claimRenderer = null;
+        let claimAnimationId = null;
+        let claimNodeListScenes = [];
+        let claimNodeListRenderers = [];
+
+        function navigateToClaim() {
+            if (nodes.length === 0) {
+                alert('No hay visualización para reclamar. Genera una visualización primero.');
+                return;
+            }
+            
+            const modal = document.getElementById('claim-modal');
+            if (!modal) return;
+            
+            // Mostrar modal
+            modal.style.display = 'block';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            
+            // Inicializar contenido del modal
+            initClaimModal();
+        }
+
+        function initClaimModal() {
+            // Crear visualización 3D
+            initClaim3DScene();
+            
+            // Mostrar Total Value (idéntico al modal original)
+            showClaimTotalValue();
+            
+            // Crear lista de top 12 nodos
+            createClaimTop12NodesList();
+        }
+
+        function initClaim3DScene() {
+            const container = document.getElementById('claim-3d-container');
+            if (!container) return;
+            
+            // Limpiar contenido previo
+            while (container.firstChild) {
+                container.removeChild(container.firstChild);
+            }
+            
+            // Limpiar escena anterior si existe
+            if (claimScene && claimRenderer) {
+                claimScene.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+                if (claimAnimationId) {
+                    cancelAnimationFrame(claimAnimationId);
+                }
+                claimRenderer.dispose();
+            }
+            
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            claimScene = new THREE.Scene();
+            claimScene.background = new THREE.Color(currentBackgroundColor);
+
+            claimCamera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            
+            // Calcular bounding box para ver todo el cuerpo
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+            let minZ = Infinity, maxZ = -Infinity;
+            
+            nodes.forEach(node => {
+                const pos = node.position;
+                minX = Math.min(minX, pos.x);
+                maxX = Math.max(maxX, pos.x);
+                minY = Math.min(minY, pos.y);
+                maxY = Math.max(maxY, pos.y);
+                minZ = Math.min(minZ, pos.z);
+                maxZ = Math.max(maxZ, pos.z);
+            });
+            
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            const centerZ = (minZ + maxZ) / 2;
+            
+            const sizeX = maxX - minX;
+            const sizeY = maxY - minY;
+            const sizeZ = maxZ - minZ;
+            const maxSize = Math.max(sizeX, sizeY, sizeZ, 1);
+            
+            // Posicionar cámara para ver todo el cuerpo
+            const distance = maxSize * 2.5;
+            claimCamera.position.set(centerX, centerY, centerZ + distance);
+            claimCamera.lookAt(centerX, centerY, centerZ);
+
+            claimRenderer = new THREE.WebGLRenderer({ antialias: false });
+            claimRenderer.setSize(width, height);
+            claimRenderer.setClearColor(currentBackgroundColor, 1);
+            container.appendChild(claimRenderer.domElement);
+
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            claimScene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(5, 5, 5);
+            claimScene.add(directionalLight);
+
+            // Clonar nodos y conexiones
+            nodes.forEach(node => {
+                const clonedNode = node.isGroup ? node.clone(true) : node.clone();
+                claimScene.add(clonedNode);
+            });
+            
+            connections.forEach(connection => {
+                const clonedConnection = connection.clone();
+                claimScene.add(clonedConnection);
+            });
+
+            // Animación estática (sin rotación)
+            function animate() {
+                claimAnimationId = requestAnimationFrame(animate);
+                if (claimRenderer && claimScene && claimCamera) {
+                    claimRenderer.render(claimScene, claimCamera);
+                }
+            }
+            animate();
+        }
+
+        function showClaimTotalValue() {
+            const container = document.getElementById('claim-total-value-container');
+            if (!container) return;
+            
+            // Limpiar contenido previo
+            container.innerHTML = '';
+            
+            // Crear estructura idéntica al modal de Total Value
+            const wrapper = document.createElement('div');
+            wrapper.id = 'claim-total-value-wrapper';
+            wrapper.style.cssText = 'position: relative; max-width: 100%; margin: 0;';
+            
+            const content = document.createElement('div');
+            content.id = 'claim-value-logic-content';
+            content.style.cssText = 'font-size: 11px; line-height: 1.1; color: #000000; margin-top: 5px;';
+            
+            const overviewContainer = document.createElement('div');
+            overviewContainer.id = 'claim-value-logic-overview-container';
+            overviewContainer.style.cssText = 'width: 100%; max-width: 100%; height: 150px; background: #000000; border: 1px solid #ffffff; margin-top: 5px; margin-bottom: 5px; border-radius: 0; position: relative; display: none; overflow: hidden; box-sizing: border-box;';
+            const overviewCanvas = document.createElement('canvas');
+            overviewCanvas.id = 'claim-value-logic-overview-canvas';
+            overviewCanvas.style.cssText = 'width: 100%; height: 100%; display: block;';
+            overviewContainer.appendChild(overviewCanvas);
+            
+            const top5Grid = document.createElement('div');
+            top5Grid.id = 'claim-value-logic-top5-grid';
+            top5Grid.style.cssText = 'display: none; margin-top: 5px; margin-bottom: 5px;';
+            
+            const totalBox = document.createElement('div');
+            totalBox.id = 'claim-value-logic-total-box';
+            totalBox.style.cssText = 'background: #000000; border: 1px solid #ffffff; padding: 6px; margin-top: 5px; border-radius: 0; display: none;';
+            const totalDisplay = document.createElement('div');
+            totalDisplay.style.cssText = 'color: #ffffff; font-size: 11px;';
+            totalDisplay.innerHTML = '<strong>Total Value:</strong> <span id="claim-value-logic-total-display">-</span>';
+            totalBox.appendChild(totalDisplay);
+            
+            wrapper.appendChild(content);
+            wrapper.appendChild(overviewContainer);
+            wrapper.appendChild(top5Grid);
+            wrapper.appendChild(totalBox);
+            container.appendChild(wrapper);
+            
+            // Generar el contenido usando la misma lógica que showValueLogicSummary
+            if (!analyzedWords || analyzedWords.length === 0) return;
+            
+            const totalWords = analyzedWords.length;
+            const totalValueUSD = window.totalTextScore || analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+            const avgBaseValue = analyzedWords.reduce((sum, w) => sum + (w.baseValue || 0), 0) / totalWords;
+            const avgFinalValueUSD = totalValueUSD / totalWords;
+            
+            let totalValueETH = 0;
+            let avgFinalValueETH = 0;
+            if (ethPriceUSD) {
+                totalValueETH = totalValueUSD / ethPriceUSD;
+                avgFinalValueETH = avgFinalValueUSD / ethPriceUSD;
+            }
+            
+            const totalValueETHDisplay = totalValueETH >= 0.01 ? 
+                `${totalValueETH.toFixed(6)} ETH` : 
+                `${totalValueETH.toFixed(10)} ETH`;
+            const avgFinalValueETHDisplay = avgFinalValueETH >= 0.01 ? 
+                `${avgFinalValueETH.toFixed(6)} ETH` : 
+                `${avgFinalValueETH.toFixed(10)} ETH`;
+            
+            // Calcular multiplicadores promedio (reutilizar lógica existente)
+            const avgLengthMultiplier = analyzedWords.reduce((sum, w) => sum + (w.lengthMultiplier || 1), 0) / totalWords;
+            const avgOntologicalMultiplier = analyzedWords.reduce((sum, w) => sum + (w.ontologicalMultiplier || 1), 0) / totalWords;
+            const avgNameWithToBeMultiplier = analyzedWords.reduce((sum, w) => sum + (w.nameWithToBeMultiplier || 1), 0) / totalWords;
+            const avgSemanticMultiplier = analyzedWords.reduce((sum, w) => sum + (w.semanticMultiplier || 1), 0) / totalWords;
+            const avgRepetitionMultiplier = analyzedWords.reduce((sum, w) => sum + (w.repetitionMultiplier || 1), 0) / totalWords;
+            const avgTenseMultiplier = analyzedWords.reduce((sum, w) => sum + (w.tenseMultiplier || 1), 0) / totalWords;
+            const avgNarrativePenalty = analyzedWords.reduce((sum, w) => sum + (w.narrativePenalty || 1), 0) / totalWords;
+            
+            // Contar tiempos verbales (reutilizar lógica existente)
+            let presentCount = 0, pastCount = 0, futureCount = 0;
+            analyzedWords.forEach((w) => {
+                if (w.pos === 'verb') {
+                    const cleanWord = w.text.toLowerCase().replace(/[^\w]/g, '');
+                    const presentVerbs = ['is', 'am', 'are', 'be', 'being', 'exist', 'exists', 'remain', 'remains',
+                                         'es', 'son', 'estar', 'ser', 'existe', 'existen', 'permanece', 'permanecen',
+                                         'have', 'has', 'do', 'does', 'go', 'goes', 'come', 'comes', 'see', 'sees',
+                                         'tengo', 'tiene', 'hago', 'hace', 'voy', 'va', 'vengo', 'viene', 'veo', 've'];
+                    const pastVerbs = ['was', 'were', 'been', 'existed', 'remained', 'became', 'had', 'did', 'went',
+                                      'came', 'saw', 'fue', 'fueron', 'estuvo', 'estuvieron', 'existió', 'existieron',
+                                      'tuvo', 'hizo', 'fue', 'vino', 'vio', 'said', 'told', 'thought', 'knew',
+                                      'dijo', 'contó', 'pensó', 'supo'];
+                    const futureVerbs = ['will', 'shall', 'would', 'going', 'gonna',
+                                        'será', 'serán', 'estará', 'estarán', 'tendrá', 'tendrán', 'hará', 'harán',
+                                        'irá', 'irán', 'vendrá', 'vendrán', 'verá', 'verán'];
+                    const futureModal = ['will', 'shall', 'would', 'can', 'could', 'may', 'might',
+                                        'podrá', 'podrán', 'deberá', 'deberán', 'puede', 'pueden'];
+                    if (presentVerbs.includes(cleanWord) || cleanWord.endsWith('ing')) presentCount++;
+                    else if (pastVerbs.includes(cleanWord) || cleanWord.endsWith('ed')) pastCount++;
+                    else if (futureVerbs.includes(cleanWord) || futureModal.includes(cleanWord)) futureCount++;
+                }
+            });
+            
+            let predominantTense = 'none';
+            const totalVerbs = presentCount + pastCount + futureCount;
+            if (totalVerbs > 0) {
+                if (presentCount > pastCount && presentCount > futureCount) predominantTense = 'present';
+                else if (pastCount > presentCount && pastCount > futureCount) predominantTense = 'past';
+                else if (futureCount > presentCount && futureCount > pastCount) predominantTense = 'future';
+                else if (presentCount > 0 && (pastCount > 0 || futureCount > 0)) {
+                    if (futureCount > 0) predominantTense = 'present_future';
+                    else if (pastCount > 0) predominantTense = 'present_past';
+                }
+            }
+            
+            const tenseLabels = {
+                'present': 'Present', 'past': 'Past', 'future': 'Future',
+                'present_future': 'Present + Future', 'present_past': 'Present + Past',
+                'none': 'No verbs detected'
+            };
+            
+            // Contar por POS
+            const posCounts = {}, posValues = {}, posValuesETH = {};
+            analyzedWords.forEach(w => {
+                const pos = w.pos || 'other';
+                posCounts[pos] = (posCounts[pos] || 0) + 1;
+                const valueUSD = w.finalValue || 0;
+                posValues[pos] = (posValues[pos] || 0) + valueUSD;
+                if (ethPriceUSD) {
+                    posValuesETH[pos] = (posValuesETH[pos] || 0) + (valueUSD / ethPriceUSD);
+                }
+            });
+            
+            const toBeCount = analyzedWords.filter(w => w.isSerEstar).length;
+            const nameGroups = window.nameGroups || [];
+            const nameCount = nameGroups.length;
+            const ontologicalValues = toBeCount + nameCount;
+            const ontologicalAssertions = analyzedWords.filter(w => w.ontologicalMultiplier > 1).length;
+            
+            const top4Words = [...analyzedWords]
+                .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
+                .slice(0, 4);
+            
+            const topWords = [...analyzedWords]
+                .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
+                .slice(0, 20);
+            
+            function highlightNumber(num) {
+                return `<span style="background: #ffffff; color: #000000 !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;">${num}</span>`;
+            }
+            
+            const boxBg = "#000000";
+            const boxBorder = "#ffffff";
+            const textColor = "#ffffff";
+            const borderColor = boxBorder;
+            const dividerColor = "#333333";
+            const boxStyle = `background: ${boxBg}; border: 1px solid ${boxBorder}; padding: 4px; margin-bottom: 3px; border-radius: 0;`;
+            const itemStyle = "margin: 0.5px 0;";
+            
+            let generationDateStr = 'N/A';
+            if (visualizationGenerationDate) {
+                const date = visualizationGenerationDate;
+                generationDateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+            }
+            
+            let html = `
+                <div style="${boxStyle}">
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">General Summary</h3>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Total Words:</strong> ${highlightNumber(totalWords)}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Average Value per Word:</strong> ${highlightNumber(avgFinalValueETHDisplay)}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Average Base Value:</strong> ${highlightNumber(avgBaseValue.toFixed(2))}</div>
+                </div>
+                <div style="${boxStyle}">
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">Date</h3>
+                    <div style="${itemStyle} color: ${textColor};">${generationDateStr}</div>
+                </div>
+                <div style="${boxStyle}">
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">Applied Multipliers (Average)</h3>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Length Multiplier:</strong> ×${highlightNumber(avgLengthMultiplier.toFixed(2))}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Ontological Multiplier:</strong> ×${highlightNumber(avgOntologicalMultiplier.toFixed(2))}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Name + "to be" Multiplier:</strong> ×${highlightNumber(avgNameWithToBeMultiplier.toFixed(2))}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Semantic Closure Multiplier:</strong> ×${highlightNumber(avgSemanticMultiplier.toFixed(2))}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Repetition Multiplier:</strong> ×${highlightNumber(avgRepetitionMultiplier.toFixed(2))}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Temporal Multiplier:</strong> ×${highlightNumber(avgTenseMultiplier.toFixed(2))}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Predominant Tense:</strong> ${highlightNumber(tenseLabels[predominantTense])} (Present: ${presentCount}, Past: ${pastCount}, Future: ${futureCount})</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Narrative Penalty:</strong> ×${highlightNumber(avgNarrativePenalty.toFixed(2))}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Global Reduction (60%):</strong> ×${highlightNumber('0.4335')}</div>
+                </div>
+                <div style="${boxStyle}">
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">Distribution by Word Type</h3>
+            `;
+            
+            Object.keys(posCounts).forEach(pos => {
+                const count = posCounts[pos];
+                const valueETH = posValuesETH[pos] || 0;
+                const percentage = (count / totalWords * 100).toFixed(1);
+                const valuePercentage = totalValueETH > 0 ? ((valueETH / totalValueETH) * 100).toFixed(1) : '0.0';
+                const valueETHDisplay = valueETH >= 0.01 ? `${valueETH.toFixed(6)} ETH` : `${valueETH.toFixed(10)} ETH`;
+                html += `<div style="${itemStyle} color: ${textColor};"><strong>${pos}:</strong> ${highlightNumber(count)} words (${highlightNumber(percentage + '%')}) - Value: ${highlightNumber(valueETHDisplay)} (${highlightNumber(valuePercentage + '%')})</div>`;
+            });
+            
+            html += `
+                </div>
+                <div style="${boxStyle}">
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">Special Elements</h3>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Ontological Values:</strong> ${highlightNumber(ontologicalValues)}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Names:</strong> ${highlightNumber(nameCount)}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Ontological Assertions:</strong> ${highlightNumber(ontologicalAssertions)}</div>
+                </div>
+                <div style="${boxStyle}">
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">Top 20 Words by Value</h3>
+            `;
+            
+            topWords.forEach((w, idx) => {
+                const wordValueUSD = w.finalValue || 0;
+                const wordValueETH = ethPriceUSD ? wordValueUSD / ethPriceUSD : 0;
+                const wordValueETHDisplay = wordValueETH >= 0.01 ? `${wordValueETH.toFixed(6)} ETH` : `${wordValueETH.toFixed(10)} ETH`;
+                html += `
+                    <div style="${itemStyle} color: ${textColor}; padding: 2px 0; border-top: 1px solid ${dividerColor};">
+                        <strong>${idx + 1}. "${w.text}"</strong><br>
+                        Value: ${highlightNumber(wordValueETHDisplay)}<br>
+                        Base: ${highlightNumber((w.baseValue || 0).toFixed(2))} | 
+                        Length: ×${highlightNumber((w.lengthMultiplier || 1).toFixed(2))} | 
+                        Ontological: ×${highlightNumber((w.ontologicalMultiplier || 1).toFixed(2))} | 
+                        Repetition: ×${highlightNumber((w.repetitionMultiplier || 1).toFixed(2))}
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            
+            content.innerHTML = html;
+            
+            // Crear overview 3D (reutilizar función existente pero adaptada)
+            createClaimValueLogicOverview(overviewContainer, overviewCanvas);
+            
+            // Generar top 4 grid con fractales
+            generateClaimTop5Grid(top5Grid, top4Words);
+            
+            // Actualizar total value box
+            const claimTotalDisplay = document.getElementById('claim-value-logic-total-display');
+            if (claimTotalDisplay) {
+                claimTotalDisplay.textContent = totalValueETHDisplay;
+            }
+            totalBox.style.display = 'block';
+        }
+
+        function createClaimValueLogicOverview(container, canvas) {
+            if (!container || !canvas || !nodes || nodes.length === 0) return;
+            
+            container.style.display = 'block';
+            
+            const containerRect = container.getBoundingClientRect();
+            const containerWidth = Math.floor(containerRect.width) || 376;
+            const containerHeight = 150;
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            
+            const camera = new THREE.PerspectiveCamera(50, containerWidth / containerHeight, 0.1, 1000);
+            
+            // Calcular bounding box
+            let minX = Infinity, maxX = -Infinity;
+            let minY = Infinity, maxY = -Infinity;
+            let minZ = Infinity, maxZ = -Infinity;
+            
+            nodes.forEach(node => {
+                const pos = node.position;
+                minX = Math.min(minX, pos.x);
+                maxX = Math.max(maxX, pos.x);
+                minY = Math.min(minY, pos.y);
+                maxY = Math.max(maxY, pos.y);
+                minZ = Math.min(minZ, pos.z);
+                maxZ = Math.max(maxZ, pos.z);
+            });
+            
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            const centerZ = (minZ + maxZ) / 2;
+            
+            const sizeX = maxX - minX;
+            const sizeY = maxY - minY;
+            const sizeZ = maxZ - minZ;
+            const maxSize = Math.max(sizeX, sizeY, sizeZ, 1);
+            
+            const distance = maxSize * 2.5;
+            camera.position.set(centerX, centerY, centerZ + distance);
+            camera.lookAt(centerX, centerY, centerZ);
+            
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(2, 2, 2);
+            scene.add(directionalLight);
+            
+            const scaleFactor = 0.25;
+            nodes.forEach(node => {
+                const clonedNode = node.isGroup ? node.clone(true) : node.clone();
+                clonedNode.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                scene.add(clonedNode);
+            });
+            
+            connections.forEach(connection => {
+                const clonedConnection = connection.clone();
+                scene.add(clonedConnection);
+            });
+            
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
+            renderer.setSize(containerWidth, containerHeight);
+            renderer.render(scene, camera);
+        }
+
+        function generateClaimTop5Grid(container, top4Words) {
+            if (!container || !top4Words || top4Words.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            const boxBorder = "#ffffff";
+            const boxBg = "#000000";
+            const textColor = "#ffffff";
+            
+            let gridHTML = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">';
+            
+            top4Words.forEach((w, idx) => {
+                const wordIndex = analyzedWords.indexOf(w);
+                if (wordIndex < 0) return;
+                
+                const fractalCanvasId = `claim-top5-grid-fractal-${idx}`;
+                gridHTML += `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                        <div style="border: 1px solid ${boxBorder}; background: #000000; width: 100%; padding: 2px;">
+                            <canvas id="${fractalCanvasId}" width="120" height="90" style="display: block; width: 100%; height: 90px;"></canvas>
+                        </div>
+                        <div style="border: 1px solid ${boxBorder}; background: ${boxBg}; padding: 4px; width: 100%;">
+                            <div style="color: ${textColor}; font-size: 10px; text-align: center; font-family: Helvetica, Arial, sans-serif;">${w.text}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            gridHTML += '</div>';
+            container.innerHTML = gridHTML;
+            container.style.display = 'block';
+            
+            // Generar fractales
+            setTimeout(() => {
+                top4Words.forEach((w, idx) => {
+                    const wordIndex = analyzedWords.indexOf(w);
+                    if (wordIndex >= 0) {
+                        const fractalCanvasId = `claim-top5-grid-fractal-${idx}`;
+                        generateTop5Fractal(fractalCanvasId, wordIndex);
+                    }
+                });
+            }, 150);
+        }
+
+        function createClaimTop12NodesList() {
+            const grid = document.getElementById('claim-nodes-grid');
+            if (!grid) return;
+            
+            // Limpiar contenido previo
+            grid.innerHTML = '';
+            
+            // Limpiar escenas anteriores
+            claimNodeListScenes.forEach(scene => {
+                scene.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+            });
+            claimNodeListRenderers.forEach(renderer => renderer.dispose());
+            claimNodeListScenes = [];
+            claimNodeListRenderers = [];
+            
+            const sortedNodes = [...nodes].sort((a, b) => {
+                const scoreA = a.userData.wordData ? (a.userData.wordData.finalValue || 0) : 0;
+                const scoreB = b.userData.wordData ? (b.userData.wordData.finalValue || 0) : 0;
+                return scoreB - scoreA;
+            });
+
+            const top12 = sortedNodes.slice(0, 12);
+
+            top12.forEach((node, index) => {
+                const wordData = node.userData.wordData;
+                if (!wordData) return;
+
+                const item = document.createElement('div');
+                item.className = 'node-list-item';
+                item.style.cssText = 'width: 200px; height: 350px; background: rgba(255, 255, 255, 0.95); border: none; padding: 5px; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; flex-shrink: 0;';
+
+                const header = document.createElement('div');
+                header.style.cssText = 'text-align: center; margin-bottom: 5px; padding: 2px;';
+                const h3 = document.createElement('h3');
+                h3.style.cssText = 'color: #000000; font-size: 11px; margin: 0; font-family: Helvetica, Arial, sans-serif;';
+                h3.textContent = wordData.text;
+                header.appendChild(h3);
+                item.appendChild(header);
+
+                const canvasContainer = document.createElement('div');
+                canvasContainer.className = 'node-list-item-canvas-container';
+                canvasContainer.style.cssText = 'width: 100%; height: 140px; background: #000000; margin-bottom: 5px; position: relative;';
+                const canvas = document.createElement('canvas');
+                canvas.className = 'node-list-item-canvas';
+                canvas.width = 200;
+                canvas.height = 140;
+                canvasContainer.appendChild(canvas);
+                item.appendChild(canvasContainer);
+
+                const info = document.createElement('div');
+                info.className = 'node-list-item-info';
+                info.style.cssText = 'font-size: 9px; color: #000000; overflow-y: auto; flex: 1;';
+                
+                const totalValue = window.totalTextScore || 0;
+                const individualValue = wordData.finalValue || wordData.totalScore || 0;
+                const relativeValue = totalValue > 0 ? ((individualValue / totalValue) * 100).toFixed(2) + '%' : '0%';
+                
+                let individualValueETH = 0;
+                if (ethPriceUSD) {
+                    individualValueETH = individualValue / ethPriceUSD;
+                }
+                const individualValueETHDisplay = individualValueETH >= 0.01 ? 
+                    `${individualValueETH.toFixed(6)} ETH` : 
+                    `${individualValueETH.toFixed(10)} ETH`;
+
+                info.innerHTML = `
+                    <div><strong>Word:</strong> ${wordData.text}</div>
+                    <div><strong>Individual Value:</strong> $${individualValue.toFixed(2)} USD (${individualValueETHDisplay})</div>
+                    <div><strong>Position in Text:</strong> ${node.userData.index + 1} / ${analyzedWords.length}</div>
+                    <div><strong>Value / Total:</strong> ${relativeValue} ($${totalValue.toFixed(2)} total)</div>
+                    <div><strong>Part of Speech:</strong> ${wordData.pos}</div>
+                    <div><strong>Connections:</strong> ${node.userData.connectionCount || 0}</div>
+                `;
+                item.appendChild(info);
+
+                grid.appendChild(item);
+
+                // Crear escena 3D para este nodo
+                createClaimNodeListItem3D(canvas, node, index);
+            });
+        }
+
+        function createClaimNodeListItem3D(canvas, node, index) {
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            
+            const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+            camera.position.set(0, 0, 0.3);
+            camera.lookAt(0, 0, 0);
+
+            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
+            renderer.setSize(canvas.width, canvas.height);
+
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            directionalLight.position.set(5, 5, 5);
+            scene.add(directionalLight);
+
+            // Clonar el nodo y centrarlo
+            const clone = node.isGroup ? node.clone(true) : node.clone();
+            clone.position.set(0, 0, 0);
+            scene.add(clone);
+
+            // Rotar continuamente
+            function animateNode() {
+                requestAnimationFrame(animateNode);
+                clone.rotation.y += 0.01;
+                renderer.render(scene, camera);
+            }
+            animateNode();
+
+            claimNodeListScenes.push(scene);
+            claimNodeListRenderers.push(renderer);
+        }
+
+        function hideClaimModal() {
+            const modal = document.getElementById('claim-modal');
+            if (modal) {
+                modal.style.display = 'none';
+                modal.style.visibility = 'hidden';
+                modal.style.opacity = '0';
+            }
+            
+            // Limpiar recursos 3D
+            if (claimAnimationId) {
+                cancelAnimationFrame(claimAnimationId);
+                claimAnimationId = null;
+            }
+            
+            if (claimScene && claimRenderer) {
+                claimScene.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+                claimRenderer.dispose();
+                claimScene = null;
+                claimRenderer = null;
+            }
+            
+            claimNodeListScenes.forEach(scene => {
+                scene.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+            });
+            claimNodeListRenderers.forEach(renderer => renderer.dispose());
+            claimNodeListScenes = [];
+            claimNodeListRenderers = [];
+        }
+
+        async function downloadClaimPurchasePack() {
+            try {
+                // Verificar JSZip
+                if (typeof JSZip === 'undefined') {
+                    // Cargar JSZip dinámicamente
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                    await new Promise((resolve, reject) => {
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                }
+                
+                const zip = new JSZip();
+                let imageReady = false;
+                let glbReady = false;
+
+                function checkAndDownload() {
+                    if (imageReady && glbReady) {
+                        zip.generateAsync({ type: 'blob' }).then((content) => {
+                            const link = document.createElement('a');
+                            link.href = URL.createObjectURL(content);
+                            link.download = `purchase-pack-${getTimestamp()}.zip`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            setTimeout(() => URL.revokeObjectURL(link.href), 100);
+                        });
+                    }
+                }
+
+                // 1. Capturar imagen del total value
+                const totalValueContainer = document.getElementById('claim-total-value-container');
+                if (totalValueContainer && typeof html2canvas !== 'undefined') {
+                    html2canvas(totalValueContainer, {
+                        backgroundColor: '#dcdcdc',
+                        scale: 2
+                    }).then((canvas) => {
+                        canvas.toBlob((blob) => {
+                            zip.file('total-value-summary.jpg', blob);
+                            imageReady = true;
+                            checkAndDownload();
+                        }, 'image/jpeg', 1.0);
+                    }).catch(() => {
+                        imageReady = true;
+                        checkAndDownload();
+                    });
+                } else {
+                    imageReady = true;
+                    checkAndDownload();
+                }
+
+                // 2. Exportar GLB
+                if (typeof THREE.GLTFExporter === 'undefined') {
+                    alert('Error: GLTFExporter no está disponible.');
+                    glbReady = true;
+                    checkAndDownload();
+                    return;
+                }
+
+                const exportScene = new THREE.Scene();
+                nodes.forEach(node => {
+                    const clonedNode = node.isGroup ? node.clone(true) : node.clone();
+                    exportScene.add(clonedNode);
+                });
+                connections.forEach(connection => {
+                    const clonedConnection = connection.clone();
+                    exportScene.add(clonedConnection);
+                });
+
+                try {
+                    const exporter = new THREE.GLTFExporter();
+                    exporter.parse(exportScene, (result) => {
+                        let blob;
+                        if (result instanceof ArrayBuffer) {
+                            blob = new Blob([result], { type: 'model/gltf-binary' });
+                        } else {
+                            const output = JSON.stringify(result, null, 2);
+                            blob = new Blob([output], { type: 'application/json' });
+                        }
+                        zip.file('text-body.glb', blob);
+                        glbReady = true;
+                        checkAndDownload();
+                    }, {
+                        binary: true,
+                        trs: false,
+                        onlyVisible: true,
+                        truncateDrawRange: true,
+                        embedImages: true,
+                        animations: [],
+                        includeCustomExtensions: false
+                    });
+                } catch (error) {
+                    console.error('Error exporting GLB:', error);
+                    glbReady = true;
+                    checkAndDownload();
+                }
+            } catch (e) {
+                console.error('Error creating purchase pack:', e);
+                alert('Error al crear el pack. Por favor, intenta de nuevo.');
+            }
         }
 
         // ==================== EXPORTACIÓN GLB ====================
@@ -5105,10 +6097,252 @@
             }
         }
         
+        // Helper function to get next available offset
+        function getNextRightPanelOffset() {
+            // If there's an available offset from a closed panel, use it
+            if (availableOffsets.length > 0) {
+                return availableOffsets.pop();
+            }
+            // Otherwise, calculate new offset based on number of active panels
+            return rightPanels.length * 20; // 20px offset per panel
+        }
+        
+        // Helper function to create a cloned right panel
+        function createRightPanelClone(panelId, offset) {
+            const originalPanel = document.getElementById('right-panel');
+            if (!originalPanel) return null;
+            
+            // Clone the panel
+            const clonedPanel = originalPanel.cloneNode(true);
+            clonedPanel.id = `right-panel-${panelId}`;
+            clonedPanel.className = 'right-panel-clone';
+            
+            // Set position with offset
+            clonedPanel.style.bottom = (15 + offset) + 'px';
+            clonedPanel.style.right = (5 + offset) + 'px';
+            
+            // Update all IDs in cloned panel to be unique (must do this BEFORE querying elements)
+            // But keep track of key container IDs for later reference
+            const allElements = clonedPanel.querySelectorAll('[id]');
+            const idMap = {};
+            let headerId = null;
+            let detailsId = null;
+            allElements.forEach(el => {
+                if (el.id) {
+                    const oldId = el.id;
+                    const newId = oldId + '-' + panelId;
+                    el.id = newId;
+                    idMap[oldId] = newId;
+                    
+                    // Track important container IDs
+                    if (oldId === 'right-panel-header') headerId = newId;
+                    if (oldId === 'node-details-content') detailsId = newId;
+                }
+            });
+            
+            // Store IDs for later use
+            clonedPanel.dataset.headerId = headerId;
+            clonedPanel.dataset.detailsId = detailsId;
+            
+            // Update close button to use specific panel ID (after IDs are updated)
+            const closeBtn = clonedPanel.querySelector(`#right-panel-close-${panelId}`);
+            if (closeBtn) {
+                closeBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hideRightPanel(panelId);
+                };
+            } else {
+                console.error('Close button not found for panel:', panelId);
+            }
+            
+            // Add to body
+            document.body.appendChild(clonedPanel);
+            
+            return clonedPanel;
+        }
+        
+        // Helper function to create 3D scene for a cloned panel
+        function createRightPanelScene(panelId) {
+            const panel = document.getElementById(`right-panel-${panelId}`);
+            if (!panel) {
+                console.error('Panel not found:', `right-panel-${panelId}`);
+                return null;
+            }
+            
+            // Canvas ID is updated to right-panel-canvas-{panelId}
+            const canvas = panel.querySelector(`#right-panel-canvas-${panelId}`) || panel.querySelector('canvas');
+            if (!canvas) {
+                console.error('Canvas not found in panel:', panelId);
+                return null;
+            }
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            
+            const camera = new THREE.PerspectiveCamera(50, 200 / 150, 0.1, 100);
+            camera.position.set(0, 0, 2);
+            camera.lookAt(0, 0, 0);
+            
+            const renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas,
+                antialias: false,
+                alpha: false
+            });
+            // Get actual canvas dimensions (accounting for padding: 200px - 10px = 190px)
+            const canvasWidth = 190;
+            const canvasHeight = 140; // Increased from 90px
+            renderer.setSize(canvasWidth, canvasHeight);
+            renderer.setPixelRatio(window.devicePixelRatio || 1);
+            
+            // Add lights
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(2, 2, 2);
+            scene.add(directionalLight);
+            
+            return { scene, camera, renderer };
+        }
+        
+        // Helper function to show enlarged node in a specific panel
+        function showRightPanelEnlargedNodeForPanel(panelId, node) {
+            const panelData = rightPanels.find(p => p.id === panelId);
+            if (!panelData || !panelData.scene) return;
+            
+            // Remove previous mesh
+            if (panelData.mesh) {
+                panelData.scene.remove(panelData.mesh);
+                if (panelData.mesh.geometry) panelData.mesh.geometry.dispose();
+                if (panelData.mesh.material) panelData.mesh.material.dispose();
+                if (panelData.mesh.children) {
+                    panelData.mesh.children.forEach(child => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) child.material.dispose();
+                    });
+                }
+            }
+            
+            // Clone the node for display (enlarged)
+            const wordData = node.userData.wordData;
+            const enlargedSize = 0.35;
+            
+            let color;
+            const score = wordData.normalizedScore;
+            if (score > 0.85) {
+                color = 0xffff00;
+            } else if (score > 0.7) {
+                color = 0x4a6fa5;
+            } else if (score > 0.5) {
+                color = 0x5a7fb5;
+            } else if (score > 0.3) {
+                color = 0x6a8fc5;
+            } else if (score > 0.1) {
+                color = 0x7a9fd5;
+            } else {
+                color = 0xffffff;
+            }
+            
+            let mesh;
+            if (wordData.isSerEstar) {
+                const cubeGeometry = new THREE.BoxGeometry(enlargedSize, enlargedSize, enlargedSize, 1, 1, 1);
+                const material = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.9 });
+                const cube = new THREE.Mesh(cubeGeometry, material);
+                
+                const flatRectWidth = enlargedSize * 1.0;
+                const flatRectDepth = enlargedSize * 1.0;
+                const flatRectHeight = enlargedSize * 0.1;
+                const flatRectGeometry = new THREE.BoxGeometry(flatRectWidth, flatRectHeight, flatRectDepth, 1, 1, 1);
+                const flatRectMaterial = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.9 });
+                const flatRect = new THREE.Mesh(flatRectGeometry, flatRectMaterial);
+                flatRect.position.y = -enlargedSize * 2.0;
+                
+                const group = new THREE.Group();
+                group.add(cube);
+                group.add(flatRect);
+                mesh = group;
+            } else if (wordData.pos === 'noun') {
+                const sphereGeometry = new THREE.SphereGeometry(enlargedSize, 16, 16);
+                const material = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.9 });
+                const sphere = new THREE.Mesh(sphereGeometry, material);
+                
+                const flatSquareSize = enlargedSize * 1.0;
+                const flatSquareGeometry = new THREE.BoxGeometry(flatSquareSize, flatSquareSize * 0.1, flatSquareSize, 1, 1, 1);
+                const flatSquareMaterial = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.9 });
+                const flatSquare = new THREE.Mesh(flatSquareGeometry, flatSquareMaterial);
+                flatSquare.position.y = -enlargedSize * 2.0;
+                
+                const group = new THREE.Group();
+                group.add(sphere);
+                group.add(flatSquare);
+                mesh = group;
+            } else if (node.userData.connectionCount > 0) {
+                let geometry;
+                if (node.userData.connectionCount >= 5) {
+                    geometry = new THREE.BoxGeometry(enlargedSize * 1.2, enlargedSize * 0.8, enlargedSize * 1.5, 1, 1, 1);
+                } else {
+                    geometry = new THREE.BoxGeometry(enlargedSize, enlargedSize, enlargedSize, 1, 1, 1);
+                }
+                const material = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.9 });
+                mesh = new THREE.Mesh(geometry, material);
+            } else {
+                const geometry = new THREE.SphereGeometry(enlargedSize, 16, 16);
+                const material = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.9 });
+                mesh = new THREE.Mesh(geometry, material);
+            }
+            
+            panelData.mesh = mesh;
+            panelData.scene.add(mesh);
+            
+            // Render immediately to show the node
+            if (panelData.renderer && panelData.camera) {
+                panelData.renderer.render(panelData.scene, panelData.camera);
+            }
+        }
+        
+        // Helper function to animate a specific panel
+        function animateRightPanelNodeForPanel(panelId) {
+            const panelData = rightPanels.find(p => p.id === panelId);
+            if (!panelData || !panelData.mesh || !panelData.renderer || !panelData.scene || !panelData.camera) {
+                if (panelData && panelData.animationId) {
+                    cancelAnimationFrame(panelData.animationId);
+                    panelData.animationId = null;
+                }
+                return;
+            }
+            
+            // Rotate the node
+            panelData.mesh.rotation.y += 0.01;
+            panelData.mesh.rotation.x += 0.005;
+            
+            panelData.renderer.render(panelData.scene, panelData.camera);
+            panelData.animationId = requestAnimationFrame(() => animateRightPanelNodeForPanel(panelId));
+        }
+        
         function showNodeDetails(node) {
             if (!node.userData || !node.userData.wordData) return;
             
-            selectedNode = node; // Store the selected node
+            // Check if we need to remove the oldest panel
+            if (rightPanels.length >= MAX_RIGHT_PANELS) {
+                const oldestPanel = rightPanels.shift(); // Remove first (oldest)
+                hideRightPanel(oldestPanel.id);
+            }
+            
+            // Get next available offset
+            const offset = getNextRightPanelOffset();
+            
+            // Create new panel
+            const panelId = rightPanelCounter++;
+            const panelElement = createRightPanelClone(panelId, offset);
+            if (!panelElement) return;
+            
+            // Create 3D scene for this panel
+            const sceneData = createRightPanelScene(panelId);
+            if (!sceneData) {
+                panelElement.remove();
+                return;
+            }
             
             const wordData = node.userData.wordData;
             const index = node.userData.index;
@@ -5119,16 +6353,12 @@
             // Calculate node size in KB (approximate)
             let nodeSizeKB = 0;
             if (node.userData.isSerEstar) {
-                // Cube + flat rectangular base
                 nodeSizeKB = (1 * 1 * 1 * 4 * 3) + (1.5 * 0.1 * 1.2 * 4 * 3);
             } else if (node.userData.isNoun) {
-                // Sphere + flat square
                 nodeSizeKB = (8 * 8 * 8 * 4 * 3) + (1 * 1 * 1 * 4 * 3);
             } else if (node.userData.connectionCount > 0) {
-                // Cube
                 nodeSizeKB = (8 * 4 * 3);
             } else {
-                // Sphere
                 nodeSizeKB = (8 * 8 * 8 * 4 * 3);
             }
             nodeSizeKB = (nodeSizeKB / 1024).toFixed(4);
@@ -5156,30 +6386,94 @@
                 `${totalValueETH.toFixed(6)} ETH` : 
                 `${totalValueETH.toFixed(10)} ETH`;
             
-            // Update detailed panel content
-            document.getElementById('right-panel-word').textContent = wordData.text;
-            document.getElementById('detail-word').textContent = wordData.text;
-            document.getElementById('detail-individual-value').textContent = '$' + individualValue.toFixed(2) + ' USD (' + individualValueETHDisplay + ')';
-            document.getElementById('detail-position').textContent = (index + 1) + ' / ' + analyzedWords.length;
-            document.getElementById('detail-relative-value').textContent = relativeValue + ' ($' + totalValue.toFixed(2) + ' total / ' + totalValueETHDisplay + ')';
-            document.getElementById('detail-pos').textContent = wordData.pos;
-            document.getElementById('detail-connections').textContent = node.userData.connectionCount || 0;
-            document.getElementById('detail-size').textContent = nodeSizeKB + ' KB';
-            document.getElementById('detail-performance').textContent = performanceImpact;
-            document.getElementById('detail-is-name').textContent = wordData.isName ? 'Yes' : 'No';
-            document.getElementById('detail-is-ser-estar').textContent = wordData.isSerEstar ? 'Yes' : 'No';
+            // Update panel content - find elements using stored IDs or structure
+            const headerId = panelElement.dataset.headerId || `right-panel-header-${panelId}`;
+            const detailsId = panelElement.dataset.detailsId || `node-details-content-${panelId}`;
             
-            // Show enlarged node in right panel
-            showRightPanelEnlargedNode(node);
+            const detailsContent = panelElement.querySelector(`#${detailsId}`);
             
-            // Start animation for right panel
-            if (rightPanelAnimationId) {
-                cancelAnimationFrame(rightPanelAnimationId);
+            // Update header word - position it in top right corner
+            let panelWordEl = panelElement.querySelector(`#right-panel-word-${panelId}`);
+            
+            // If word element doesn't exist, create it
+            if (!panelWordEl) {
+                panelWordEl = document.createElement('h3');
+                panelWordEl.id = `right-panel-word-${panelId}`;
+                panelWordEl.style.cssText = 'position: absolute; top: 2px; right: 5px; color: #000000; font-size: 11px; margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; z-index: 10; line-height: 1;';
+                panelElement.appendChild(panelWordEl);
             }
-            animateRightPanelNode();
             
-            // Show right panel
-            document.getElementById('right-panel').classList.add('visible');
+            if (panelWordEl) {
+                panelWordEl.textContent = wordData.text;
+            }
+            
+            // Update details content using innerHTML (like TOP NODES)
+            if (detailsContent) {
+                // Force visibility BEFORE updating content - match max-value-panel-info exactly
+                detailsContent.style.display = 'block';
+                detailsContent.style.visibility = 'visible';
+                detailsContent.style.opacity = '1';
+                detailsContent.style.background = '#000000';
+                detailsContent.style.color = '#ffffff';
+                detailsContent.style.fontSize = '9px';
+                detailsContent.style.fontFamily = 'Helvetica, Arial, sans-serif';
+                detailsContent.style.lineHeight = '1.3';
+                detailsContent.style.margin = '0';
+                detailsContent.style.padding = '8px';
+                detailsContent.style.flex = '1';
+                detailsContent.style.minHeight = '0';
+                detailsContent.style.boxSizing = 'border-box';
+                detailsContent.style.overflowY = 'visible';
+                
+                detailsContent.innerHTML = `
+                    <div><strong>Word:</strong> ${wordData.text}</div>
+                    <div><strong>Individual Value:</strong> $${individualValue.toFixed(2)} USD (${individualValueETHDisplay})</div>
+                    <div><strong>Position in Text:</strong> ${index + 1} / ${analyzedWords.length}</div>
+                    <div><strong>Value / Total:</strong> ${relativeValue} ($${totalValue.toFixed(2)} total / ${totalValueETHDisplay})</div>
+                    <div><strong>Part of Speech:</strong> ${wordData.pos}</div>
+                    <div><strong>Connections:</strong> ${node.userData.connectionCount || 0}</div>
+                    <div><strong>Size (KB):</strong> ${nodeSizeKB} KB</div>
+                    <div><strong>Performance:</strong> ${performanceImpact}</div>
+                    <div><strong>Is Name:</strong> ${wordData.isName ? 'Yes' : 'No'}</div>
+                    <div><strong>Is identity:</strong> ${wordData.isSerEstar ? 'Yes' : 'No'}</div>
+                `;
+                
+                // Verify it's visible after update
+                const computedStyle = window.getComputedStyle(detailsContent);
+                console.log('Details content updated. Display:', computedStyle.display, 'Visibility:', computedStyle.visibility, 'Opacity:', computedStyle.opacity, 'Background:', computedStyle.backgroundColor, 'Height:', computedStyle.height);
+            } else {
+                console.error('Details content element not found!');
+            }
+            
+            // Store panel data first
+            const panelData = {
+                id: panelId,
+                element: panelElement,
+                node: node,
+                scene: sceneData.scene,
+                renderer: sceneData.renderer,
+                camera: sceneData.camera,
+                mesh: null,
+                animationId: null,
+                offset: offset
+            };
+            
+            rightPanels.push(panelData);
+            
+            // Show enlarged node in panel (must be after panelData is in rightPanels array)
+            showRightPanelEnlargedNodeForPanel(panelId, node);
+            
+            // Show panel - ensure it's visible
+            panelElement.classList.add('visible');
+            panelElement.style.display = 'flex';
+            panelElement.style.visibility = 'visible';
+            panelElement.style.opacity = '1';
+            
+            // Debug: log if elements were found
+            console.log('Panel created:', panelId, 'Header found:', !!header, 'Details found:', !!detailsContent, 'HeaderId:', headerId, 'DetailsId:', detailsId);
+            
+            // Start animation
+            animateRightPanelNodeForPanel(panelId);
         }
         
         function showRightPanelEnlargedNode(node) {
@@ -5848,6 +7142,9 @@
             }
             
             modal.style.display = 'block';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
         }
         
         function toggleValueLogicColorMode() {
@@ -6106,6 +7403,9 @@
             // Show modal (centered)
             const fractalModal = document.getElementById('fractal-modal');
             fractalModal.style.display = 'flex';
+            fractalModal.style.visibility = 'visible';
+            fractalModal.style.opacity = '1';
+            fractalModal.style.pointerEvents = 'auto';
             fractalModal.style.alignItems = 'center';
             fractalModal.style.justifyContent = 'center';
             
@@ -6682,26 +7982,90 @@
             valueLogicOverviewRenderer.render(valueLogicOverviewScene, valueLogicOverviewCamera);
         }
         
-        function hideNodeDetails() {
-            document.getElementById('right-panel').classList.remove('visible');
-            hoveredNode = null;
-            selectedNode = null; // Clear selected node
-            if (rightPanelAnimationId) {
-                cancelAnimationFrame(rightPanelAnimationId);
-                rightPanelAnimationId = null;
+        function hideRightPanel(panelId) {
+            const panelIndex = rightPanels.findIndex(p => p.id === panelId);
+            if (panelIndex === -1) {
+                console.warn('Panel not found for removal:', panelId);
+                return;
             }
-            if (rightPanelMesh) {
-                rightPanelScene.remove(rightPanelMesh);
-                if (rightPanelMesh.geometry) rightPanelMesh.geometry.dispose();
-                if (rightPanelMesh.material) rightPanelMesh.material.dispose();
-                if (rightPanelMesh.children) {
-                    rightPanelMesh.children.forEach(child => {
-                        if (child.geometry) child.geometry.dispose();
-                        if (child.material) child.material.dispose();
-                    });
+            
+            const panelData = rightPanels[panelIndex];
+            
+            // Stop animation
+            if (panelData.animationId) {
+                cancelAnimationFrame(panelData.animationId);
+                panelData.animationId = null;
+            }
+            
+            // Clean up 3D mesh
+            if (panelData.mesh && panelData.scene) {
+                try {
+                    panelData.scene.remove(panelData.mesh);
+                    if (panelData.mesh.geometry) panelData.mesh.geometry.dispose();
+                    if (panelData.mesh.material) {
+                        if (Array.isArray(panelData.mesh.material)) {
+                            panelData.mesh.material.forEach(mat => mat.dispose());
+                        } else {
+                            panelData.mesh.material.dispose();
+                        }
+                    }
+                    if (panelData.mesh.children && panelData.mesh.children.length > 0) {
+                        panelData.mesh.children.forEach(child => {
+                            if (child.geometry) child.geometry.dispose();
+                            if (child.material) {
+                                if (Array.isArray(child.material)) {
+                                    child.material.forEach(mat => mat.dispose());
+                                } else {
+                                    child.material.dispose();
+                                }
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error cleaning up mesh:', e);
                 }
-                rightPanelMesh = null;
+                panelData.mesh = null;
             }
+            
+            // Clean up renderer
+            if (panelData.renderer) {
+                try {
+                    panelData.renderer.dispose();
+                } catch (e) {
+                    console.error('Error disposing renderer:', e);
+                }
+            }
+            
+            // Remove from DOM
+            if (panelData.element && panelData.element.parentNode) {
+                try {
+                    panelData.element.remove();
+                } catch (e) {
+                    console.error('Error removing element:', e);
+                }
+            }
+            
+            // Add offset to available stack for reuse
+            if (panelData.offset !== undefined) {
+                availableOffsets.push(panelData.offset);
+            }
+            
+            // Remove from array
+            rightPanels.splice(panelIndex, 1);
+            
+            // Clear selectedNode if this was the last panel
+            if (rightPanels.length === 0) {
+                selectedNode = null;
+            }
+        }
+        
+        function hideNodeDetails() {
+            // Hide all panels (for backward compatibility)
+            rightPanels.forEach(panel => {
+                hideRightPanel(panel.id);
+            });
+            hoveredNode = null;
+            selectedNode = null;
         }
 
         // ==================== MAX VALUE PANEL ====================
@@ -8021,8 +9385,107 @@
             }
         }
 
-        // Inicializar cuando se carga la página
-        init();
+        // Start screen handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const startScreen = document.getElementById('start-screen');
+            const startButton = document.getElementById('start-button');
+            
+            // Initially hide all main content (exclude modals - they should stay hidden)
+            const mainContent = document.querySelectorAll('#canvas-container, #left-panel, #top-bar, #fps-bar, #realtime-info-panel, #node-list-container, #max-value-panel');
+            
+            // Modals should always stay hidden until explicitly shown
+            const valueLogicModal = document.getElementById('value-logic-modal');
+            const fractalModal = document.getElementById('fractal-modal');
+            const nodeInfoPanel = document.getElementById('node-info-panel');
+            const rightPanel = document.getElementById('right-panel');
+            
+            mainContent.forEach(el => {
+                if (el) el.style.display = 'none';
+            });
+            
+            // Keep modals and panels hidden (they show on hover/click only)
+            if (valueLogicModal) {
+                valueLogicModal.style.display = 'none';
+                valueLogicModal.style.visibility = 'hidden';
+                valueLogicModal.style.opacity = '0';
+            }
+            if (fractalModal) {
+                fractalModal.style.display = 'none';
+                fractalModal.style.visibility = 'hidden';
+                fractalModal.style.opacity = '0';
+            }
+            if (nodeInfoPanel) {
+                nodeInfoPanel.style.display = 'none';
+                nodeInfoPanel.style.visibility = 'hidden';
+                nodeInfoPanel.style.opacity = '0';
+            }
+            if (rightPanel) {
+                rightPanel.style.display = 'none';
+                rightPanel.style.visibility = 'hidden';
+                rightPanel.style.opacity = '0';
+            }
+            
+            startButton.addEventListener('click', function() {
+                // Hide start screen
+                startScreen.classList.add('hidden');
+                
+                // Show all main content (but NOT modals - they show only when activated)
+                mainContent.forEach(el => {
+                    if (el) el.style.display = '';
+                });
+                
+                // Ensure modals and panels stay hidden (they show on hover/click only)
+                if (valueLogicModal) {
+                    valueLogicModal.style.display = 'none';
+                    valueLogicModal.style.visibility = 'hidden';
+                    valueLogicModal.style.opacity = '0';
+                }
+                if (fractalModal) {
+                    fractalModal.style.display = 'none';
+                    fractalModal.style.visibility = 'hidden';
+                    fractalModal.style.opacity = '0';
+                }
+                if (nodeInfoPanel) {
+                    nodeInfoPanel.style.display = 'none';
+                    nodeInfoPanel.style.visibility = 'hidden';
+                    nodeInfoPanel.style.opacity = '0';
+                    nodeInfoPanel.classList.remove('visible');
+                }
+                if (rightPanel) {
+                    rightPanel.style.display = 'none';
+                    rightPanel.style.visibility = 'hidden';
+                    rightPanel.style.opacity = '0';
+                    rightPanel.classList.remove('visible');
+                }
+                
+                // Initialize the application
+                init();
+                
+                // Double-check after init() that modals and panels remain hidden
+                setTimeout(() => {
+                    if (valueLogicModal && valueLogicModal.style.display !== 'block') {
+                        valueLogicModal.style.display = 'none';
+                        valueLogicModal.style.visibility = 'hidden';
+                        valueLogicModal.style.opacity = '0';
+                    }
+                    if (fractalModal && fractalModal.style.display !== 'block') {
+                        fractalModal.style.display = 'none';
+                        fractalModal.style.visibility = 'hidden';
+                        fractalModal.style.opacity = '0';
+                    }
+                    if (nodeInfoPanel && !nodeInfoPanel.classList.contains('visible')) {
+                        nodeInfoPanel.style.display = 'none';
+                        nodeInfoPanel.style.visibility = 'hidden';
+                        nodeInfoPanel.style.opacity = '0';
+                    }
+                    if (rightPanel && !rightPanel.classList.contains('visible')) {
+                        rightPanel.style.display = 'none';
+                        rightPanel.style.visibility = 'hidden';
+                        rightPanel.style.opacity = '0';
+                    }
+                }, 100);
+            });
+        });
     </script>
 </body>
 </html>
