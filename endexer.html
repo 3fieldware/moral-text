@@ -1053,9 +1053,18 @@
             }
             #claim-total-value-container::-webkit-scrollbar {
                 display: none;
+                width: 0;
+                height: 0;
             }
             #claim-nodes-list-container::-webkit-scrollbar {
                 display: none;
+                width: 0;
+                height: 0;
+            }
+            #claim-modal-container::-webkit-scrollbar {
+                display: none;
+                width: 0;
+                height: 0;
             }
             #claim-total-value-container {
                 scrollbar-width: none;
@@ -1066,23 +1075,22 @@
                 -ms-overflow-style: none;
             }
         </style>
-        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 900px; margin: 20px auto; padding: 20px; background: #ffffff;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 900px; margin: 10px auto; padding: 10px; background: rgba(255, 255, 255, 0.7);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; border-radius: 0; display: flex; align-items: center; gap: 2px; white-space: nowrap;"><span style="font-size: 12px;">×</span><span>CLOSE</span></button>
                 <h2 style="color: #000000; font-family: Helvetica, Arial, sans-serif; font-size: 16px; margin: 0;">CLAIM</h2>
                 <div style="width: 100px;"></div>
             </div>
-            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
                 <div id="claim-3d-container" style="flex: 1; min-width: 450px; height: 500px; background: #0000FF; position: relative; border: 2px solid #000000;"></div>
-                <div id="claim-total-value-container" style="flex: 1; min-width: 350px; max-width: 400px; background: rgba(220, 220, 220, 0.95); padding: 4px 12px 12px 12px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; max-height: 500px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+                <div id="claim-total-value-container" style="flex: 1; min-width: 350px; max-width: 400px; background: rgba(220, 220, 220, 0.95); padding: 4px 8px 8px 8px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; max-height: 500px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
                     <div id="claim-total-value-content"></div>
                 </div>
             </div>
-            <div id="claim-nodes-list-container" style="background: rgba(255, 255, 255, 0.95); padding: 15px; border: 2px solid #000000; margin-bottom: 20px; max-height: 500px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
-                <h3 style="font-size: 14px; margin-bottom: 15px; color: #000000; border-bottom: 1px solid #000000; padding-bottom: 5px;">Top 12 Nodes</h3>
-                <div id="claim-nodes-grid" class="nodes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;"></div>
+            <div id="claim-nodes-list-container" style="background: rgba(255, 255, 255, 0.95); padding: 8px; border: 2px solid #000000; margin-bottom: 10px; max-height: 400px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+                <div id="claim-nodes-grid" class="nodes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;"></div>
             </div>
-            <div style="text-align: center; margin-top: 20px;">
+            <div style="text-align: center; margin-top: 10px;">
                 <button id="claim-purchase-btn" style="background: #808080; color: #ffffff; border: none; padding: 4px 8px; font-size: 10px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0;">PURCHASE</button>
             </div>
         </div>
@@ -5731,7 +5739,7 @@
 
                 const item = document.createElement('div');
                 item.className = 'node-list-item';
-                item.style.cssText = 'width: 200px; height: 350px; background: rgba(255, 255, 255, 0.95); border: none; padding: 5px; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; flex-shrink: 0;';
+                item.style.cssText = 'width: 180px; height: 240px; background: rgba(255, 255, 255, 0.95); border: none; padding: 5px; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; flex-shrink: 0;';
 
                 const header = document.createElement('div');
                 header.style.cssText = 'text-align: center; margin-bottom: 5px; padding: 2px;';
@@ -5753,40 +5761,14 @@
 
                 // Añadir fractal debajo del canvas 3D
                 const fractalContainer = document.createElement('div');
-                fractalContainer.style.cssText = 'width: 100%; margin-bottom: 5px; border: 1px solid #ffffff; background: #000000; padding: 2px;';
+                fractalContainer.style.cssText = 'width: 100%; margin-bottom: 5px; border: 1px solid #ffffff; background: #000000; padding: 2px; box-sizing: border-box;';
                 const fractalCanvas = document.createElement('canvas');
                 fractalCanvas.id = `claim-node-list-fractal-${index}`;
                 fractalCanvas.width = 196;
                 fractalCanvas.height = 90;
-                fractalCanvas.style.cssText = 'display: block; width: 100%; height: 90px;';
+                fractalCanvas.style.cssText = 'display: block; width: 100%; height: 90px; background: #000000;';
                 fractalContainer.appendChild(fractalCanvas);
                 item.appendChild(fractalContainer);
-
-                const info = document.createElement('div');
-                info.className = 'node-list-item-info';
-                info.style.cssText = 'font-size: 9px; color: #000000; overflow-y: auto; flex: 1;';
-                
-                const totalValue = window.totalTextScore || 0;
-                const individualValue = wordData.finalValue || wordData.totalScore || 0;
-                const relativeValue = totalValue > 0 ? ((individualValue / totalValue) * 100).toFixed(2) + '%' : '0%';
-                
-                let individualValueETH = 0;
-                if (ethPriceUSD) {
-                    individualValueETH = individualValue / ethPriceUSD;
-                }
-                const individualValueETHDisplay = individualValueETH >= 0.01 ? 
-                    `${individualValueETH.toFixed(6)} ETH` : 
-                    `${individualValueETH.toFixed(10)} ETH`;
-
-                info.innerHTML = `
-                    <div><strong>Word:</strong> ${wordData.text}</div>
-                    <div><strong>Individual Value:</strong> $${individualValue.toFixed(2)} USD (${individualValueETHDisplay})</div>
-                    <div><strong>Position in Text:</strong> ${node.userData.index + 1} / ${analyzedWords.length}</div>
-                    <div><strong>Value / Total:</strong> ${relativeValue} ($${totalValue.toFixed(2)} total)</div>
-                    <div><strong>Part of Speech:</strong> ${wordData.pos}</div>
-                    <div><strong>Connections:</strong> ${node.userData.connectionCount || 0}</div>
-                `;
-                item.appendChild(info);
 
                 grid.appendChild(item);
 
@@ -5980,52 +5962,71 @@
                     const originalHeight = totalValueContainer.style.height;
                     const originalOverflow = totalValueContainer.style.overflow;
                     const originalMaxHeight = totalValueContainer.style.maxHeight;
-                    const originalPosition = totalValueContainer.style.position;
-                    const originalVisibility = totalValueContainer.style.visibility;
                     const originalOpacity = totalValueContainer.style.opacity;
                     
-                    // Clonar el contenedor para capturarlo fuera de la vista
-                    const clonedContainer = totalValueContainer.cloneNode(true);
-                    clonedContainer.id = 'claim-total-value-container-clone';
-                    clonedContainer.style.position = 'absolute';
-                    clonedContainer.style.left = '-9999px';
-                    clonedContainer.style.top = '0';
-                    clonedContainer.style.height = 'auto';
-                    clonedContainer.style.maxHeight = 'none';
-                    clonedContainer.style.overflow = 'visible';
-                    clonedContainer.style.visibility = 'visible';
-                    clonedContainer.style.opacity = '1';
-                    document.body.appendChild(clonedContainer);
+                    // Temporalmente expandir el contenedor para capturar todo el contenido
+                    totalValueContainer.style.height = 'auto';
+                    totalValueContainer.style.maxHeight = 'none';
+                    totalValueContainer.style.overflow = 'visible';
+                    totalValueContainer.style.opacity = '1';
                     
-                    // Esperar un momento para que el DOM se actualice
+                    // Esperar a que los canvas se rendericen
                     setTimeout(() => {
-                        html2canvas(clonedContainer, {
-                            backgroundColor: '#dcdcdc',
-                            scale: 2,
-                            height: clonedContainer.scrollHeight, // Usar altura completa del contenido
-                            width: clonedContainer.scrollWidth, // Usar ancho completo del contenido
-                            useCORS: true,
-                            allowTaint: true,
-                            logging: false
-                        }).then((canvas) => {
-                            // Eliminar el clon
-                            document.body.removeChild(clonedContainer);
-                            
-                            canvas.toBlob((blob) => {
-                                zip.file('total-value-summary.jpg', blob);
+                        // Forzar renderizado de canvas dentro del contenedor
+                        const canvases = totalValueContainer.querySelectorAll('canvas');
+                        canvases.forEach(canvas => {
+                            if (canvas.getContext) {
+                                const ctx = canvas.getContext('2d');
+                                if (ctx) {
+                                    // Forzar actualización del canvas
+                                    ctx.canvas.width = canvas.width;
+                                }
+                            }
+                        });
+                        
+                        // Esperar un frame más para asegurar renderizado
+                        requestAnimationFrame(() => {
+                            html2canvas(totalValueContainer, {
+                                backgroundColor: '#dcdcdc',
+                                scale: 2,
+                                height: totalValueContainer.scrollHeight,
+                                width: totalValueContainer.scrollWidth,
+                                useCORS: true,
+                                allowTaint: true,
+                                logging: false,
+                                onclone: (clonedDoc) => {
+                                    // Asegurarse de que los canvas en el clon estén visibles
+                                    const clonedContainer = clonedDoc.getElementById('claim-total-value-container');
+                                    if (clonedContainer) {
+                                        clonedContainer.style.height = 'auto';
+                                        clonedContainer.style.maxHeight = 'none';
+                                        clonedContainer.style.overflow = 'visible';
+                                    }
+                                }
+                            }).then((canvas) => {
+                                // Restaurar estilos originales inmediatamente
+                                totalValueContainer.style.height = originalHeight;
+                                totalValueContainer.style.maxHeight = originalMaxHeight;
+                                totalValueContainer.style.overflow = originalOverflow;
+                                totalValueContainer.style.opacity = originalOpacity;
+                                
+                                canvas.toBlob((blob) => {
+                                    zip.file('total-value-summary.jpg', blob);
+                                    imageReady = true;
+                                    checkAndDownload();
+                                }, 'image/jpeg', 1.0);
+                            }).catch((error) => {
+                                console.error('Error capturing total value:', error);
+                                // Restaurar estilos originales en caso de error
+                                totalValueContainer.style.height = originalHeight;
+                                totalValueContainer.style.maxHeight = originalMaxHeight;
+                                totalValueContainer.style.overflow = originalOverflow;
+                                totalValueContainer.style.opacity = originalOpacity;
                                 imageReady = true;
                                 checkAndDownload();
-                            }, 'image/jpeg', 1.0);
-                        }).catch((error) => {
-                            console.error('Error capturing total value:', error);
-                            // Eliminar el clon en caso de error
-                            if (clonedContainer.parentNode) {
-                                document.body.removeChild(clonedContainer);
-                            }
-                            imageReady = true;
-                            checkAndDownload();
+                            });
                         });
-                    }, 100);
+                    }, 200);
                 } else {
                     imageReady = true;
                     checkAndDownload();
@@ -7104,6 +7105,14 @@
             const modalContainer = document.getElementById('value-logic-modal-container');
             const content = document.getElementById('value-logic-content');
             const totalValueBtn = document.getElementById('total-value-display');
+            
+            // Show modal explicitly
+            if (modal) {
+                modal.style.display = 'block';
+                modal.style.visibility = 'visible';
+                modal.style.opacity = '1';
+                modal.style.pointerEvents = 'auto';
+            }
             
             // Position modal below the button
             if (totalValueBtn && modalContainer) {
