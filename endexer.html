@@ -1075,20 +1075,16 @@
                 -ms-overflow-style: none;
             }
         </style>
-        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 900px; margin: 10px auto; padding: 10px; background: rgba(255, 255, 255, 0.7);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 730px; margin: 60px auto 20px auto; padding: 10px; background: rgba(255, 255, 255, 0.7); border: 1px solid #000000;">
+            <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 10px;">
                 <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; border-radius: 0; display: flex; align-items: center; gap: 2px; white-space: nowrap;"><span style="font-size: 12px;">×</span><span>CLOSE</span></button>
-                <h2 style="color: #000000; font-family: Helvetica, Arial, sans-serif; font-size: 16px; margin: 0;">CLAIM</h2>
-                <div style="width: 100px;"></div>
             </div>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-                <div id="claim-3d-container" style="flex: 1; min-width: 450px; height: 500px; background: #0000FF; position: relative; border: 2px solid #000000;"></div>
-                <div id="claim-total-value-container" style="flex: 1; min-width: 350px; max-width: 400px; background: rgba(220, 220, 220, 0.95); padding: 4px 8px 8px 8px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; max-height: 500px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+            <div style="display: flex; gap: 10px; flex-wrap: nowrap; margin-bottom: 10px; align-items: flex-start;">
+                <div id="claim-3d-container" style="flex: 0 0 auto; width: 350px; height: 500px; background: #000000; position: relative; border: 1px solid #000000;"></div>
+                <div id="claim-total-value-container" style="flex: 0 0 auto; width: 350px; height: 500px; background: rgba(220, 220, 220, 0.95); padding: 4px 8px 8px 8px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; border: 1px solid #000000; position: relative;">
                     <div id="claim-total-value-content"></div>
+                    <button id="claim-scroll-down-btn" style="position: absolute; bottom: 5px; right: 5px; background: rgba(128, 128, 128, 0.7); color: #ffffff; border: none; padding: 2px 4px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; border-radius: 0; z-index: 10;">↓</button>
                 </div>
-            </div>
-            <div id="claim-nodes-list-container" style="background: rgba(255, 255, 255, 0.95); padding: 8px; border: 2px solid #000000; margin-bottom: 10px; max-height: 400px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
-                <div id="claim-nodes-grid" class="nodes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;"></div>
             </div>
             <div style="text-align: center; margin-top: 10px;">
                 <button id="claim-purchase-btn" style="background: #808080; color: #ffffff; border: none; padding: 4px 8px; font-size: 10px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0;">PURCHASE</button>
@@ -1407,6 +1403,18 @@
             }
             if (claimPurchaseBtn) {
                 claimPurchaseBtn.addEventListener('click', downloadClaimPurchasePack);
+            }
+            const claimScrollDownBtn = document.getElementById('claim-scroll-down-btn');
+            if (claimScrollDownBtn) {
+                claimScrollDownBtn.addEventListener('click', function() {
+                    const totalValueContainer = document.getElementById('claim-total-value-container');
+                    if (totalValueContainer) {
+                        totalValueContainer.scrollTo({
+                            top: totalValueContainer.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
             }
             const colorBtn = document.getElementById('value-logic-color-btn');
             if (colorBtn) {
@@ -5165,9 +5173,6 @@
             
             // Mostrar Total Value (idéntico al modal original)
             showClaimTotalValue();
-            
-            // Crear lista de top 12 nodos
-            createClaimTop12NodesList();
         }
 
         function initClaim3DScene() {
@@ -5203,7 +5208,7 @@
             // Usar el renderer principal en lugar de crear uno nuevo
             // Renderizar a una textura y luego mostrar en un canvas 2D
             claimScene = new THREE.Scene();
-            claimScene.background = new THREE.Color(currentBackgroundColor);
+            claimScene.background = new THREE.Color(0x000000); // Fondo negro
 
             claimCamera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
             
@@ -5232,7 +5237,7 @@
             const maxSize = Math.max(sizeX, sizeY, sizeZ, 1);
             
             // Posicionar cámara para ver todo el cuerpo (más cerca para que se vea más grande)
-            const distance = maxSize * 1.8; // Reducido de 2.5 a 1.8 para hacer el cuerpo más grande
+            const distance = maxSize * 1.3; // Reducido para hacer el cuerpo más grande sin alterar el recuadro
             claimCamera.position.set(centerX, centerY, centerZ + distance);
             claimCamera.lookAt(centerX, centerY, centerZ);
 
@@ -5272,7 +5277,7 @@
             
             // Renderizar una vez
             renderer.setRenderTarget(renderTarget);
-            renderer.setClearColor(currentBackgroundColor, 1);
+            renderer.setClearColor(0x000000, 1); // Fondo negro
             renderer.render(claimScene, claimCamera);
             
             // Leer la textura y dibujarla en el canvas 2D
@@ -5329,7 +5334,7 @@
             
             const overviewContainer = document.createElement('div');
             overviewContainer.id = 'claim-value-logic-overview-container';
-            overviewContainer.style.cssText = 'width: 100%; max-width: 100%; height: 150px; background: #000000; border: 1px solid #ffffff; margin-top: 5px; margin-bottom: 5px; border-radius: 0; position: relative; display: none; overflow: hidden; box-sizing: border-box;';
+            overviewContainer.style.cssText = 'width: 100%; max-width: 100%; height: 150px; background: #000000; border: 1px solid #ffffff; margin-top: 5px; margin-bottom: 5px; border-radius: 0; position: relative; display: block; overflow: hidden; box-sizing: border-box;';
             const overviewCanvas = document.createElement('canvas');
             overviewCanvas.id = 'claim-value-logic-overview-canvas';
             overviewCanvas.style.cssText = 'width: 100%; height: 100%; display: block;';
@@ -5337,7 +5342,7 @@
             
             const top5Grid = document.createElement('div');
             top5Grid.id = 'claim-value-logic-top5-grid';
-            top5Grid.style.cssText = 'display: none; margin-top: 5px; margin-bottom: 5px;';
+            top5Grid.style.cssText = 'display: block; margin-top: 5px; margin-bottom: 5px;';
             
             const totalBox = document.createElement('div');
             totalBox.id = 'claim-value-logic-total-box';
@@ -5553,124 +5558,150 @@
         }
 
         function createClaimValueLogicOverview(container, canvas) {
-            if (!container || !canvas || !nodes || nodes.length === 0) return;
-            
-            container.style.display = 'block';
-            
-            const containerRect = container.getBoundingClientRect();
-            const containerWidth = Math.floor(containerRect.width) || 376;
-            const containerHeight = 150;
-            
-            // Reutilizar el overview existente si está disponible
-            const existingOverview = document.getElementById('value-logic-overview-canvas');
-            if (existingOverview && existingOverview.width > 0) {
-                // Copiar la imagen del overview existente
-                const ctx2D = canvas.getContext('2d');
-                canvas.width = containerWidth;
-                canvas.height = containerHeight;
-                ctx2D.drawImage(existingOverview, 0, 0, containerWidth, containerHeight);
+            if (!container || !canvas || !nodes || nodes.length === 0) {
+                console.warn('createClaimValueLogicOverview: Missing parameters', { container: !!container, canvas: !!canvas, nodes: nodes?.length });
                 return;
             }
             
-            // Si no existe, crear uno temporal usando el renderer principal
-            const tempScene = new THREE.Scene();
-            tempScene.background = new THREE.Color(0x000000);
+            // Asegurarse de que el contenedor esté visible
+            container.style.display = 'block';
+            container.style.visibility = 'visible';
+            container.style.opacity = '1';
             
-            const tempCamera = new THREE.PerspectiveCamera(50, containerWidth / containerHeight, 0.1, 1000);
-            
-            // Calcular bounding box
-            let minX = Infinity, maxX = -Infinity;
-            let minY = Infinity, maxY = -Infinity;
-            let minZ = Infinity, maxZ = -Infinity;
-            
-            nodes.forEach(node => {
-                const pos = node.position;
-                minX = Math.min(minX, pos.x);
-                maxX = Math.max(maxX, pos.x);
-                minY = Math.min(minY, pos.y);
-                maxY = Math.max(maxY, pos.y);
-                minZ = Math.min(minZ, pos.z);
-                maxZ = Math.max(maxZ, pos.z);
-            });
-            
-            const centerX = (minX + maxX) / 2;
-            const centerY = (minY + maxY) / 2;
-            const centerZ = (minZ + maxZ) / 2;
-            
-            const sizeX = maxX - minX;
-            const sizeY = maxY - minY;
-            const sizeZ = maxZ - minZ;
-            const maxSize = Math.max(sizeX, sizeY, sizeZ, 1);
-            
-            const distance = maxSize * 2.5;
-            tempCamera.position.set(centerX, centerY, centerZ + distance);
-            tempCamera.lookAt(centerX, centerY, centerZ);
-            
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
-            tempScene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            directionalLight.position.set(2, 2, 2);
-            tempScene.add(directionalLight);
-            
-            const scaleFactor = 0.25;
-            nodes.forEach(node => {
-                const clonedNode = node.isGroup ? node.clone(true) : node.clone();
-                clonedNode.scale.set(scaleFactor, scaleFactor, scaleFactor);
-                tempScene.add(clonedNode);
-            });
-            
-            connections.forEach(connection => {
-                const clonedConnection = connection.clone();
-                tempScene.add(clonedConnection);
-            });
-            
-            // Usar el renderer principal para renderizar a una textura
-            const renderTarget = new THREE.WebGLRenderTarget(containerWidth, containerHeight);
-            
-            // Guardar estado del renderer principal
-            const originalSize = renderer.getSize(new THREE.Vector2());
-            const originalClearColor = renderer.getClearColor(new THREE.Color());
-            
-            // Renderizar
-            renderer.setRenderTarget(renderTarget);
-            renderer.setClearColor(0x000000, 1);
-            renderer.render(tempScene, tempCamera);
-            
-            // Leer la textura y dibujarla en el canvas 2D
-            const ctx2D = canvas.getContext('2d');
-            canvas.width = containerWidth;
-            canvas.height = containerHeight;
-            const pixels = new Uint8Array(containerWidth * containerHeight * 4);
-            renderer.readRenderTargetPixels(renderTarget, 0, 0, containerWidth, containerHeight, pixels);
-            
-            const imageData = ctx2D.createImageData(containerWidth, containerHeight);
-            for (let i = 0; i < pixels.length; i += 4) {
-                imageData.data[i] = pixels[i];
-                imageData.data[i + 1] = pixels[i + 1];
-                imageData.data[i + 2] = pixels[i + 2];
-                imageData.data[i + 3] = pixels[i + 3];
+            // Asegurarse de que el canvas esté en el DOM
+            if (!canvas.parentNode) {
+                container.appendChild(canvas);
             }
-            ctx2D.putImageData(imageData, 0, 0);
             
-            // Restaurar estado del renderer principal
-            renderer.setRenderTarget(null);
-            renderer.setSize(originalSize.x, originalSize.y);
-            renderer.setClearColor(originalClearColor, 1);
-            
-            // Limpiar render target
-            renderTarget.dispose();
-            
-            // Limpiar escena temporal
-            tempScene.children.forEach(child => {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(m => m.dispose());
+            // Esperar a que el DOM se actualice para obtener las dimensiones correctas
+            setTimeout(() => {
+                // Verificar que el canvas todavía existe
+                if (!canvas || !canvas.parentNode) {
+                    console.warn('Canvas no longer exists');
+                    return;
+                }
+                
+                const containerRect = container.getBoundingClientRect();
+                let containerWidth = Math.floor(containerRect.width);
+                const containerHeight = 150;
+                
+                // Si el ancho es 0 o muy pequeño, usar un valor por defecto
+                if (containerWidth <= 0) {
+                    containerWidth = 340;
+                }
+                
+                // Asegurarse de que el canvas tenga dimensiones explícitas
+                canvas.width = containerWidth;
+                canvas.height = containerHeight;
+                
+                // Limpiar renderer anterior si existe
+                if (window.claimOverviewRenderer) {
+                    try {
+                        window.claimOverviewRenderer.dispose();
+                    } catch (e) {
+                        console.warn('Error disposing claim overview renderer:', e);
+                    }
+                    window.claimOverviewRenderer = null;
+                }
+                
+                // Crear escena (similar al overview regular)
+                const overviewScene = new THREE.Scene();
+                overviewScene.background = new THREE.Color(0x000000);
+                
+                const overviewCamera = new THREE.PerspectiveCamera(50, containerWidth / containerHeight, 0.1, 1000);
+                
+                // Calcular bounding box
+                let minX = Infinity, maxX = -Infinity;
+                let minY = Infinity, maxY = -Infinity;
+                let minZ = Infinity, maxZ = -Infinity;
+                
+                nodes.forEach(node => {
+                    const pos = node.position;
+                    minX = Math.min(minX, pos.x);
+                    maxX = Math.max(maxX, pos.x);
+                    minY = Math.min(minY, pos.y);
+                    maxY = Math.max(maxY, pos.y);
+                    minZ = Math.min(minZ, pos.z);
+                    maxZ = Math.max(maxZ, pos.z);
+                });
+                
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                const centerZ = (minZ + maxZ) / 2;
+                
+                const sizeX = maxX - minX;
+                const sizeY = maxY - minY;
+                const sizeZ = maxZ - minZ;
+                const maxSize = Math.max(sizeX, sizeY, sizeZ, 1);
+                
+                const distance = maxSize * 2.5;
+                overviewCamera.position.set(centerX, centerY, centerZ + distance);
+                overviewCamera.lookAt(centerX, centerY, centerZ);
+                
+                // Add lights
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+                overviewScene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+                directionalLight.position.set(2, 2, 2);
+                overviewScene.add(directionalLight);
+                
+                // Clone nodes at smaller scale
+                const scaleFactor = 0.25;
+                nodes.forEach(node => {
+                    let clonedNode;
+                    if (node.isGroup) {
+                        clonedNode = node.clone(true);
                     } else {
-                        child.material.dispose();
+                        clonedNode = node.clone();
+                    }
+                    clonedNode.scale.set(scaleFactor, scaleFactor, scaleFactor);
+                    overviewScene.add(clonedNode);
+                });
+                
+                // Clone connections
+                connections.forEach(conn => {
+                    const clonedConn = conn.clone();
+                    overviewScene.add(clonedConn);
+                });
+                
+                // Create renderer directly with the canvas (igual que el overview regular)
+                try {
+                    // Asegurarse de que el canvas esté visible y tenga dimensiones
+                    if (canvas.width === 0 || canvas.height === 0) {
+                        canvas.width = containerWidth;
+                        canvas.height = containerHeight;
+                    }
+                    
+                    window.claimOverviewRenderer = new THREE.WebGLRenderer({ 
+                        canvas: canvas,
+                        antialias: false,
+                        powerPreference: "low-power"
+                    });
+                    window.claimOverviewRenderer.setSize(containerWidth, containerHeight);
+                    window.claimOverviewRenderer.setPixelRatio(0.5);
+                    
+                    // Renderizar en el siguiente frame para asegurar que todo esté listo
+                    requestAnimationFrame(() => {
+                        if (window.claimOverviewRenderer && overviewScene && overviewCamera) {
+                            window.claimOverviewRenderer.render(overviewScene, overviewCamera);
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error creating claim overview renderer:', error);
+                    // Fallback: intentar copiar del overview regular si está disponible
+                    const existingOverview = document.getElementById('value-logic-overview-canvas');
+                    if (existingOverview && existingOverview.width > 0 && existingOverview.height > 0) {
+                        try {
+                            const ctx2D = canvas.getContext('2d');
+                            canvas.width = containerWidth;
+                            canvas.height = containerHeight;
+                            ctx2D.drawImage(existingOverview, 0, 0, containerWidth, containerHeight);
+                        } catch (e) {
+                            console.error('Error copying existing overview:', e);
+                        }
                     }
                 }
-            });
+            }, 300);
         }
 
         function generateClaimTop5Grid(container, top4Words) {
@@ -5739,7 +5770,7 @@
 
                 const item = document.createElement('div');
                 item.className = 'node-list-item';
-                item.style.cssText = 'width: 180px; height: 240px; background: rgba(255, 255, 255, 0.95); border: none; padding: 5px; display: flex; flex-direction: column; overflow: hidden; box-sizing: border-box; flex-shrink: 0;';
+                item.style.cssText = 'width: 180px; height: auto; min-height: 250px; background: rgba(255, 255, 255, 0.95); border: none; padding: 5px; display: flex; flex-direction: column; overflow: visible; box-sizing: border-box; flex-shrink: 0;';
 
                 const header = document.createElement('div');
                 header.style.cssText = 'text-align: center; margin-bottom: 5px; padding: 2px;';
@@ -5761,12 +5792,12 @@
 
                 // Añadir fractal debajo del canvas 3D
                 const fractalContainer = document.createElement('div');
-                fractalContainer.style.cssText = 'width: 100%; margin-bottom: 5px; border: 1px solid #ffffff; background: #000000; padding: 2px; box-sizing: border-box;';
+                fractalContainer.style.cssText = 'width: 100%; margin-bottom: 5px; border: 1px solid #ffffff; background: #000000; padding: 1px; box-sizing: border-box; overflow: visible;';
                 const fractalCanvas = document.createElement('canvas');
                 fractalCanvas.id = `claim-node-list-fractal-${index}`;
-                fractalCanvas.width = 196;
-                fractalCanvas.height = 90;
-                fractalCanvas.style.cssText = 'display: block; width: 100%; height: 90px; background: #000000;';
+                fractalCanvas.width = 178;
+                fractalCanvas.height = 94;
+                fractalCanvas.style.cssText = 'display: block; width: 100%; height: 94px; background: #000000; box-sizing: border-box;';
                 fractalContainer.appendChild(fractalCanvas);
                 item.appendChild(fractalContainer);
 
@@ -5958,75 +5989,149 @@
                 // 1. Capturar imagen del total value (capturar todo el contenido sin cortes)
                 const totalValueContainer = document.getElementById('claim-total-value-container');
                 if (totalValueContainer && typeof html2canvas !== 'undefined') {
-                    // Guardar estilos originales
-                    const originalHeight = totalValueContainer.style.height;
-                    const originalOverflow = totalValueContainer.style.overflow;
-                    const originalMaxHeight = totalValueContainer.style.maxHeight;
-                    const originalOpacity = totalValueContainer.style.opacity;
+                    // Clonar el contenedor fuera de la vista para evitar glitches visuales
+                    const clonedContainer = totalValueContainer.cloneNode(true);
+                    clonedContainer.id = 'claim-total-value-container-clone';
+                    clonedContainer.style.position = 'fixed';
+                    clonedContainer.style.left = '-9999px';
+                    clonedContainer.style.top = '0';
+                    clonedContainer.style.height = 'auto';
+                    clonedContainer.style.maxHeight = 'none';
+                    clonedContainer.style.overflow = 'visible';
+                    clonedContainer.style.opacity = '1';
+                    clonedContainer.style.visibility = 'visible';
+                    clonedContainer.style.display = 'block';
+                    clonedContainer.style.width = totalValueContainer.offsetWidth + 'px';
+                    document.body.appendChild(clonedContainer);
                     
-                    // Temporalmente expandir el contenedor para capturar todo el contenido
-                    totalValueContainer.style.height = 'auto';
-                    totalValueContainer.style.maxHeight = 'none';
-                    totalValueContainer.style.overflow = 'visible';
-                    totalValueContainer.style.opacity = '1';
+                    // Asegurarse de que los contenedores estén visibles en el clon
+                    const clonedOverviewContainer = clonedContainer.querySelector('#claim-value-logic-overview-container');
+                    const clonedTop5Grid = clonedContainer.querySelector('#claim-value-logic-top5-grid');
+                    if (clonedOverviewContainer) {
+                        clonedOverviewContainer.style.display = 'block';
+                    }
+                    if (clonedTop5Grid) {
+                        clonedTop5Grid.style.display = 'block';
+                    }
                     
-                    // Esperar a que los canvas se rendericen
-                    setTimeout(() => {
-                        // Forzar renderizado de canvas dentro del contenedor
-                        const canvases = totalValueContainer.querySelectorAll('canvas');
-                        canvases.forEach(canvas => {
-                            if (canvas.getContext) {
-                                const ctx = canvas.getContext('2d');
+                    // Copiar el contenido de los canvas al clon
+                    const originalCanvases = totalValueContainer.querySelectorAll('canvas');
+                    const clonedCanvases = clonedContainer.querySelectorAll('canvas');
+                    
+                    // Mapear canvas por ID para copiar correctamente
+                    originalCanvases.forEach((originalCanvas) => {
+                        const canvasId = originalCanvas.id;
+                        if (!canvasId) return;
+                        
+                        const clonedCanvas = clonedContainer.querySelector('#' + canvasId);
+                        if (clonedCanvas && originalCanvas.width > 0 && originalCanvas.height > 0) {
+                            try {
+                                const ctx = clonedCanvas.getContext('2d');
                                 if (ctx) {
-                                    // Forzar actualización del canvas
-                                    ctx.canvas.width = canvas.width;
+                                    clonedCanvas.width = originalCanvas.width;
+                                    clonedCanvas.height = originalCanvas.height;
+                                    // Copiar el contenido del canvas original
+                                    ctx.drawImage(originalCanvas, 0, 0);
                                 }
+                            } catch (e) {
+                                console.warn('Could not copy canvas ' + canvasId + ':', e);
                             }
+                        }
+                    });
+                    
+                    // Esperar a que el DOM se actualice y los canvas se rendericen
+                    setTimeout(() => {
+                        // Asegurarse de que todos los canvas estén listos
+                        const allCanvasesReady = Array.from(clonedCanvases).every(canvas => {
+                            return canvas.width > 0 && canvas.height > 0;
                         });
                         
-                        // Esperar un frame más para asegurar renderizado
-                        requestAnimationFrame(() => {
-                            html2canvas(totalValueContainer, {
-                                backgroundColor: '#dcdcdc',
-                                scale: 2,
-                                height: totalValueContainer.scrollHeight,
-                                width: totalValueContainer.scrollWidth,
-                                useCORS: true,
-                                allowTaint: true,
-                                logging: false,
-                                onclone: (clonedDoc) => {
-                                    // Asegurarse de que los canvas en el clon estén visibles
-                                    const clonedContainer = clonedDoc.getElementById('claim-total-value-container');
-                                    if (clonedContainer) {
-                                        clonedContainer.style.height = 'auto';
-                                        clonedContainer.style.maxHeight = 'none';
-                                        clonedContainer.style.overflow = 'visible';
+                        if (!allCanvasesReady) {
+                            // Reintentar copiar los canvas
+                            originalCanvases.forEach((originalCanvas) => {
+                                const canvasId = originalCanvas.id;
+                                if (!canvasId) return;
+                                
+                                const clonedCanvas = clonedContainer.querySelector('#' + canvasId);
+                                if (clonedCanvas && originalCanvas.width > 0 && originalCanvas.height > 0) {
+                                    try {
+                                        const ctx = clonedCanvas.getContext('2d');
+                                        if (ctx) {
+                                            clonedCanvas.width = originalCanvas.width;
+                                            clonedCanvas.height = originalCanvas.height;
+                                            ctx.drawImage(originalCanvas, 0, 0);
+                                        }
+                                    } catch (e) {
+                                        console.warn('Could not copy canvas ' + canvasId + ':', e);
                                     }
                                 }
-                            }).then((canvas) => {
-                                // Restaurar estilos originales inmediatamente
-                                totalValueContainer.style.height = originalHeight;
-                                totalValueContainer.style.maxHeight = originalMaxHeight;
-                                totalValueContainer.style.overflow = originalOverflow;
-                                totalValueContainer.style.opacity = originalOpacity;
+                            });
+                        }
+                        
+                        html2canvas(clonedContainer, {
+                            backgroundColor: '#dcdcdc',
+                            scale: 2,
+                            height: clonedContainer.scrollHeight,
+                            width: clonedContainer.scrollWidth,
+                            useCORS: true,
+                            allowTaint: true,
+                            logging: false,
+                            ignoreElements: (element) => {
+                                // No ignorar nada, capturar todo
+                                return false;
+                            },
+                            onclone: (clonedDoc) => {
+                                // Asegurarse de que los contenedores estén visibles en el clon de html2canvas
+                                const clonedOverview = clonedDoc.getElementById('claim-value-logic-overview-container');
+                                const clonedTop5 = clonedDoc.getElementById('claim-value-logic-top5-grid');
+                                if (clonedOverview) {
+                                    clonedOverview.style.display = 'block';
+                                }
+                                if (clonedTop5) {
+                                    clonedTop5.style.display = 'block';
+                                }
                                 
-                                canvas.toBlob((blob) => {
-                                    zip.file('total-value-summary.jpg', blob);
-                                    imageReady = true;
-                                    checkAndDownload();
-                                }, 'image/jpeg', 1.0);
-                            }).catch((error) => {
-                                console.error('Error capturing total value:', error);
-                                // Restaurar estilos originales en caso de error
-                                totalValueContainer.style.height = originalHeight;
-                                totalValueContainer.style.maxHeight = originalMaxHeight;
-                                totalValueContainer.style.overflow = originalOverflow;
-                                totalValueContainer.style.opacity = originalOpacity;
+                                // Copiar canvas nuevamente en el clon de html2canvas
+                                originalCanvases.forEach((originalCanvas) => {
+                                    const canvasId = originalCanvas.id;
+                                    if (!canvasId) return;
+                                    
+                                    const clonedCanvas = clonedDoc.getElementById(canvasId);
+                                    if (clonedCanvas && originalCanvas.width > 0 && originalCanvas.height > 0) {
+                                        try {
+                                            const ctx = clonedCanvas.getContext('2d');
+                                            if (ctx) {
+                                                clonedCanvas.width = originalCanvas.width;
+                                                clonedCanvas.height = originalCanvas.height;
+                                                ctx.drawImage(originalCanvas, 0, 0);
+                                            }
+                                        } catch (e) {
+                                            console.warn('Could not copy canvas in onclone ' + canvasId + ':', e);
+                                        }
+                                    }
+                                });
+                            }
+                        }).then((canvas) => {
+                            // Eliminar el clon
+                            if (clonedContainer.parentNode) {
+                                document.body.removeChild(clonedContainer);
+                            }
+                            
+                            canvas.toBlob((blob) => {
+                                zip.file('total-value-summary.jpg', blob);
                                 imageReady = true;
                                 checkAndDownload();
-                            });
+                            }, 'image/jpeg', 1.0);
+                        }).catch((error) => {
+                            console.error('Error capturing total value:', error);
+                            // Eliminar el clon en caso de error
+                            if (clonedContainer.parentNode) {
+                                document.body.removeChild(clonedContainer);
+                            }
+                            imageReady = true;
+                            checkAndDownload();
                         });
-                    }, 200);
+                    }, 300);
                 } else {
                     imageReady = true;
                     checkAndDownload();
