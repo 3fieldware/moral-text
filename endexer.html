@@ -850,6 +850,24 @@
     <div id="start-screen">
         <button id="start-button">CONNECT</button>
     </div>
+    
+    <!-- Wallet Connection Modal -->
+    <div id="wallet-connect-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 40000; pointer-events: auto;">
+        <div id="wallet-connect-modal-container" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; padding: 9px; border: 2px solid #000000; min-width: 300px; max-width: 400px; display: flex; flex-direction: column;">
+            <div style="position: relative; margin-bottom: 12px; min-height: 18px;">
+                <button id="wallet-connect-close-btn" style="position: absolute; top: 0; left: 0; background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; display: flex; align-items: center; gap: 2px; white-space: nowrap; border-radius: 0; margin: 0; min-height: 16px; height: 16px; line-height: 1;">
+                    <span style="font-size: 12px;">×</span>
+                    <span>CLOSE</span>
+                </button>
+            </div>
+            <div style="margin: 0 auto 7px auto; font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #ffffff; text-align: left; background: #000000; padding: 8px 9px 8px 9px; border: 1px solid #000000; width: 98%;">
+                You need to connect your wallet to continue.
+            </div>
+            <div style="position: relative; min-height: 27px; margin-top: 7px;">
+                <button id="wallet-connect-wallet-btn" style="position: absolute; bottom: 0; right: 0; background: #808080; color: #ffffff; border: none; padding: 4px 8px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 10px; border-radius: 0; margin: 0;">CONNECT WALLET</button>
+            </div>
+        </div>
+    </div>
     <div id="canvas-container"></div>
     
     <div id="node-info-panel" class="node-info-panel">
@@ -1028,20 +1046,39 @@
     </div>
 
     <!-- Claim Modal -->
-    <div id="claim-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 30000; overflow-y: auto; pointer-events: auto;">
-        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 1600px; margin: 20px auto; padding: 20px; background: #000000;">
+    <div id="claim-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none;">
+        <style>
+            #claim-modal::-webkit-scrollbar {
+                display: none;
+            }
+            #claim-total-value-container::-webkit-scrollbar {
+                display: none;
+            }
+            #claim-nodes-list-container::-webkit-scrollbar {
+                display: none;
+            }
+            #claim-total-value-container {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+            #claim-nodes-list-container {
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+        </style>
+        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 1200px; margin: 20px auto; padding: 20px; background: #ffffff;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 8px 16px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 10px; border-radius: 0;">← BACK</button>
-                <h2 style="color: #ffffff; font-family: Helvetica, Arial, sans-serif; font-size: 16px; margin: 0;">CLAIM</h2>
+                <h2 style="color: #000000; font-family: Helvetica, Arial, sans-serif; font-size: 16px; margin: 0;">CLAIM</h2>
                 <div style="width: 100px;"></div>
             </div>
             <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px;">
-                <div id="claim-3d-container" style="flex: 1; min-width: 600px; height: 600px; background: #0000FF; position: relative; border: 2px solid #ffffff;"></div>
-                <div id="claim-total-value-container" style="flex: 1; min-width: 400px; max-width: 500px; background: rgba(220, 220, 220, 0.95); padding: 4px 12px 12px 12px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; max-height: 600px; overflow-y: auto;">
+                <div id="claim-3d-container" style="flex: 1; min-width: 450px; height: 500px; background: #0000FF; position: relative; border: 2px solid #000000;"></div>
+                <div id="claim-total-value-container" style="flex: 1; min-width: 350px; max-width: 400px; background: rgba(220, 220, 220, 0.95); padding: 4px 12px 12px 12px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; max-height: 500px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
                     <div id="claim-total-value-content"></div>
                 </div>
             </div>
-            <div id="claim-nodes-list-container" style="background: rgba(255, 255, 255, 0.95); padding: 15px; border: 2px solid #ffffff; margin-bottom: 20px; max-height: 600px; overflow-y: auto;">
+            <div id="claim-nodes-list-container" style="background: rgba(255, 255, 255, 0.95); padding: 15px; border: 2px solid #000000; margin-bottom: 20px; max-height: 500px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
                 <h3 style="font-size: 14px; margin-bottom: 15px; color: #000000; border-bottom: 1px solid #000000; padding-bottom: 5px;">Top 12 Nodes</h3>
                 <div id="claim-nodes-grid" class="nodes-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;"></div>
             </div>
@@ -1140,6 +1177,10 @@
         let nodeListMeshes = [];
         let nodeListAnimationIds = [];
         let nodeListIntersectionObserver = null;
+        // Renderer compartido para nodos de la lista (evita múltiples contextos WebGL)
+        let sharedTopNodesRenderer = null;
+        let sharedTopNodesScene = null;
+        let sharedTopNodesCamera = null;
         let ethPriceUSD = null; // Store current Ethereum price in USD
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
@@ -5087,10 +5128,10 @@
         // Variables para claim modal
         let claimScene = null;
         let claimCamera = null;
-        let claimRenderer = null;
         let claimAnimationId = null;
-        let claimNodeListScenes = [];
-        let claimNodeListRenderers = [];
+        let sharedNodeListRenderer = null;
+        let sharedNodeListScene = null;
+        let sharedNodeListCamera = null;
 
         function navigateToClaim() {
             if (nodes.length === 0) {
@@ -5131,7 +5172,7 @@
             }
             
             // Limpiar escena anterior si existe
-            if (claimScene && claimRenderer) {
+            if (claimScene) {
                 claimScene.children.forEach(child => {
                     if (child.geometry) child.geometry.dispose();
                     if (child.material) {
@@ -5142,15 +5183,17 @@
                         }
                     }
                 });
-                if (claimAnimationId) {
-                    cancelAnimationFrame(claimAnimationId);
-                }
-                claimRenderer.dispose();
+            }
+            if (claimAnimationId) {
+                cancelAnimationFrame(claimAnimationId);
+                claimAnimationId = null;
             }
             
             const width = container.clientWidth;
             const height = container.clientHeight;
 
+            // Usar el renderer principal en lugar de crear uno nuevo
+            // Renderizar a una textura y luego mostrar en un canvas 2D
             claimScene = new THREE.Scene();
             claimScene.background = new THREE.Color(currentBackgroundColor);
 
@@ -5180,15 +5223,10 @@
             const sizeZ = maxZ - minZ;
             const maxSize = Math.max(sizeX, sizeY, sizeZ, 1);
             
-            // Posicionar cámara para ver todo el cuerpo
-            const distance = maxSize * 2.5;
+            // Posicionar cámara para ver todo el cuerpo (más cerca para que se vea más grande)
+            const distance = maxSize * 1.8; // Reducido de 2.5 a 1.8 para hacer el cuerpo más grande
             claimCamera.position.set(centerX, centerY, centerZ + distance);
             claimCamera.lookAt(centerX, centerY, centerZ);
-
-            claimRenderer = new THREE.WebGLRenderer({ antialias: false });
-            claimRenderer.setSize(width, height);
-            claimRenderer.setClearColor(currentBackgroundColor, 1);
-            container.appendChild(claimRenderer.domElement);
 
             // Luces
             const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
@@ -5208,14 +5246,61 @@
                 claimScene.add(clonedConnection);
             });
 
-            // Animación estática (sin rotación)
-            function animate() {
-                claimAnimationId = requestAnimationFrame(animate);
-                if (claimRenderer && claimScene && claimCamera) {
-                    claimRenderer.render(claimScene, claimCamera);
-                }
+            // Crear canvas 2D para mostrar la imagen renderizada
+            const canvas2D = document.createElement('canvas');
+            canvas2D.width = width;
+            canvas2D.height = height;
+            canvas2D.style.cssText = 'width: 100%; height: 100%; display: block;';
+            container.appendChild(canvas2D);
+            
+            const ctx2D = canvas2D.getContext('2d');
+            
+            // Renderizar usando el renderer principal a una textura temporal
+            const renderTarget = new THREE.WebGLRenderTarget(width, height);
+            
+            // Guardar estado del renderer principal
+            const originalSize = renderer.getSize(new THREE.Vector2());
+            const originalClearColor = renderer.getClearColor(new THREE.Color());
+            
+            // Renderizar una vez
+            renderer.setRenderTarget(renderTarget);
+            renderer.setClearColor(currentBackgroundColor, 1);
+            renderer.render(claimScene, claimCamera);
+            
+            // Leer la textura y dibujarla en el canvas 2D
+            const gl = renderer.getContext();
+            const pixels = new Uint8Array(width * height * 4);
+            renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, pixels);
+            
+            const imageData = ctx2D.createImageData(width, height);
+            for (let i = 0; i < pixels.length; i += 4) {
+                imageData.data[i] = pixels[i];     // R
+                imageData.data[i + 1] = pixels[i + 1]; // G
+                imageData.data[i + 2] = pixels[i + 2]; // B
+                imageData.data[i + 3] = pixels[i + 3]; // A
             }
-            animate();
+            ctx2D.putImageData(imageData, 0, 0);
+            
+            // Restaurar estado del renderer principal
+            renderer.setRenderTarget(null);
+            renderer.setSize(originalSize.x, originalSize.y);
+            renderer.setClearColor(originalClearColor, 1);
+            
+            // Limpiar render target
+            renderTarget.dispose();
+            
+            // Limpiar escena temporal
+            claimScene.children.forEach(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            });
+            claimScene = null;
         }
 
         function showClaimTotalValue() {
@@ -5468,10 +5553,22 @@
             const containerWidth = Math.floor(containerRect.width) || 376;
             const containerHeight = 150;
             
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000);
+            // Reutilizar el overview existente si está disponible
+            const existingOverview = document.getElementById('value-logic-overview-canvas');
+            if (existingOverview && existingOverview.width > 0) {
+                // Copiar la imagen del overview existente
+                const ctx2D = canvas.getContext('2d');
+                canvas.width = containerWidth;
+                canvas.height = containerHeight;
+                ctx2D.drawImage(existingOverview, 0, 0, containerWidth, containerHeight);
+                return;
+            }
             
-            const camera = new THREE.PerspectiveCamera(50, containerWidth / containerHeight, 0.1, 1000);
+            // Si no existe, crear uno temporal usando el renderer principal
+            const tempScene = new THREE.Scene();
+            tempScene.background = new THREE.Color(0x000000);
+            
+            const tempCamera = new THREE.PerspectiveCamera(50, containerWidth / containerHeight, 0.1, 1000);
             
             // Calcular bounding box
             let minX = Infinity, maxX = -Infinity;
@@ -5498,30 +5595,74 @@
             const maxSize = Math.max(sizeX, sizeY, sizeZ, 1);
             
             const distance = maxSize * 2.5;
-            camera.position.set(centerX, centerY, centerZ + distance);
-            camera.lookAt(centerX, centerY, centerZ);
+            tempCamera.position.set(centerX, centerY, centerZ + distance);
+            tempCamera.lookAt(centerX, centerY, centerZ);
             
             const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
-            scene.add(ambientLight);
+            tempScene.add(ambientLight);
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
             directionalLight.position.set(2, 2, 2);
-            scene.add(directionalLight);
+            tempScene.add(directionalLight);
             
             const scaleFactor = 0.25;
             nodes.forEach(node => {
                 const clonedNode = node.isGroup ? node.clone(true) : node.clone();
                 clonedNode.scale.set(scaleFactor, scaleFactor, scaleFactor);
-                scene.add(clonedNode);
+                tempScene.add(clonedNode);
             });
             
             connections.forEach(connection => {
                 const clonedConnection = connection.clone();
-                scene.add(clonedConnection);
+                tempScene.add(clonedConnection);
             });
             
-            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
-            renderer.setSize(containerWidth, containerHeight);
-            renderer.render(scene, camera);
+            // Usar el renderer principal para renderizar a una textura
+            const renderTarget = new THREE.WebGLRenderTarget(containerWidth, containerHeight);
+            
+            // Guardar estado del renderer principal
+            const originalSize = renderer.getSize(new THREE.Vector2());
+            const originalClearColor = renderer.getClearColor(new THREE.Color());
+            
+            // Renderizar
+            renderer.setRenderTarget(renderTarget);
+            renderer.setClearColor(0x000000, 1);
+            renderer.render(tempScene, tempCamera);
+            
+            // Leer la textura y dibujarla en el canvas 2D
+            const ctx2D = canvas.getContext('2d');
+            canvas.width = containerWidth;
+            canvas.height = containerHeight;
+            const pixels = new Uint8Array(containerWidth * containerHeight * 4);
+            renderer.readRenderTargetPixels(renderTarget, 0, 0, containerWidth, containerHeight, pixels);
+            
+            const imageData = ctx2D.createImageData(containerWidth, containerHeight);
+            for (let i = 0; i < pixels.length; i += 4) {
+                imageData.data[i] = pixels[i];
+                imageData.data[i + 1] = pixels[i + 1];
+                imageData.data[i + 2] = pixels[i + 2];
+                imageData.data[i + 3] = pixels[i + 3];
+            }
+            ctx2D.putImageData(imageData, 0, 0);
+            
+            // Restaurar estado del renderer principal
+            renderer.setRenderTarget(null);
+            renderer.setSize(originalSize.x, originalSize.y);
+            renderer.setClearColor(originalClearColor, 1);
+            
+            // Limpiar render target
+            renderTarget.dispose();
+            
+            // Limpiar escena temporal
+            tempScene.children.forEach(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            });
         }
 
         function generateClaimTop5Grid(container, top4Words) {
@@ -5575,23 +5716,6 @@
             
             // Limpiar contenido previo
             grid.innerHTML = '';
-            
-            // Limpiar escenas anteriores
-            claimNodeListScenes.forEach(scene => {
-                scene.children.forEach(child => {
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(m => m.dispose());
-                        } else {
-                            child.material.dispose();
-                        }
-                    }
-                });
-            });
-            claimNodeListRenderers.forEach(renderer => renderer.dispose());
-            claimNodeListScenes = [];
-            claimNodeListRenderers = [];
             
             const sortedNodes = [...nodes].sort((a, b) => {
                 const scoreA = a.userData.wordData ? (a.userData.wordData.finalValue || 0) : 0;
@@ -5661,37 +5785,92 @@
         }
 
         function createClaimNodeListItem3D(canvas, node, index) {
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000);
+            // Usar renderer compartido si no existe
+            if (!sharedNodeListRenderer) {
+                // Crear un canvas temporal para el renderer compartido
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 200;
+                tempCanvas.height = 140;
+                sharedNodeListRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: false });
+                sharedNodeListRenderer.setSize(200, 140);
+                
+                sharedNodeListScene = new THREE.Scene();
+                sharedNodeListScene.background = new THREE.Color(0x000000);
+                
+                sharedNodeListCamera = new THREE.PerspectiveCamera(75, 200 / 140, 0.1, 1000);
+                sharedNodeListCamera.position.set(0, 0, 0.3);
+                sharedNodeListCamera.lookAt(0, 0, 0);
+                
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                sharedNodeListScene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+                directionalLight.position.set(5, 5, 5);
+                sharedNodeListScene.add(directionalLight);
+            }
             
-            const camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-            camera.position.set(0, 0, 0.3);
-            camera.lookAt(0, 0, 0);
-
-            const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false });
-            renderer.setSize(canvas.width, canvas.height);
-
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-            scene.add(ambientLight);
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            directionalLight.position.set(5, 5, 5);
-            scene.add(directionalLight);
-
+            // Limpiar escena anterior
+            while (sharedNodeListScene.children.length > 2) { // Mantener las luces
+                const child = sharedNodeListScene.children[2];
+                sharedNodeListScene.remove(child);
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            }
+            
             // Clonar el nodo y centrarlo
             const clone = node.isGroup ? node.clone(true) : node.clone();
             clone.position.set(0, 0, 0);
-            scene.add(clone);
-
-            // Rotar continuamente
-            function animateNode() {
-                requestAnimationFrame(animateNode);
-                clone.rotation.y += 0.01;
-                renderer.render(scene, camera);
+            sharedNodeListScene.add(clone);
+            
+            // Renderizar a una textura temporal
+            const renderTarget = new THREE.WebGLRenderTarget(200, 140);
+            
+            // Guardar estado del renderer
+            const originalSize = sharedNodeListRenderer.getSize(new THREE.Vector2());
+            const originalClearColor = sharedNodeListRenderer.getClearColor(new THREE.Color());
+            
+            // Renderizar
+            sharedNodeListRenderer.setRenderTarget(renderTarget);
+            sharedNodeListRenderer.setClearColor(0x000000, 1);
+            sharedNodeListRenderer.render(sharedNodeListScene, sharedNodeListCamera);
+            
+            // Leer la textura y dibujarla en el canvas 2D
+            const ctx2D = canvas.getContext('2d');
+            const pixels = new Uint8Array(200 * 140 * 4);
+            sharedNodeListRenderer.readRenderTargetPixels(renderTarget, 0, 0, 200, 140, pixels);
+            
+            const imageData = ctx2D.createImageData(200, 140);
+            for (let i = 0; i < pixels.length; i += 4) {
+                imageData.data[i] = pixels[i];
+                imageData.data[i + 1] = pixels[i + 1];
+                imageData.data[i + 2] = pixels[i + 2];
+                imageData.data[i + 3] = pixels[i + 3];
             }
-            animateNode();
-
-            claimNodeListScenes.push(scene);
-            claimNodeListRenderers.push(renderer);
+            ctx2D.putImageData(imageData, 0, 0);
+            
+            // Restaurar estado del renderer
+            sharedNodeListRenderer.setRenderTarget(null);
+            sharedNodeListRenderer.setSize(originalSize.x, originalSize.y);
+            sharedNodeListRenderer.setClearColor(originalClearColor, 1);
+            
+            // Limpiar render target
+            renderTarget.dispose();
+            
+            // Remover el nodo clonado de la escena
+            sharedNodeListScene.remove(clone);
+            if (clone.geometry) clone.geometry.dispose();
+            if (clone.material) {
+                if (Array.isArray(clone.material)) {
+                    clone.material.forEach(m => m.dispose());
+                } else {
+                    clone.material.dispose();
+                }
+            }
         }
 
         function hideClaimModal() {
@@ -5708,7 +5887,7 @@
                 claimAnimationId = null;
             }
             
-            if (claimScene && claimRenderer) {
+            if (claimScene) {
                 claimScene.children.forEach(child => {
                     if (child.geometry) child.geometry.dispose();
                     if (child.material) {
@@ -5719,26 +5898,28 @@
                         }
                     }
                 });
-                claimRenderer.dispose();
                 claimScene = null;
-                claimRenderer = null;
             }
             
-            claimNodeListScenes.forEach(scene => {
-                scene.children.forEach(child => {
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(m => m.dispose());
-                        } else {
-                            child.material.dispose();
+            // Limpiar renderer compartido de nodos
+            if (sharedNodeListRenderer) {
+                if (sharedNodeListScene) {
+                    sharedNodeListScene.children.forEach(child => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => m.dispose());
+                            } else {
+                                child.material.dispose();
+                            }
                         }
-                    }
-                });
-            });
-            claimNodeListRenderers.forEach(renderer => renderer.dispose());
-            claimNodeListScenes = [];
-            claimNodeListRenderers = [];
+                    });
+                    sharedNodeListScene = null;
+                }
+                sharedNodeListRenderer.dispose();
+                sharedNodeListRenderer = null;
+                sharedNodeListCamera = null;
+            }
         }
 
         async function downloadClaimPurchasePack() {
@@ -5773,22 +5954,50 @@
                     }
                 }
 
-                // 1. Capturar imagen del total value
+                // 1. Capturar imagen del total value (capturar todo el contenido sin cortes)
                 const totalValueContainer = document.getElementById('claim-total-value-container');
                 if (totalValueContainer && typeof html2canvas !== 'undefined') {
-                    html2canvas(totalValueContainer, {
-                        backgroundColor: '#dcdcdc',
-                        scale: 2
-                    }).then((canvas) => {
-                        canvas.toBlob((blob) => {
-                            zip.file('total-value-summary.jpg', blob);
+                    // Guardar altura original
+                    const originalHeight = totalValueContainer.style.height;
+                    const originalOverflow = totalValueContainer.style.overflow;
+                    const originalMaxHeight = totalValueContainer.style.maxHeight;
+                    
+                    // Temporalmente hacer que el contenedor muestre todo el contenido sin scroll
+                    totalValueContainer.style.height = 'auto';
+                    totalValueContainer.style.maxHeight = 'none';
+                    totalValueContainer.style.overflow = 'visible';
+                    
+                    // Esperar un momento para que el DOM se actualice
+                    setTimeout(() => {
+                        html2canvas(totalValueContainer, {
+                            backgroundColor: '#dcdcdc',
+                            scale: 2,
+                            height: totalValueContainer.scrollHeight, // Usar altura completa del contenido
+                            width: totalValueContainer.scrollWidth, // Usar ancho completo del contenido
+                            useCORS: true,
+                            allowTaint: true,
+                            logging: false
+                        }).then((canvas) => {
+                            // Restaurar estilos originales
+                            totalValueContainer.style.height = originalHeight;
+                            totalValueContainer.style.maxHeight = originalMaxHeight;
+                            totalValueContainer.style.overflow = originalOverflow;
+                            
+                            canvas.toBlob((blob) => {
+                                zip.file('total-value-summary.jpg', blob);
+                                imageReady = true;
+                                checkAndDownload();
+                            }, 'image/jpeg', 1.0);
+                        }).catch((error) => {
+                            console.error('Error capturing total value:', error);
+                            // Restaurar estilos originales en caso de error
+                            totalValueContainer.style.height = originalHeight;
+                            totalValueContainer.style.maxHeight = originalMaxHeight;
+                            totalValueContainer.style.overflow = originalOverflow;
                             imageReady = true;
                             checkAndDownload();
-                        }, 'image/jpeg', 1.0);
-                    }).catch(() => {
-                        imageReady = true;
-                        checkAndDownload();
-                    });
+                        });
+                    }, 100);
                 } else {
                     imageReady = true;
                     checkAndDownload();
@@ -8994,28 +9203,43 @@
         }
 
         function createNodeList3DScene(index, node, canvas) {
-            // Create scene
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000);
+            // Usar renderer compartido si no existe
+            if (!sharedTopNodesRenderer) {
+                // Crear un canvas temporal para el renderer compartido
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 200;
+                tempCanvas.height = 120;
+                sharedTopNodesRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: false });
+                sharedTopNodesRenderer.setSize(200, 120);
+                sharedTopNodesRenderer.setPixelRatio(0.75);
+                
+                sharedTopNodesScene = new THREE.Scene();
+                sharedTopNodesScene.background = new THREE.Color(0x000000);
+                
+                sharedTopNodesCamera = new THREE.PerspectiveCamera(50, 200 / 120, 0.1, 100);
+                sharedTopNodesCamera.position.set(0, 0, 2);
+                sharedTopNodesCamera.lookAt(0, 0, 0);
+                
+                const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                sharedTopNodesScene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(2, 2, 2);
+                sharedTopNodesScene.add(directionalLight);
+            }
             
-            const camera = new THREE.PerspectiveCamera(50, 200 / 120, 0.1, 100);
-            camera.position.set(0, 0, 2);
-            camera.lookAt(0, 0, 0);
-            
-            const renderer = new THREE.WebGLRenderer({ 
-                canvas: canvas,
-                antialias: false
-            });
-            renderer.setSize(200, 120);
-            renderer.setPixelRatio(0.75);
-            
-            // Add lights
-            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-            scene.add(ambientLight);
-            
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(2, 2, 2);
-            scene.add(directionalLight);
+            // Limpiar escena anterior (mantener solo las luces)
+            while (sharedTopNodesScene.children.length > 2) {
+                const child = sharedTopNodesScene.children[2];
+                sharedTopNodesScene.remove(child);
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            }
             
             // Create mesh (same as showRightPanelEnlargedNode)
             const wordData = node.userData.wordData;
@@ -9088,58 +9312,104 @@
                 mesh = new THREE.Mesh(geometry, material);
             }
             
-            scene.add(mesh);
+            sharedTopNodesScene.add(mesh);
             
-            // Store references
-            nodeListScenes[index] = scene;
-            nodeListRenderers[index] = renderer;
-            nodeListMeshes[index] = mesh;
+            // Renderizar a una textura temporal
+            const renderTarget = new THREE.WebGLRenderTarget(200, 120);
             
-            // Start animation only if visible
-            function animate() {
-                if (!nodeListMeshes[index] || !nodeListRenderers[index] || !nodeListScenes[index]) {
-                    if (nodeListAnimationIds[index]) {
-                        cancelAnimationFrame(nodeListAnimationIds[index]);
-                        nodeListAnimationIds[index] = null;
-                    }
-                    return;
-                }
-                
-                // Check if canvas is still in DOM and visible
-                const canvas = renderer.domElement;
-                if (!canvas || !canvas.parentElement || canvas.parentElement.offsetParent === null) {
-                    if (nodeListAnimationIds[index]) {
-                        cancelAnimationFrame(nodeListAnimationIds[index]);
-                        nodeListAnimationIds[index] = null;
-                    }
-                    return;
-                }
-                
-                nodeListMeshes[index].rotation.y += 0.01;
-                nodeListMeshes[index].rotation.x += 0.005;
-                
-                nodeListRenderers[index].render(nodeListScenes[index], camera);
-                nodeListAnimationIds[index] = requestAnimationFrame(animate);
+            // Guardar estado del renderer
+            const originalSize = sharedTopNodesRenderer.getSize(new THREE.Vector2());
+            const originalClearColor = sharedTopNodesRenderer.getClearColor(new THREE.Color());
+            
+            // Renderizar
+            sharedTopNodesRenderer.setRenderTarget(renderTarget);
+            sharedTopNodesRenderer.setClearColor(0x000000, 1);
+            sharedTopNodesRenderer.render(sharedTopNodesScene, sharedTopNodesCamera);
+            
+            // Leer la textura y dibujarla en el canvas 2D
+            const ctx2D = canvas.getContext('2d');
+            canvas.width = 200;
+            canvas.height = 120;
+            const pixels = new Uint8Array(200 * 120 * 4);
+            sharedTopNodesRenderer.readRenderTargetPixels(renderTarget, 0, 0, 200, 120, pixels);
+            
+            const imageData = ctx2D.createImageData(200, 120);
+            for (let i = 0; i < pixels.length; i += 4) {
+                imageData.data[i] = pixels[i];
+                imageData.data[i + 1] = pixels[i + 1];
+                imageData.data[i + 2] = pixels[i + 2];
+                imageData.data[i + 3] = pixels[i + 3];
             }
+            ctx2D.putImageData(imageData, 0, 0);
             
-            animate();
+            // Restaurar estado del renderer
+            sharedTopNodesRenderer.setRenderTarget(null);
+            sharedTopNodesRenderer.setSize(originalSize.x, originalSize.y);
+            sharedTopNodesRenderer.setClearColor(originalClearColor, 1);
+            
+            // Limpiar render target
+            renderTarget.dispose();
+            
+            // Remover el mesh de la escena
+            sharedTopNodesScene.remove(mesh);
+            if (mesh.geometry) mesh.geometry.dispose();
+            if (mesh.material) {
+                if (Array.isArray(mesh.material)) {
+                    mesh.material.forEach(m => m.dispose());
+                } else {
+                    mesh.material.dispose();
+                }
+            }
+            // Si es un grupo, limpiar también los hijos
+            if (mesh.isGroup) {
+                mesh.children.forEach(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                });
+            }
         }
 
         function clearNodeList() {
             const container = document.getElementById('node-list-container');
             container.innerHTML = '';
             
-            // Stop all animations and clean up
+            // Stop all animations and clean up (ya no hay animaciones, pero mantenemos por compatibilidad)
             nodeListAnimationIds.forEach(id => {
                 if (id) cancelAnimationFrame(id);
             });
             
-            // Clean up renderers and scenes
+            // Clean up renderers and scenes (ya se limpian en createNodeList3DScene, pero mantenemos por seguridad)
             nodeListRenderers.forEach(renderer => {
                 if (renderer) {
                     renderer.dispose();
                 }
             });
+            
+            // Limpiar renderer compartido
+            if (sharedTopNodesRenderer) {
+                if (sharedTopNodesScene) {
+                    sharedTopNodesScene.children.forEach(child => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => m.dispose());
+                            } else {
+                                child.material.dispose();
+                            }
+                        }
+                    });
+                    sharedTopNodesScene = null;
+                }
+                sharedTopNodesRenderer.dispose();
+                sharedTopNodesRenderer = null;
+                sharedTopNodesCamera = null;
+            }
             
             nodeListScenes = [];
             nodeListRenderers = [];
@@ -9426,6 +9696,32 @@
             }
             
             startButton.addEventListener('click', function() {
+                // Mostrar modal de conexión de wallet
+                const walletModal = document.getElementById('wallet-connect-modal');
+                if (walletModal) {
+                    walletModal.style.display = 'block';
+                    walletModal.style.visibility = 'visible';
+                    walletModal.style.opacity = '1';
+                }
+            });
+            
+            // Event listeners para el modal de wallet
+            const walletModal = document.getElementById('wallet-connect-modal');
+            const walletCloseBtn = document.getElementById('wallet-connect-close-btn');
+            const walletConnectBtn = document.getElementById('wallet-connect-wallet-btn');
+            
+            function hideWalletModal() {
+                if (walletModal) {
+                    walletModal.style.display = 'none';
+                    walletModal.style.visibility = 'hidden';
+                    walletModal.style.opacity = '0';
+                }
+            }
+            
+            function proceedToMainApp() {
+                // Ocultar modal de wallet
+                hideWalletModal();
+                
                 // Hide start screen
                 startScreen.classList.add('hidden');
                 
@@ -9484,7 +9780,24 @@
                         rightPanel.style.opacity = '0';
                     }
                 }, 100);
-            });
+            }
+            
+            if (walletCloseBtn) {
+                walletCloseBtn.addEventListener('click', hideWalletModal);
+            }
+            
+            if (walletConnectBtn) {
+                walletConnectBtn.addEventListener('click', proceedToMainApp);
+            }
+            
+            // Cerrar modal al hacer click fuera de él
+            if (walletModal) {
+                walletModal.addEventListener('click', function(e) {
+                    if (e.target === walletModal) {
+                        hideWalletModal();
+                    }
+                });
+            }
         });
     </script>
 </body>
