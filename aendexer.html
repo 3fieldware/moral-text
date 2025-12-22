@@ -112,6 +112,7 @@
             gap: 5px;
             align-items: flex-start;
             flex-shrink: 0;
+            justify-content: space-between;
         }
         
         #left-panel.collapsed #generate-button-container {
@@ -927,8 +928,10 @@
             <div id="mapped-text-container" style="display: none;"></div>
         </div>
         <div id="generate-button-container">
-            <button id="generateBtn">Export Body</button>
-            <button id="mapTextBtn">Preview Body</button>
+            <div style="display: flex; gap: 5px;">
+                <button id="generateBtn">Export Body</button>
+                <button id="mapTextBtn">Preview Body</button>
+            </div>
             <button id="clearTextBtn">CLEAR</button>
         </div>
     </div>
@@ -937,7 +940,6 @@
         <div class="top-bar-item black" id="total-value-display" style="cursor: pointer;">
             <span style="font-size: 9px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">Total Value: <span id="valueScore">0.00</span> <span id="valueETH"></span></span>
         </div>
-        <button class="top-bar-item grey" id="exportBtn" disabled style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">CLAIM</button>
         <button class="top-bar-item grey" id="galleryBtn" disabled style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">GALLERY</button>
         <button class="top-bar-item grey" id="toggleNametagsBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Show Nametags</button>
         <button class="top-bar-item grey" id="nodeListBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">TOP NODES</button>
@@ -1022,8 +1024,8 @@
                         <span style="font-size: 12px;">×</span>
                         <span>CLOSE</span>
                     </button>
-                    <button id="value-logic-save-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; display: flex; align-items: center; gap: 2px; white-space: nowrap; border-radius: 0; margin: 0; justify-content: center; min-height: 16px; height: 16px;">
-                        SAVE
+                    <button id="value-logic-claim-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; display: flex; align-items: center; gap: 2px; white-space: nowrap; border-radius: 0; margin: 0; justify-content: center; min-height: 16px; height: 16px;">
+                        CLAIM
                     </button>
                 </div>
                 <div id="value-logic-color-btn" style="width: 16px; height: 16px; background: #808080; border: none; cursor: pointer; padding: 1px; display: flex; align-items: center; justify-content: center; border-radius: 0; margin: 0; position: absolute; top: 4px; right: 12px;">
@@ -1046,7 +1048,7 @@
     </div>
 
     <!-- Claim Modal -->
-    <div id="claim-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none;">
+    <div id="claim-modal" style="display: none; position: fixed; top: 50px; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none;">
         <style>
             #claim-modal::-webkit-scrollbar {
                 display: none;
@@ -1075,19 +1077,28 @@
                 -ms-overflow-style: none;
             }
         </style>
-        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 730px; margin: 60px auto 20px auto; padding: 10px; background: rgba(255, 255, 255, 0.7); border: 1px solid #000000;">
+        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 730px; margin: 24px auto 8px auto; padding: 10px; background: rgba(255, 255, 255, 0.7); border: 1px solid #000000;">
             <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 10px;">
                 <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; border-radius: 0; display: flex; align-items: center; gap: 2px; white-space: nowrap;"><span style="font-size: 12px;">×</span><span>CLOSE</span></button>
             </div>
-            <div style="display: flex; gap: 10px; flex-wrap: nowrap; margin-bottom: 10px; align-items: flex-start;">
-                <div id="claim-3d-container" style="flex: 0 0 auto; width: 350px; height: 500px; background: #000000; position: relative; border: 1px solid #000000;"></div>
-                <div id="claim-total-value-container" style="flex: 0 0 auto; width: 350px; height: 500px; background: rgba(220, 220, 220, 0.95); padding: 4px 8px 8px 8px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; border: 1px solid #000000; position: relative;">
-                    <div id="claim-total-value-content"></div>
+            <div style="display: flex; gap: 10px; flex-wrap: nowrap; margin-bottom: 10px; align-items: flex-start; overflow: visible;">
+                <div style="display: flex; flex-direction: column; gap: 5px;">
+                    <div id="claim-3d-container" style="flex: 0 0 auto; width: 350px; height: 500px; background: #000000; position: relative; border: 1px solid #000000;"></div>
+                    <div id="claim-expanded-section" style="display: none; width: 350px; background: #000000; padding: 5px; border: 1px solid #000000;">
+                        <div id="claim-top4-fractals-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; width: 100%;"></div>
+                    </div>
+                </div>
+                <div id="claim-total-value-container" style="flex: 0 0 auto; width: 350px; height: 500px; min-height: 500px; max-height: none; background: rgba(220, 220, 220, 0.95); padding: 4px 8px 8px 8px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; border: 1px solid #000000; position: relative; transition: height 0.3s ease;">
+                    <div id="claim-total-value-content" style="min-height: 100%;"></div>
                     <button id="claim-scroll-down-btn" style="position: absolute; bottom: 5px; right: 5px; background: rgba(128, 128, 128, 0.7); color: #ffffff; border: none; padding: 2px 4px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; border-radius: 0; z-index: 10;">↓</button>
                 </div>
             </div>
-            <div style="text-align: center; margin-top: 10px;">
-                <button id="claim-purchase-btn" style="background: #808080; color: #ffffff; border: none; padding: 4px 8px; font-size: 10px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0;">PURCHASE</button>
+            <div style="position: relative; margin-top: 10px; min-height: 30px;">
+                <button id="claim-expand-btn" style="position: absolute; left: 0; bottom: 0; background: #808080; color: #ffffff; border: none; padding: 1px 2px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 10px; border-radius: 0; display: flex; align-items: center; justify-content: center; gap: 3px;">
+                    <span>EXPAND</span>
+                    <span style="font-size: 7px;">↓</span>
+                </button>
+                <button id="claim-purchase-btn" style="position: absolute; right: 0; bottom: 0; background: #808080; color: #ffffff; border: none; padding: 1px 2px; font-size: 10px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0;">PURCHASE</button>
             </div>
         </div>
     </div>
@@ -1384,7 +1395,6 @@
         function setupEventListeners() {
             // Buttons
             document.getElementById('generateBtn').addEventListener('click', generateVisualization);
-            document.getElementById('exportBtn').addEventListener('click', navigateToClaim);
             document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
             document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
             document.getElementById('toggleNametagsBtn').addEventListener('click', toggleNametags);
@@ -1416,6 +1426,13 @@
                     }
                 });
             }
+            const claimExpandBtn = document.getElementById('claim-expand-btn');
+            if (claimExpandBtn) {
+                claimExpandBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevenir que el evento se propague y cierre otros modales
+                    toggleClaimExpanded();
+                });
+            }
             const colorBtn = document.getElementById('value-logic-color-btn');
             if (colorBtn) {
                 colorBtn.addEventListener('click', toggleValueLogicColorMode);
@@ -1425,11 +1442,11 @@
                     indicator.style.background = valueLogicColorMode ? '#ffffff' : '#000000';
                 }
             }
-            const saveBtn = document.getElementById('value-logic-save-btn');
-            if (saveBtn) {
-                saveBtn.addEventListener('click', function(e) {
+            const claimBtn = document.getElementById('value-logic-claim-btn');
+            if (claimBtn) {
+                claimBtn.addEventListener('click', function(e) {
                     e.stopPropagation(); // Prevent event from bubbling up
-                    saveValueLogicSummaryAsImage();
+                    navigateToClaim();
                 });
             }
             
@@ -1438,9 +1455,24 @@
             if (modalContainer) {
                 document.addEventListener('click', (e) => {
                     const modal = document.getElementById('value-logic-modal');
-                    // Don't close if clicking on SAVE button or its parent container
-                    const isSaveButton = e.target.id === 'value-logic-save-btn' || e.target.closest('#value-logic-save-btn');
-                    if (modal.style.display === 'block' && !modalContainer.contains(e.target) && e.target.id !== 'total-value-display' && !e.target.closest('#total-value-display') && !isSaveButton) {
+                    if (!modal || modal.style.display !== 'block') return;
+                    
+                    // Don't close if clicking on CLAIM button or its parent container
+                    const isClaimButton = e.target.id === 'value-logic-claim-btn' || e.target.closest('#value-logic-claim-btn');
+                    // Don't close if clicking inside the claim modal or any of its children
+                    const isClaimModal = e.target.closest('#claim-modal') !== null;
+                    // Don't close if clicking on claim modal buttons or their children
+                    const isClaimModalButton = e.target.id === 'claim-expand-btn' || 
+                                             e.target.id === 'claim-purchase-btn' || 
+                                             e.target.id === 'claim-back-btn' || 
+                                             e.target.closest('#claim-expand-btn') !== null || 
+                                             e.target.closest('#claim-purchase-btn') !== null || 
+                                             e.target.closest('#claim-back-btn') !== null;
+                    // Don't close if clicking on the total value display button
+                    const isTotalValueDisplay = e.target.id === 'total-value-display' || e.target.closest('#total-value-display') !== null;
+                    
+                    // Only close if clicking outside the modal container and not on any of the protected elements
+                    if (!modalContainer.contains(e.target) && !isClaimButton && !isClaimModal && !isClaimModalButton && !isTotalValueDisplay) {
                         hideValueLogicSummary();
                     }
                 });
@@ -5056,6 +5088,9 @@
             removeNametags();
             nametagsVisible = false;
             
+            // Ocultar todos los paneles de nodos ampliados cuando se limpia la escena
+            hideNodeDetails();
+            
             // Clear max-value-panel
             maxValueNode = null;
             if (maxValuePanelMesh) {
@@ -5150,8 +5185,53 @@
             // Update max value panel
             updateMaxValuePanel();
             
+            // Si la ventana de CLAIM está abierta, actualizar su contenido
+            updateClaimModalIfOpen();
+            
             // Enable export button
-            document.getElementById('exportBtn').disabled = false;
+            // Export button removed - CLAIM button is now in TOTAL VALUE modal
+        }
+        
+        function updateClaimModalIfOpen() {
+            const claimModal = document.getElementById('claim-modal');
+            if (!claimModal || claimModal.style.display === 'none') return;
+            
+            // Actualizar visualización 3D
+            initClaim3DScene();
+            
+            // Actualizar Total Value
+            showClaimTotalValue();
+            
+            // Resetear completamente la sección expandida cuando se actualiza con nuevos datos
+            const expandedSection = document.getElementById('claim-expanded-section');
+            const expandBtn = document.getElementById('claim-expand-btn');
+            const grid = document.getElementById('claim-top4-fractals-grid');
+            const totalValueContainer = document.getElementById('claim-total-value-container');
+            
+            // Forzar ocultación de la sección expandida
+            if (expandedSection) {
+                expandedSection.style.display = 'none';
+                expandedSection.style.visibility = 'hidden';
+            }
+            
+            // Limpiar grid completamente
+            if (grid) {
+                grid.innerHTML = '';
+                while (grid.firstChild) {
+                    grid.removeChild(grid.firstChild);
+                }
+            }
+            
+            // Resetear botón de expand
+            if (expandBtn) {
+                expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
+            }
+            
+            // Restaurar altura original del recuadro de TOTAL VALUE
+            if (totalValueContainer) {
+                totalValueContainer.style.height = '500px';
+                totalValueContainer.style.minHeight = '500px';
+            }
         }
 
         // ==================== NAVEGACIÓN A CLAIM ====================
@@ -5187,6 +5267,372 @@
             
             // Mostrar Total Value (idéntico al modal original)
             showClaimTotalValue();
+            
+            // Limpiar y resetear sección expandida completamente
+            const expandedSection = document.getElementById('claim-expanded-section');
+            const expandBtn = document.getElementById('claim-expand-btn');
+            const grid = document.getElementById('claim-top4-fractals-grid');
+            const totalValueContainer = document.getElementById('claim-total-value-container');
+            
+            // Forzar ocultación de la sección expandida
+            if (expandedSection) {
+                expandedSection.style.display = 'none';
+                expandedSection.style.visibility = 'hidden';
+            }
+            
+            // Limpiar grid completamente para asegurar que no queden imágenes antiguas
+            if (grid) {
+                grid.innerHTML = '';
+                // Remover todos los hijos por si acaso
+                while (grid.firstChild) {
+                    grid.removeChild(grid.firstChild);
+                }
+            }
+            
+            // Resetear botón de expand al estado inicial
+            if (expandBtn) {
+                expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
+            }
+            
+            // Restaurar altura original del recuadro de TOTAL VALUE
+            if (totalValueContainer) {
+                totalValueContainer.style.height = '500px';
+                totalValueContainer.style.minHeight = '500px';
+            }
+        }
+        
+        function toggleClaimExpanded() {
+            const expandedSection = document.getElementById('claim-expanded-section');
+            const expandBtn = document.getElementById('claim-expand-btn');
+            const totalValueContainer = document.getElementById('claim-total-value-container');
+            
+            if (!expandedSection || !expandBtn) return;
+            
+            if (expandedSection.style.display === 'none' || expandedSection.style.display === '') {
+                // Expandir
+                expandedSection.style.display = 'block';
+                expandedSection.style.visibility = 'visible'; // Asegurar que sea visible
+                expandBtn.innerHTML = '<span>COLLAPSE</span><span style="font-size: 7px;">↑</span>';
+                
+                // Ampliar el recuadro de TOTAL VALUE verticalmente
+                if (totalValueContainer) {
+                    // Calcular altura adicional según el número de nodos
+                    const containerWidth = 350;
+                    const padding = 5;
+                    const gridWidth = containerWidth - (padding * 2);
+                    const gap = 2;
+                    
+                    // Obtener el número de nodos para calcular la altura correcta
+                    const top8Words = analyzedWords ? [...analyzedWords]
+                        .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
+                        .slice(0, 8) : [];
+                    const totalNodes = top8Words.length;
+                    
+                    let squareSize;
+                    let rows;
+                    
+                    if (totalNodes === 2) {
+                        // 1 fila de 2 columnas
+                        squareSize = Math.floor((gridWidth - (gap * 1)) / 2);
+                        rows = 1;
+                    } else {
+                        // 2 filas de 4 columnas
+                        squareSize = Math.floor((gridWidth - (gap * 3)) / 4);
+                        rows = 2;
+                    }
+                    
+                    const expandedHeight = (squareSize * rows) + (gap * (rows - 1)) + (padding * 2) + 5;
+                    const newHeight = 500 + expandedHeight;
+                    totalValueContainer.style.height = newHeight + 'px';
+                    totalValueContainer.style.minHeight = newHeight + 'px';
+                }
+                
+                // Siempre limpiar y regenerar para asegurar que se usen los datos actuales
+                const grid = document.getElementById('claim-top4-fractals-grid');
+                if (grid) {
+                    grid.innerHTML = '';
+                    // Esperar un momento para que el DOM se actualice y la sección sea visible antes de generar
+                    setTimeout(() => {
+                        // Verificar que la sección esté visible antes de generar
+                        if (expandedSection.style.display === 'block' && expandedSection.style.visibility !== 'hidden') {
+                            generateClaimTop4Fractals();
+                        }
+                    }, 100);
+                }
+            } else {
+                // Contraer
+                expandedSection.style.display = 'none';
+                // No establecer visibility: hidden aquí para que pueda expandirse de nuevo
+                expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
+                
+                // Restaurar altura original del recuadro de TOTAL VALUE
+                if (totalValueContainer) {
+                    totalValueContainer.style.height = '500px';
+                    totalValueContainer.style.minHeight = '500px';
+                }
+            }
+        }
+        
+        function generateClaimTop4Fractals() {
+            if (!analyzedWords || analyzedWords.length === 0 || !nodes || nodes.length === 0) return;
+            
+            const grid = document.getElementById('claim-top4-fractals-grid');
+            if (!grid) return;
+            
+            // Obtener top 8 palabras por valor (para 2 filas de 4)
+            const top8Words = [...analyzedWords]
+                .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
+                .slice(0, 8);
+            
+            if (top8Words.length === 0) return;
+            
+            // Limpiar grid
+            grid.innerHTML = '';
+            
+            // Calcular tamaño de cada cuadrado
+            const containerWidth = 350;
+            const padding = 5;
+            const gridWidth = containerWidth - (padding * 2);
+            const gap = 2;
+            
+            // Si solo hay 2 nodos, hacerlos el doble de grandes
+            const totalNodes = top8Words.length;
+            let squareSize;
+            let columns;
+            let rows;
+            
+            if (totalNodes === 2) {
+                // 1 fila de 2 columnas, cada cuadrado ocupa el doble de espacio
+                columns = 2;
+                rows = 1;
+                squareSize = Math.floor((gridWidth - (gap * 1)) / 2); // 1 gap entre 2 elementos
+                grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                grid.style.gridTemplateRows = 'repeat(1, 1fr)';
+            } else {
+                // Configurar grid para 2 filas de 4 columnas (comportamiento normal)
+                columns = 4;
+                rows = 2;
+                squareSize = Math.floor((gridWidth - (gap * 3)) / 4); // 3 gaps entre 4 elementos
+                grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                grid.style.gridTemplateRows = 'repeat(2, 1fr)';
+            }
+            
+            top8Words.forEach((w, idx) => {
+                const wordIndex = analyzedWords.indexOf(w);
+                if (wordIndex < 0) return;
+                
+                // Encontrar el nodo correspondiente (usar los nodos actuales, no en caché)
+                const node = nodes.find(n => n.userData && n.userData.index === wordIndex);
+                if (!node) {
+                    console.warn(`Node not found for word index ${wordIndex}`);
+                    return;
+                }
+                
+                const nodeSectionCanvasId = `claim-expanded-node-section-${idx}`;
+                
+                // Crear contenedor del cuadrado
+                const squareDiv = document.createElement('div');
+                squareDiv.style.cssText = `width: ${squareSize}px; height: ${squareSize}px; background: #000000; border: 1px solid #ffffff; padding: 1px; box-sizing: border-box; overflow: hidden;`;
+                
+                // Crear canvas
+                const canvas = document.createElement('canvas');
+                canvas.id = nodeSectionCanvasId;
+                const canvasSize = squareSize - 2; // menos padding (1px cada lado)
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                canvas.style.cssText = 'display: block; width: 100%; height: 100%; background: #000000;';
+                
+                squareDiv.appendChild(canvas);
+                grid.appendChild(squareDiv);
+            });
+            
+            // Generar imágenes de secciones de nodos después de que los canvas estén en el DOM
+            setTimeout(() => {
+                top8Words.forEach((w, idx) => {
+                    const wordIndex = analyzedWords.indexOf(w);
+                    if (wordIndex >= 0) {
+                        const node = nodes.find(n => n.userData.index === wordIndex);
+                        if (node) {
+                            const nodeSectionCanvasId = `claim-expanded-node-section-${idx}`;
+                            createClaimNodeSectionImage(nodeSectionCanvasId, node, squareSize - 2);
+                        }
+                    }
+                });
+            }, 100);
+        }
+        
+        function createClaimNodeSectionImage(canvasId, centerNode, canvasSize) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !centerNode || !nodes || nodes.length === 0) return;
+            
+            try {
+                // Crear renderer compartido si no existe
+                if (!sharedTopNodesRenderer) {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvasSize;
+                    tempCanvas.height = canvasSize;
+                    sharedTopNodesRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: false });
+                    sharedTopNodesRenderer.setSize(canvasSize, canvasSize);
+                    sharedTopNodesRenderer.setPixelRatio(0.75);
+                    
+                    sharedTopNodesScene = new THREE.Scene();
+                    sharedTopNodesScene.background = new THREE.Color(0x000000);
+                    
+                    sharedTopNodesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+                    
+                    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                    sharedTopNodesScene.add(ambientLight);
+                    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                    directionalLight.position.set(2, 2, 2);
+                    sharedTopNodesScene.add(directionalLight);
+                }
+                
+                // Limpiar escena anterior (mantener solo las luces)
+                while (sharedTopNodesScene.children.length > 2) {
+                    const child = sharedTopNodesScene.children[2];
+                    sharedTopNodesScene.remove(child);
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                }
+                
+                // Encontrar nodos conectados al nodo central
+                const connectedNodes = new Set([centerNode]);
+                const centerPos = centerNode.position;
+                
+                // Buscar conexiones que incluyan este nodo usando userData
+                connections.forEach(conn => {
+                    if (conn.userData && conn.userData.fromNode && conn.userData.toNode) {
+                        if (conn.userData.fromNode === centerNode) {
+                            connectedNodes.add(conn.userData.toNode);
+                        } else if (conn.userData.toNode === centerNode) {
+                            connectedNodes.add(conn.userData.fromNode);
+                        }
+                    }
+                });
+                
+                // También incluir nodos cercanos en el espacio 3D (dentro de un radio)
+                const radius = 0.4; // Radio para incluir nodos cercanos
+                nodes.forEach(node => {
+                    if (node !== centerNode && !connectedNodes.has(node)) {
+                        const distance = centerPos.distanceTo(node.position);
+                        if (distance < radius) {
+                            connectedNodes.add(node);
+                        }
+                    }
+                });
+                
+                // Clonar nodos y conexiones para la sección
+                const clonedNodes = [];
+                const nodeMap = new Map();
+                
+                connectedNodes.forEach(node => {
+                    const clonedNode = node.isGroup ? node.clone(true) : node.clone();
+                    clonedNodes.push(clonedNode);
+                    nodeMap.set(node, clonedNode);
+                    sharedTopNodesScene.add(clonedNode);
+                });
+                
+                // Clonar conexiones entre los nodos incluidos
+                connections.forEach(conn => {
+                    if (conn.userData && conn.userData.fromNode && conn.userData.toNode) {
+                        const fromNode = conn.userData.fromNode;
+                        const toNode = conn.userData.toNode;
+                        
+                        // Solo clonar si ambos nodos están en la sección
+                        if (connectedNodes.has(fromNode) && connectedNodes.has(toNode) && 
+                            nodeMap.has(fromNode) && nodeMap.has(toNode)) {
+                            const clonedFrom = nodeMap.get(fromNode);
+                            const clonedTo = nodeMap.get(toNode);
+                            
+                            // Crear nueva conexión entre los nodos clonados
+                            const clonedFromPos = clonedFrom.position;
+                            const clonedToPos = clonedTo.position;
+                            const geometry = new THREE.BufferGeometry().setFromPoints([
+                                clonedFromPos,
+                                clonedToPos
+                            ]);
+                            
+                            const material = conn.material.clone();
+                            const clonedConn = new THREE.Line(geometry, material);
+                            sharedTopNodesScene.add(clonedConn);
+                        }
+                    }
+                });
+                
+                // Calcular bounding box de la sección
+                let minX = Infinity, maxX = -Infinity;
+                let minY = Infinity, maxY = -Infinity;
+                let minZ = Infinity, maxZ = -Infinity;
+                
+                clonedNodes.forEach(node => {
+                    const pos = node.position;
+                    minX = Math.min(minX, pos.x);
+                    maxX = Math.max(maxX, pos.x);
+                    minY = Math.min(minY, pos.y);
+                    maxY = Math.max(maxY, pos.y);
+                    minZ = Math.min(minZ, pos.z);
+                    maxZ = Math.max(maxZ, pos.z);
+                });
+                
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                const centerZ = (minZ + maxZ) / 2;
+                
+                const sizeX = maxX - minX;
+                const sizeY = maxY - minY;
+                const sizeZ = maxZ - minZ;
+                const maxSize = Math.max(sizeX, sizeY, sizeZ, 0.1);
+                
+                // Posicionar cámara para ver toda la sección
+                const distance = maxSize * 2.5;
+                sharedTopNodesCamera.position.set(centerX, centerY, centerZ + distance);
+                sharedTopNodesCamera.lookAt(centerX, centerY, centerZ);
+                
+                // Renderizar a una textura temporal
+                const renderTarget = new THREE.WebGLRenderTarget(canvasSize, canvasSize);
+                
+                // Guardar estado del renderer
+                const originalSize = sharedTopNodesRenderer.getSize(new THREE.Vector2());
+                const originalClearColor = sharedTopNodesRenderer.getClearColor(new THREE.Color());
+                
+                // Renderizar
+                sharedTopNodesRenderer.setRenderTarget(renderTarget);
+                sharedTopNodesRenderer.setClearColor(0x000000, 1);
+                sharedTopNodesRenderer.render(sharedTopNodesScene, sharedTopNodesCamera);
+                
+                // Leer la textura y dibujarla en el canvas 2D
+                const ctx2D = canvas.getContext('2d');
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                const pixels = new Uint8Array(canvasSize * canvasSize * 4);
+                sharedTopNodesRenderer.readRenderTargetPixels(renderTarget, 0, 0, canvasSize, canvasSize, pixels);
+                
+                const imageData = ctx2D.createImageData(canvasSize, canvasSize);
+                for (let i = 0; i < pixels.length; i += 4) {
+                    imageData.data[i] = pixels[i];
+                    imageData.data[i + 1] = pixels[i + 1];
+                    imageData.data[i + 2] = pixels[i + 2];
+                    imageData.data[i + 3] = pixels[i + 3];
+                }
+                ctx2D.putImageData(imageData, 0, 0);
+                
+                // Restaurar estado del renderer
+                sharedTopNodesRenderer.setRenderTarget(null);
+                sharedTopNodesRenderer.setSize(originalSize.x, originalSize.y);
+                sharedTopNodesRenderer.setClearColor(originalClearColor, 1);
+                
+                // Limpiar render target
+                renderTarget.dispose();
+                
+            } catch (e) {
+                console.warn('Error generating node section image:', e);
+            }
         }
 
         function initClaim3DScene() {
@@ -5340,7 +5786,7 @@
             // Crear estructura idéntica al modal de Total Value
             const wrapper = document.createElement('div');
             wrapper.id = 'claim-total-value-wrapper';
-            wrapper.style.cssText = 'position: relative; max-width: 100%; margin: 0;';
+            wrapper.style.cssText = 'position: relative; max-width: 100%; margin: 0; width: 100%;';
             
             const content = document.createElement('div');
             content.id = 'claim-value-logic-content';
@@ -6454,7 +6900,8 @@
             clonedPanel.id = `right-panel-${panelId}`;
             clonedPanel.className = 'right-panel-clone';
             
-            // Set position with offset
+            // Set position with offset (paneles apilados hacia arriba y hacia la izquierda desde la esquina inferior derecha)
+            // El offset se suma al bottom para apilar hacia arriba, y se suma al right para apilar hacia la izquierda
             clonedPanel.style.bottom = (15 + offset) + 'px';
             clonedPanel.style.right = (5 + offset) + 'px';
             
@@ -6513,6 +6960,10 @@
                 console.error('Canvas not found in panel:', panelId);
                 return null;
             }
+            
+            // Add click listener to show fractal when clicking on the node
+            // We'll set this up after the node is assigned to panelData
+            canvas.style.cursor = 'pointer';
             
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x000000);
@@ -6796,6 +7247,19 @@
             };
             
             rightPanels.push(panelData);
+            
+            // Add click listener to canvas to show fractal when clicking on the node
+            const canvas = panelElement.querySelector(`#right-panel-canvas-${panelId}`) || panelElement.querySelector('canvas');
+            if (canvas && !canvas.dataset.fractalListenerAdded) {
+                canvas.dataset.fractalListenerAdded = 'true';
+                canvas.style.cursor = 'pointer';
+                canvas.addEventListener('click', function(e) {
+                    if (node && node.userData && node.userData.wordData) {
+                        const wordIndex = node.userData.index;
+                        showFractalModal(wordIndex, e.clientX, e.clientY);
+                    }
+                });
+            }
             
             // Show enlarged node in panel (must be after panelData is in rightPanels array)
             showRightPanelEnlargedNodeForPanel(panelId, node);
@@ -7213,11 +7677,16 @@
                 modal.style.pointerEvents = 'auto';
             }
             
-            // Position modal below the button
+            // Position modal below the TOTAL VALUE button
             if (totalValueBtn && modalContainer) {
                 const btnRect = totalValueBtn.getBoundingClientRect();
-                modalContainer.style.top = (btnRect.bottom + 5) + 'px'; // 5px gap below button
+                // Position just below the button, but ensure it's at least below the fps bar
+                const fpsBarBottom = 25; // FPS bar is at top: 18px with min-height: 7px
+                const buttonBottom = btnRect.bottom;
+                const topPosition = Math.max(buttonBottom + 2, fpsBarBottom); // At least 2px below button, but not above fps bar
+                modalContainer.style.top = topPosition + 'px';
                 modalContainer.style.left = btnRect.left + 'px';
+                modalContainer.style.right = 'auto'; // Remove right alignment
                 modalContainer.style.margin = '0'; // Remove auto margin
             }
             
@@ -8434,9 +8903,25 @@
         
         function hideNodeDetails() {
             // Hide all panels (for backward compatibility)
-            rightPanels.forEach(panel => {
-                hideRightPanel(panel.id);
+            // Crear una copia del array de IDs antes de iterar, ya que hideRightPanel modifica rightPanels
+            const panelIds = rightPanels.map(panel => panel.id);
+            panelIds.forEach(panelId => {
+                hideRightPanel(panelId);
             });
+            
+            // Asegurar que el array esté completamente vacío
+            rightPanels = [];
+            availableOffsets = [];
+            
+            // También ocultar el panel principal si está visible
+            const mainRightPanel = document.getElementById('right-panel');
+            if (mainRightPanel) {
+                mainRightPanel.classList.remove('visible');
+                mainRightPanel.style.display = 'none';
+                mainRightPanel.style.visibility = 'hidden';
+                mainRightPanel.style.opacity = '0';
+            }
+            
             hoveredNode = null;
             selectedNode = null;
         }
@@ -8666,14 +9151,9 @@
         }
         
         function clearTextBox() {
-            // Check if right-panel is visible and if the selected node is part of the text being cleared
-            const rightPanel = document.getElementById('right-panel');
-            if (rightPanel && rightPanel.classList.contains('visible') && selectedNode) {
-                // Check if the selected node is in the nodes array (part of the current visualization)
-                if (nodes.includes(selectedNode)) {
-                    hideNodeDetails(); // Close the right-panel
-                }
-            }
+            // Ocultar todos los paneles de nodos ampliados (tanto el principal como los clonados)
+            // ya que al limpiar el texto, esos nodos ya no forman parte de la configuración
+            hideNodeDetails();
             
             document.getElementById('textInput').value = '';
             // Reset stats
@@ -8727,7 +9207,7 @@
             }
 
             // Disable export button
-            document.getElementById('exportBtn').disabled = true;
+            // Export button removed - CLAIM button is now in TOTAL VALUE modal
         }
         
         function showNodeInfo(node, mouseX, mouseY) {
