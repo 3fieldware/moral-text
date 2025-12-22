@@ -1048,7 +1048,7 @@
     </div>
 
     <!-- Claim Modal -->
-    <div id="claim-modal" style="display: none; position: fixed; top: 33px; left: 0; width: 100%; height: calc(100% - 33px); background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; padding-top: 35px; padding-bottom: 30px; box-sizing: border-box;">
+    <div id="claim-modal" style="display: none; position: fixed; top: 25px; left: 0; width: 100%; height: calc(100% - 25px); background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; padding-top: 5px; padding-bottom: 30px; box-sizing: border-box;">
         <style>
             #claim-modal::-webkit-scrollbar {
                 display: none;
@@ -1078,8 +1078,9 @@
             }
         </style>
         <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 730px; margin: 0 auto; padding: 10px; background: rgba(255, 255, 255, 0.7); border: none; box-sizing: border-box;">
-            <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; border-radius: 0; display: flex; align-items: center; gap: 2px; white-space: nowrap;"><span style="font-size: 12px;">×</span><span>CLOSE</span></button>
+                <button id="claim-purchase-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 2px; font-size: 10px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0;">PURCHASE</button>
             </div>
             <div style="display: flex; gap: 10px; flex-wrap: nowrap; margin-bottom: 10px; align-items: flex-start; overflow: visible;">
                 <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -1098,7 +1099,6 @@
                     <span>EXPAND</span>
                     <span style="font-size: 7px;">↓</span>
                 </button>
-                <button id="claim-purchase-btn" style="position: absolute; right: 0; bottom: 0; background: #808080; color: #ffffff; border: none; padding: 1px 2px; font-size: 10px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0;">PURCHASE</button>
             </div>
         </div>
     </div>
@@ -5215,6 +5215,9 @@
             // Actualizar Total Value
             showClaimTotalValue();
             
+            // Actualizar botón PURCHASE con el valor en ETH
+            updateClaimPurchaseButton();
+            
             // Resetear completamente la sección expandida cuando se actualiza con nuevos datos
             const expandedSection = document.getElementById('claim-expanded-section');
             const expandBtn = document.getElementById('claim-expand-btn');
@@ -5280,6 +5283,9 @@
             
             // Mostrar Total Value (idéntico al modal original)
             showClaimTotalValue();
+            
+            // Actualizar botón PURCHASE con el valor en ETH
+            updateClaimPurchaseButton();
             
             // Limpiar y resetear sección expandida completamente
             const expandedSection = document.getElementById('claim-expanded-section');
@@ -5789,6 +5795,24 @@
             claimScene = null;
         }
 
+        function updateClaimPurchaseButton() {
+            const purchaseBtn = document.getElementById('claim-purchase-btn');
+            if (!purchaseBtn) return;
+            
+            // Calcular valor total en ETH
+            const totalValueUSD = window.totalTextScore || (analyzedWords ? analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0) : 0);
+            let totalValueETH = 0;
+            if (ethPriceUSD && totalValueUSD > 0) {
+                totalValueETH = totalValueUSD / ethPriceUSD;
+            }
+            
+            const totalValueETHDisplay = totalValueETH >= 0.01 ? 
+                `${totalValueETH.toFixed(6)} ETH` : 
+                `${totalValueETH.toFixed(10)} ETH`;
+            
+            purchaseBtn.textContent = `PURCHASE FOR ${totalValueETHDisplay}`;
+        }
+        
         function showClaimTotalValue() {
             const container = document.getElementById('claim-total-value-container');
             if (!container) return;
