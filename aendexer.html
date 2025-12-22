@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -47,7 +48,7 @@
         }
         
         #left-panel.collapsed {
-            background: transparent;
+            background : transparent;
         }
         
         #left-panel-header-wrapper {
@@ -112,7 +113,6 @@
             gap: 5px;
             align-items: flex-start;
             flex-shrink: 0;
-            justify-content: space-between;
         }
         
         #left-panel.collapsed #generate-button-container {
@@ -928,10 +928,8 @@
             <div id="mapped-text-container" style="display: none;"></div>
         </div>
         <div id="generate-button-container">
-            <div style="display: flex; gap: 5px;">
-                <button id="generateBtn">Export Body</button>
-                <button id="mapTextBtn">Preview Body</button>
-            </div>
+            <button id="generateBtn">Export Body</button>
+            <button id="mapTextBtn">Preview Body</button>
             <button id="clearTextBtn">CLEAR</button>
         </div>
     </div>
@@ -940,7 +938,7 @@
         <div class="top-bar-item black" id="total-value-display" style="cursor: pointer;">
             <span style="font-size: 9px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">Total Value: <span id="valueScore">0.00</span> <span id="valueETH"></span></span>
         </div>
-        <button class="top-bar-item grey" id="galleryBtn" disabled style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">GALLERY</button>
+        <button class="top-bar-item grey" id="galleryBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">GALLERY</button>
         <button class="top-bar-item grey" id="toggleNametagsBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Show Nametags</button>
         <button class="top-bar-item grey" id="nodeListBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">TOP NODES</button>
         <button class="top-bar-item grey" id="resetCameraBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Reset View</button>
@@ -1104,7 +1102,7 @@
     </div>
 
     <!-- Fractal Modal -->
-    <div id="fractal-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 20000; overflow-y: auto; pointer-events: auto;">
+    <div id="fractal-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 20000; overflow-y: auto; pointer-events: none;">
         <div id="fractal-modal-container" style="position: absolute; top: 25px; right: 0px; max-width: 300px; background: rgba(220, 220, 220, 0.76); padding: 4px 6px 6px 6px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; pointer-events: auto;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; margin-top: 0;">
                 <button id="close-fractal-modal" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; display: flex; align-items: center; gap: 2px; white-space: nowrap; border-radius: 0; margin: 0; min-height: 16px; height: 16px;">
@@ -1186,6 +1184,7 @@
         let nametags = [];
         let mappedTextVisible = false;
         let nodeListVisible = false;
+        let galleryVisible = false;
         let nodeListItems = [];
         let nodeListScenes = [];
         let nodeListRenderers = [];
@@ -1399,12 +1398,14 @@
             document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
             document.getElementById('toggleNametagsBtn').addEventListener('click', toggleNametags);
             document.getElementById('nodeListBtn').addEventListener('click', toggleNodeList);
+            document.getElementById('galleryBtn').addEventListener('click', toggleGallery);
             document.getElementById('mapTextBtn').addEventListener('click', mapText);
             document.getElementById('backgroundColorBtn').addEventListener('click', changeBackgroundColor);
             document.getElementById('right-panel-close').addEventListener('click', hideNodeDetails);
             document.getElementById('total-value-display').addEventListener('click', showValueLogicSummary);
             document.getElementById('close-value-logic-modal').addEventListener('click', hideValueLogicSummary);
-            
+            document.getElementById('value-logic-claim-btn').addEventListener('click', navigateToClaim);
+
             // Claim modal buttons
             const claimBackBtn = document.getElementById('claim-back-btn');
             const claimPurchaseBtn = document.getElementById('claim-purchase-btn');
@@ -1442,37 +1443,12 @@
                     indicator.style.background = valueLogicColorMode ? '#ffffff' : '#000000';
                 }
             }
-            const claimBtn = document.getElementById('value-logic-claim-btn');
-            if (claimBtn) {
-                claimBtn.addEventListener('click', function(e) {
-                    e.stopPropagation(); // Prevent event from bubbling up
-                    navigateToClaim();
-                });
-            }
-            
             // Close modal when clicking outside (only on the modal container, not the overlay)
             const modalContainer = document.getElementById('value-logic-modal-container');
             if (modalContainer) {
                 document.addEventListener('click', (e) => {
                     const modal = document.getElementById('value-logic-modal');
-                    if (!modal || modal.style.display !== 'block') return;
-                    
-                    // Don't close if clicking on CLAIM button or its parent container
-                    const isClaimButton = e.target.id === 'value-logic-claim-btn' || e.target.closest('#value-logic-claim-btn');
-                    // Don't close if clicking inside the claim modal or any of its children
-                    const isClaimModal = e.target.closest('#claim-modal') !== null;
-                    // Don't close if clicking on claim modal buttons or their children
-                    const isClaimModalButton = e.target.id === 'claim-expand-btn' || 
-                                             e.target.id === 'claim-purchase-btn' || 
-                                             e.target.id === 'claim-back-btn' || 
-                                             e.target.closest('#claim-expand-btn') !== null || 
-                                             e.target.closest('#claim-purchase-btn') !== null || 
-                                             e.target.closest('#claim-back-btn') !== null;
-                    // Don't close if clicking on the total value display button
-                    const isTotalValueDisplay = e.target.id === 'total-value-display' || e.target.closest('#total-value-display') !== null;
-                    
-                    // Only close if clicking outside the modal container and not on any of the protected elements
-                    if (!modalContainer.contains(e.target) && !isClaimButton && !isClaimModal && !isClaimModalButton && !isTotalValueDisplay) {
+                    if (modal.style.display === 'block' && !modalContainer.contains(e.target) && e.target.id !== 'total-value-display' && !e.target.closest('#total-value-display')) {
                         hideValueLogicSummary();
                     }
                 });
@@ -1504,7 +1480,7 @@
                     }
                 });
             }
-            
+
             // Setup fractal click listeners
             setupFractalClickListeners();
             
@@ -1607,8 +1583,8 @@
             const originalWord = word; // Keep original for capitalization check
             const cleanWord = word.replace(/[^\w\u4e00-\u9fff]/g, '').toLowerCase();
             
-            // FIRST: Check if it's a known proper noun (like "Carbajal") - these are always nouns
-            if (KNOWN_PROPER_NOUNS.has(cleanWord)) {
+            // FIRST: Check if it's a known proper noun (like "Carbajal") - these are always nouns (case-insensitive)
+            if (KNOWN_PROPER_NOUNS.has(cleanWord) || KNOWN_PROPER_NOUNS_LOWER.has(cleanWord)) {
                 return 'noun';
             }
             
@@ -1638,6 +1614,125 @@
             };
             
             return chinesePOS[char] || 'noun';
+        }
+
+        // Helper function to use compromise for POS tagging
+        function getPOSWithCompromise(word, context) {
+            try {
+                // Check if compromise is available
+                if (typeof nlp === 'undefined' || !nlp) {
+                    return null;
+                }
+
+                // Build a small context sentence for better accuracy
+                const prevWord = context?.prevWord ? context.prevWord.replace(/[^\w\u4e00-\u9fff]/g, '') : '';
+                const nextWord = context?.nextWord ? context.nextWord.replace(/[^\w\u4e00-\u9fff]/g, '') : '';
+
+                // Create a context sentence for better tagging (use original word with context)
+                let contextSentence = '';
+                if (prevWord) contextSentence += prevWord + ' ';
+                // Use original word if available from context, otherwise use the cleaned word
+                const originalWord = context?.allWords?.[context?.index] || word;
+                contextSentence += originalWord;
+                if (nextWord) contextSentence += ' ' + nextWord;
+
+                // Use compromise to tag the word in context
+                const doc = nlp(contextSentence);
+                const terms = doc.terms();
+
+                // Find the term that matches our word
+                const wordClean = word.toLowerCase().replace(/[^\w\u4e00-\u9fff]/g, '');
+
+                for (let i = 0; i < terms.length; i++) {
+                    const term = terms[i];
+                    const termText = term.text().toLowerCase().replace(/[^\w\u4e00-\u9fff]/g, '');
+
+                    // Check if this term matches our word
+                    if (termText === wordClean) {
+                        const tags = term.tags();
+
+                        // Priority order for tag mapping (most specific first)
+                        // Check for proper nouns/names first
+                        if (tags.some(t => t === 'Person' || t === 'Place' || t === 'Organization' || t === 'ProperNoun')) {
+                            return 'noun';
+                        }
+                        // Check for nouns
+                        if (tags.some(t => t.startsWith('Noun') || t === 'Singular' || t === 'Plural')) {
+                            return 'noun';
+                        }
+                        // Check for verbs
+                        if (tags.some(t => t.startsWith('Verb') || t === 'PresentTense' || t === 'PastTense' || t === 'Gerund' || t === 'Infinitive')) {
+                            return 'verb';
+                        }
+                        // Check for adjectives
+                        if (tags.some(t => t.startsWith('Adjective') || t === 'Comparative' || t === 'Superlative')) {
+                            return 'adjective';
+                        }
+                        // Check for adverbs
+                        if (tags.some(t => t.startsWith('Adverb'))) {
+                            return 'adverb';
+                        }
+                        // Check for pronouns
+                        if (tags.some(t => t.startsWith('Pronoun') || t === 'Possessive' || t === 'PersonalPronoun' || t === 'Reflexive')) {
+                            return 'pronoun';
+                        }
+                        // Check for determiners
+                        if (tags.some(t => t.startsWith('Determiner') || t === 'Article' || t === 'DefiniteArticle' || t === 'IndefiniteArticle')) {
+                            return 'determiner';
+                        }
+                        // Check for prepositions
+                        if (tags.some(t => t.startsWith('Preposition'))) {
+                            return 'preposition';
+                        }
+                        // Check for conjunctions
+                        if (tags.some(t => t.startsWith('Conjunction') || t === 'CoordinatingConjunction' || t === 'SubordinatingConjunction')) {
+                            return 'conjunction';
+                        }
+                        // Check for interjections
+                        if (tags.some(t => t === 'Interjection' || t === 'Exclamation')) {
+                            return 'interjection';
+                        }
+
+                        // If we have tags but none matched, try to infer from the first tag
+                        if (tags.length > 0) {
+                            const firstTag = tags[0];
+                            if (firstTag.includes('Noun') || firstTag.includes('Person') || firstTag.includes('Place')) return 'noun';
+                            if (firstTag.includes('Verb')) return 'verb';
+                            if (firstTag.includes('Adjective')) return 'adjective';
+                            if (firstTag.includes('Adverb')) return 'adverb';
+                            if (firstTag.includes('Pronoun')) return 'pronoun';
+                            if (firstTag.includes('Determiner') || firstTag.includes('Article')) return 'determiner';
+                            if (firstTag.includes('Preposition')) return 'preposition';
+                            if (firstTag.includes('Conjunction')) return 'conjunction';
+                            if (firstTag.includes('Interjection')) return 'interjection';
+                        }
+                    }
+                }
+
+                // Fallback: try to tag just the word alone
+                try {
+                    const singleDoc = nlp(originalWord || word);
+                    const singleTerms = singleDoc.terms();
+                    if (singleTerms.length > 0) {
+                        const tags = singleTerms[0].tags();
+                        if (tags.some(t => t.startsWith('Noun') || t === 'Person' || t === 'Place')) return 'noun';
+                        if (tags.some(t => t.startsWith('Verb'))) return 'verb';
+                        if (tags.some(t => t.startsWith('Adjective'))) return 'adjective';
+                        if (tags.some(t => t.startsWith('Adverb'))) return 'adverb';
+                        if (tags.some(t => t.startsWith('Pronoun'))) return 'pronoun';
+                        if (tags.some(t => t.startsWith('Determiner') || t === 'Article')) return 'determiner';
+                        if (tags.some(t => t.startsWith('Preposition'))) return 'preposition';
+                        if (tags.some(t => t.startsWith('Conjunction'))) return 'conjunction';
+                        if (tags.some(t => t === 'Interjection')) return 'interjection';
+                    }
+                } catch (e2) {
+                    // Ignore single word tagging errors
+                }
+            } catch (e) {
+                // If compromise fails, return null to use fallback
+                console.warn('Compromise tagging failed for word:', word, e);
+            }
+            return null;
         }
 
         function classifyLatinWord(word, context) {
@@ -1995,7 +2090,7 @@
             // "al" ending - can be adjective or noun, check context
             if (word.endsWith('al') && word.length > 3) {
                 // If it's a known proper noun, it's a noun
-                if (KNOWN_PROPER_NOUNS.has(word)) return 'noun';
+                if (KNOWN_PROPER_NOUNS.has(word) || KNOWN_PROPER_NOUNS_LOWER.has(word.toLowerCase())) return 'noun';
                 // If capitalized and not in common words, likely noun (proper noun)
                 const originalWord = context?.allWords?.[context.index] || word;
                 if (/^[A-Z]/.test(originalWord)) return 'noun';
@@ -2066,6 +2161,12 @@
                 return 'adjective';
             }
             
+            // Use compromise as intelligent fallback before defaulting to 'other'
+            const compromiseResult = getPOSWithCompromise(word, context);
+            if (compromiseResult) {
+                return compromiseResult;
+            }
+
             // Last resort: if we truly can't determine, return 'other' instead of guessing 'noun'
             // This prevents false classifications and is more honest
             return 'other';
@@ -2367,8 +2468,9 @@
                     if (previousWord && previousWord.isName && previousWord.pos === 'noun') {
                         const cleanWord = wordData.text.replace(/[^\w\u4e00-\u9fff]/g, '');
                         const isCapitalized = /^[A-Z\u00C0-\u017F]/.test(cleanWord) && cleanWord.length > 1;
-                        // Check if it's in the known proper nouns (like "Carbajal")
-                        if (KNOWN_PROPER_NOUNS.has(cleanWord) || isCapitalized) {
+                        // Check if it's in the known proper nouns (like "Carbajal") - case-insensitive
+                        const cleanWordLower = cleanWord.toLowerCase();
+                        if (KNOWN_PROPER_NOUNS.has(cleanWord) || KNOWN_PROPER_NOUNS_LOWER.has(cleanWordLower) || isCapitalized) {
                             wordData.isName = true; // Mark as name (surname)
                         }
                     }
@@ -2443,10 +2545,18 @@
             // Nouns
             if (pos === 'noun') {
                 // Check if it's a proper noun (name) - these have very high value
-                const isCapitalized = /^[A-Z\u00C0-\u017F]/.test(word) && word.length > 1;
+                // Check both capitalized and lowercase versions (case-insensitive)
+                const cleanWordForCheck = word.replace(/[^\w\u4e00-\u9fff]/g, '');
+                const cleanWordLower = cleanWordForCheck.toLowerCase();
+                const isCapitalized = /^[A-Z\u00C0-\u017F]/.test(cleanWordForCheck) && cleanWordForCheck.length > 1;
                 const commonCapitalized = ['I', 'The', 'A', 'An', 'This', 'That', 'These', 'Those', 
                                           'He', 'She', 'We', 'They', 'You', 'It'];
-                if (isCapitalized && !commonCapitalized.includes(word)) {
+
+                // Check if it's in the name database (case-insensitive)
+                const isInNameDatabase = KNOWN_PROPER_NOUNS.has(cleanWordForCheck) || KNOWN_PROPER_NOUNS_LOWER.has(cleanWordLower);
+
+                // If it's capitalized and not a common word, OR if it's in the name database, treat as name
+                if ((isCapitalized && !commonCapitalized.includes(cleanWordForCheck)) || isInNameDatabase) {
                     return 25.0; // Names have very high ontological value (increased to prioritize names)
                 }
                 
@@ -2524,6 +2634,16 @@
                 }
                 
                 return 1.0; // Default for function words
+            }
+            
+            // Other/Miscellaneous: words that are not recognized (treated as compound name when alone)
+            if (pos === 'other') {
+                // Check if this word is marked as miscellaneous (single word, not recognized)
+                // This will be set in identifyCompoundNames if it's a single "other" word
+                // For now, we'll check if it's part of a compound name group (which indicates it's miscellaneous)
+                // The baseValue for miscellaneous should equal nombre+nombre = 25.0 + 25.0 = 50.0
+                // But we need to check this in calculateScores where we have access to wordData
+                return 0.1; // Default for other, will be overridden in calculateScores if miscellaneous
             }
             
             // Default minimum value
@@ -3180,6 +3300,55 @@
             const nameGroups = [];
             let currentGroup = null;
             
+            // Special case: if there's only one word and it's not recognized or has numbers,
+            // treat it as a compound name (nombre+nombre)
+            if (analyzedWords.length === 1) {
+                const wordData = analyzedWords[0];
+                const hasNumbers = /\d/.test(wordData.text);
+                const isUnrecognized = wordData.pos === 'other' || (wordData.frequency === 1 && wordData.pos === 'noun' && !wordData.isName);
+                
+                // Special handling for "other" type words when alone: treat as miscellaneous
+                if (wordData.pos === 'other') {
+                    wordData.isMiscellaneous = true;
+                    // Create a compound name group (even though it's single word, treat as nombre+nombre)
+                    const compoundGroup = {
+                        indices: [0],
+                        startIndex: 0
+                    };
+                    nameGroups.push(compoundGroup);
+                    
+                    // Mark as part of compound name
+                    wordData.isPartOfCompoundName = true;
+                    wordData.compoundNameGroup = compoundGroup;
+                    
+                    window.nameGroups = nameGroups;
+                    console.log(`Identified 1 name group (treated as compound name: miscellaneous/other)`);
+                    return nameGroups;
+                }
+                
+                if (hasNumbers || isUnrecognized) {
+                    // Mark as name if it's a noun
+                    if (wordData.pos === 'noun') {
+                        wordData.isName = true;
+                    }
+                    
+                    // Create a compound name group (even though it's single word, treat as nombre+nombre)
+                    const compoundGroup = {
+                        indices: [0],
+                        startIndex: 0
+                    };
+                    nameGroups.push(compoundGroup);
+                    
+                    // Mark as part of compound name
+                    wordData.isPartOfCompoundName = true;
+                    wordData.compoundNameGroup = compoundGroup;
+                    
+                    window.nameGroups = nameGroups;
+                    console.log(`Identified 1 name group (treated as compound name: unrecognized or has numbers)`);
+                    return nameGroups;
+                }
+            }
+            
             analyzedWords.forEach((wordData, index) => {
                 const isNameWord = wordData.isName && wordData.pos === 'noun';
                 
@@ -3226,7 +3395,10 @@
             
             // Mark words that are part of compound names
             nameGroups.forEach(group => {
-                if (group.indices.length > 1) {
+                // Treat single-word groups that are marked as compound (unrecognized or with numbers) as compound names
+                const isSingleWordCompound = group.indices.length === 1 && analyzedWords[group.indices[0]]?.isPartOfCompoundName;
+                
+                if (group.indices.length > 1 || isSingleWordCompound) {
                     // This is a compound name - mark all words in the group
                     group.indices.forEach((idx, position) => {
                         analyzedWords[idx].isPartOfCompoundName = true;
@@ -3298,6 +3470,12 @@
                     // Get base value
                     let baseValue = getBaseValue(wordData.text, wordData.pos);
                     
+                    // Special case: if word is miscellaneous (single "other" word), 
+                    // it should have the same value as nombre+nombre (25.0 + 25.0 = 50.0)
+                    if (wordData.isMiscellaneous) {
+                        baseValue = 50.0; // Same value as nombre+nombre (compound name)
+                    }
+                    
                     // Apply minimum value constraint
                     baseValue = Math.max(baseValue, 0.1);
                     
@@ -3313,8 +3491,8 @@
                     wordData.baseValue = baseValue;
                     // Apply all contextual multipliers (ledger system: each word's value modified by context)
                     // Final Word Value = Base Value × Length × Ontological × Name+ToBe × Semantic × Repetition × Tense × Narrative × Global Reduction
-                    wordData.finalValue = (baseValue * lengthMultiplier * ontologicalMultiplier * nameWithToBeMultiplier * semanticMultiplier * repetitionMultiplier * tenseMultiplier * narrativePenalty) * 0.4335;
-                    // Global reduction of 60% applied (ledger entry adjustment)
+                    wordData.finalValue = (baseValue * lengthMultiplier * ontologicalMultiplier * nameWithToBeMultiplier * semanticMultiplier * repetitionMultiplier * tenseMultiplier * narrativePenalty) * 0.20808;
+                    // Global reduction applied (ledger entry adjustment: additional 20% reduction from previous 0.2601)
                     
                     // Ensure minimum value
                     wordData.finalValue = Math.max(wordData.finalValue, 0.1);
@@ -3554,20 +3732,315 @@
         }
         
         // Database of known proper nouns (names, cities, countries, etc.)
+        // Comprehensive database of first names and surnames (case-insensitive matching)
         const KNOWN_PROPER_NOUNS = new Set([
-            // Common first names (English)
-            'John', 'Mary', 'James', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph', 'Thomas',
-            'Charles', 'Christopher', 'Daniel', 'Matthew', 'Anthony', 'Mark', 'Donald', 'Steven', 'Paul', 'Andrew',
-            'Joshua', 'Kenneth', 'Kevin', 'Brian', 'George', 'Edward', 'Ronald', 'Timothy', 'Jason', 'Jeffrey',
-            'Ryan', 'Jacob', 'Gary', 'Nicholas', 'Eric', 'Jonathan', 'Stephen', 'Larry', 'Justin', 'Scott',
-            'Sarah', 'Jennifer', 'Emily', 'Jessica', 'Amanda', 'Melissa', 'Deborah', 'Michelle', 'Carol', 'Lisa',
-            'Nancy', 'Karen', 'Betty', 'Helen', 'Sandra', 'Donna', 'Carolyn', 'Ruth', 'Sharon', 'Laura',
-            'Anna', 'Emma', 'Olivia', 'Sophia', 'Isabella', 'Charlotte', 'Mia', 'Amelia', 'Harper', 'Evelyn',
-            // Common first names (Spanish)
-            'José', 'María', 'Juan', 'Francisco', 'Antonio', 'Manuel', 'Pedro', 'Carlos', 'Luis', 'Miguel',
-            'Jesús', 'Javier', 'Fernando', 'Pablo', 'Ángel', 'Alejandro', 'Rafael', 'Mario', 'Enrique', 'Ricardo',
-            'Carmen', 'Ana', 'Laura', 'Patricia', 'Guadalupe', 'Rosa', 'Martha', 'Gloria', 'Andrea', 'Monica',
-            'Lucía', 'Sofía', 'Martina', 'Isabella', 'Valentina', 'Emma', 'Olivia', 'Sara', 'Julia', 'Paula',
+            // Common first names (English - Male)
+            'John', 'James', 'Robert', 'Michael', 'William', 'David', 'Richard', 'Joseph', 'Thomas', 'Charles',
+            'Christopher', 'Daniel', 'Matthew', 'Anthony', 'Mark', 'Donald', 'Steven', 'Paul', 'Andrew', 'Joshua',
+            'Kenneth', 'Kevin', 'Brian', 'George', 'Edward', 'Ronald', 'Timothy', 'Jason', 'Jeffrey', 'Ryan',
+            'Jacob', 'Gary', 'Nicholas', 'Eric', 'Jonathan', 'Stephen', 'Larry', 'Justin', 'Scott', 'Brandon',
+            'Benjamin', 'Samuel', 'Frank', 'Gregory', 'Raymond', 'Alexander', 'Patrick', 'Jack', 'Dennis', 'Jerry',
+            'Tyler', 'Aaron', 'Jose', 'Henry', 'Adam', 'Douglas', 'Nathan', 'Zachary', 'Kyle', 'Noah',
+            'Ethan', 'Jeremy', 'Walter', 'Christian', 'Keith', 'Roger', 'Terry', 'Austin', 'Sean', 'Gerald',
+            'Carl', 'Harold', 'Dylan', 'Jesse', 'Jordan', 'Bryan', 'Billy', 'Joe', 'Bruce', 'Gabriel',
+            'Logan', 'Alan', 'Juan', 'Wayne', 'Roy', 'Ralph', 'Randy', 'Eugene', 'Vincent', 'Louis',
+            'Philip', 'Bobby', 'Johnny', 'Russell', 'Lawrence', 'Ivan', 'Mason', 'Willie', 'Albert', 'Arthur',
+            'Fred', 'Howard', 'Peter', 'Harry', 'Ian', 'Connor', 'Caleb', 'Lucas', 'Mason', 'Owen',
+            'Aiden', 'Liam', 'Mason', 'Ethan', 'Noah', 'Lucas', 'Oliver', 'Aiden', 'Elijah', 'James',
+            'Benjamin', 'Mason', 'Ethan', 'Alexander', 'Henry', 'Jackson', 'Sebastian', 'Aiden', 'Matthew', 'Samuel',
+            'David', 'Joseph', 'Carter', 'Owen', 'Wyatt', 'John', 'Jack', 'Luke', 'Jayden', 'Dylan',
+            'Grayson', 'Levi', 'Isaac', 'Julian', 'Mateo', 'Anthony', 'Jaxon', 'Lincoln', 'Joshua', 'Christopher',
+            'Andrew', 'Theodore', 'Caleb', 'Ryan', 'Asher', 'Nathan', 'Thomas', 'Leo', 'Isaiah', 'Charles',
+            'Josiah', 'Hudson', 'Christian', 'Hunter', 'Connor', 'Eli', 'Ezra', 'Aaron', 'Landon', 'Adrian',
+            'Jonathan', 'Santiago', 'Jordan', 'Colton', 'Angel', 'Cooper', 'Ian', 'Carson', 'Easton', 'Nolan',
+            'Parker', 'Roman', 'Connor', 'Tristan', 'Jeremy', 'Preston', 'Jaxson', 'Jose', 'Brayden', 'Bryce',
+            'Weston', 'Axel', 'Carlos', 'Brody', 'Ashton', 'Ryder', 'Jesus', 'Silas', 'Sean', 'Nicolas',
+            'Ivan', 'Miles', 'Maxwell', 'Kaiden', 'Vincent', 'Justin', 'Max', 'Cole', 'Damian', 'Steven',
+            'Richard', 'Timothy', 'Jesse', 'Miguel', 'Diego', 'Luis', 'Antonio', 'Jorge', 'Alejandro', 'Fernando',
+            'Rafael', 'Mario', 'Sergio', 'Roberto', 'Alberto', 'Ricardo', 'Eduardo', 'Andres', 'Oscar', 'Raul',
+            'Ruben', 'Adrian', 'Alvaro', 'Victor', 'Hector', 'Gonzalo', 'Ignacio', 'Joaquin', 'Marcos', 'Nicolas',
+            'Rodrigo', 'Sebastian', 'Tomas', 'Vicente', 'Alfonso', 'Arturo', 'Cesar', 'Emilio', 'Felipe', 'Gabriel',
+            'Guillermo', 'Hugo', 'Julian', 'Leandro', 'Martin', 'Nestor', 'Octavio', 'Patricio', 'Ramon', 'Salvador',
+            'Simon', 'Tadeo', 'Ulises', 'Valentin', 'Xavier', 'Yago', 'Zacarias', 'Abel', 'Bruno', 'Ciro',
+            'Damian', 'Elias', 'Fabian', 'Gael', 'Hernan', 'Iker', 'Jairo', 'Kai', 'Lautaro', 'Mateo',
+            // Common first names (English - Female)
+            'Mary', 'Sarah', 'Jennifer', 'Emily', 'Jessica', 'Amanda', 'Melissa', 'Deborah', 'Michelle', 'Carol',
+            'Lisa', 'Nancy', 'Karen', 'Betty', 'Helen', 'Sandra', 'Donna', 'Carolyn', 'Ruth', 'Sharon',
+            'Laura', 'Anna', 'Emma', 'Olivia', 'Sophia', 'Isabella', 'Charlotte', 'Mia', 'Amelia', 'Harper',
+            'Evelyn', 'Abigail', 'Emily', 'Elizabeth', 'Mila', 'Ella', 'Avery', 'Sofia', 'Camila', 'Aria',
+            'Scarlett', 'Victoria', 'Madison', 'Luna', 'Grace', 'Chloe', 'Penelope', 'Layla', 'Riley', 'Zoey',
+            'Nora', 'Lily', 'Eleanor', 'Hannah', 'Lillian', 'Addison', 'Aubrey', 'Ellie', 'Stella', 'Natalie',
+            'Zoe', 'Leah', 'Hazel', 'Violet', 'Aurora', 'Savannah', 'Audrey', 'Brooklyn', 'Bella', 'Claire',
+            'Skylar', 'Lucy', 'Paisley', 'Everly', 'Anna', 'Caroline', 'Nova', 'Genesis', 'Aaliyah', 'Kennedy',
+            'Kinsley', 'Allison', 'Maya', 'Sarah', 'Madelyn', 'Adeline', 'Alexa', 'Ariana', 'Elena', 'Gabriella',
+            // Common first names (Spanish - Male)
+            'José', 'Juan', 'Francisco', 'Antonio', 'Manuel', 'Pedro', 'Carlos', 'Luis', 'Miguel', 'Jesús',
+            'Javier', 'Fernando', 'Pablo', 'Ángel', 'Alejandro', 'Rafael', 'Mario', 'Enrique', 'Ricardo', 'Sergio',
+            'Alberto', 'Roberto', 'Daniel', 'Jorge', 'Eduardo', 'Andrés', 'Diego', 'Óscar', 'Raúl', 'Rubén',
+            'Adrián', 'Álvaro', 'Iván', 'Víctor', 'Héctor', 'Gonzalo', 'Ignacio', 'Joaquín', 'Marcos', 'Nicolás',
+            'Rodrigo', 'Sebastián', 'Tomás', 'Vicente', 'Alfonso', 'Arturo', 'César', 'Emilio', 'Felipe', 'Gabriel',
+            'Guillermo', 'Hugo', 'Julián', 'Leandro', 'Martín', 'Néstor', 'Octavio', 'Patricio', 'Ramón', 'Salvador',
+            'Simón', 'Tadeo', 'Ulises', 'Valentín', 'Xavier', 'Yago', 'Zacarías', 'Abel', 'Bruno', 'Ciro',
+            'Damián', 'Elías', 'Fabián', 'Gael', 'Hernán', 'Iker', 'Jairo', 'Kai', 'Lautaro', 'Mateo',
+            // Common first names (Spanish - Female)
+            'María', 'Carmen', 'Ana', 'Laura', 'Patricia', 'Guadalupe', 'Rosa', 'Martha', 'Gloria', 'Andrea',
+            'Monica', 'Lucía', 'Sofía', 'Martina', 'Isabella', 'Valentina', 'Emma', 'Olivia', 'Sara', 'Julia',
+            'Paula', 'Daniela', 'Victoria', 'Elena', 'Beatriz', 'Dolores', 'Pilar', 'Concepción', 'Mercedes', 'Josefa',
+            'Francisca', 'Teresa', 'Isabel', 'Catalina', 'Adriana', 'Alejandra', 'Bárbara', 'Cecilia', 'Claudia', 'Diana',
+            'Esther', 'Gabriela', 'Inés', 'Jimena', 'Karina', 'Lorena', 'Mariana', 'Natalia', 'Rebeca', 'Silvia',
+            'Verónica', 'Yolanda', 'Alicia', 'Amparo', 'Angela', 'Antonia', 'Blanca', 'Cristina', 'Dolores', 'Esperanza',
+            'Francisca', 'Gloria', 'Isabel', 'Josefa', 'Juana', 'Lourdes', 'Margarita', 'Milagros', 'Nuria', 'Paloma',
+            'Pilar', 'Remedios', 'Rosario', 'Soledad', 'Teresa', 'Trinidad', 'Vanesa', 'Yolanda', 'Zoraida', 'Aurora',
+            'Belen', 'Carmen', 'Consuelo', 'Dolores', 'Esperanza', 'Felisa', 'Gracia', 'Herminia', 'Inmaculada', 'Josefa',
+            // Additional English Female Names
+            'Charlotte', 'Harper', 'Evelyn', 'Abigail', 'Emily', 'Elizabeth', 'Mila', 'Ella', 'Avery', 'Sofia',
+            'Camila', 'Aria', 'Scarlett', 'Victoria', 'Madison', 'Luna', 'Grace', 'Chloe', 'Penelope', 'Layla',
+            'Riley', 'Zoey', 'Nora', 'Lily', 'Eleanor', 'Hannah', 'Lillian', 'Addison', 'Aubrey', 'Ellie',
+            'Stella', 'Natalie', 'Zoe', 'Leah', 'Hazel', 'Violet', 'Aurora', 'Savannah', 'Audrey', 'Brooklyn',
+            'Bella', 'Claire', 'Skylar', 'Lucy', 'Paisley', 'Everly', 'Caroline', 'Nova', 'Genesis', 'Aaliyah',
+            'Kennedy', 'Kinsley', 'Allison', 'Maya', 'Madelyn', 'Adeline', 'Alexa', 'Ariana', 'Elena', 'Gabriella',
+            'Naomi', 'Alice', 'Samantha', 'Hailey', 'Eva', 'Emilia', 'Autumn', 'Quinn', 'Nevaeh', 'Piper',
+            'Willow', 'Lydia', 'Peyton', 'Brielle', 'Annabelle', 'Katherine', 'Liliana', 'Faith', 'Alexis', 'Rose',
+            'Isabelle', 'Julia', 'Arianna', 'Allison', 'Savannah', 'Valentina', 'Claire', 'Samantha', 'Stella', 'Violet',
+            'Aria', 'Lucy', 'Paisley', 'Everly', 'Caroline', 'Nova', 'Genesis', 'Aaliyah', 'Kennedy', 'Kinsley',
+            // Additional English Male Names
+            'Ian', 'Connor', 'Caleb', 'Lucas', 'Owen', 'Aiden', 'Liam', 'Oliver', 'Elijah', 'Sebastian',
+            'Carter', 'Wyatt', 'Jayden', 'Grayson', 'Levi', 'Isaac', 'Julian', 'Jaxon', 'Lincoln', 'Theodore',
+            'Asher', 'Leo', 'Isaiah', 'Josiah', 'Hudson', 'Hunter', 'Eli', 'Ezra', 'Landon', 'Santiago',
+            'Colton', 'Angel', 'Cooper', 'Carson', 'Easton', 'Nolan', 'Parker', 'Roman', 'Tristan', 'Preston',
+            'Brayden', 'Bryce', 'Weston', 'Axel', 'Brody', 'Ashton', 'Ryder', 'Silas', 'Miles', 'Maxwell',
+            'Kaiden', 'Max', 'Cole', 'Damian', 'Zachary', 'Luke', 'Grayson', 'Jackson', 'Levi', 'Mateo',
+            'Asher', 'Leo', 'Isaiah', 'Josiah', 'Hudson', 'Hunter', 'Eli', 'Ezra', 'Landon', 'Santiago',
+            'Colton', 'Angel', 'Cooper', 'Carson', 'Easton', 'Nolan', 'Parker', 'Roman', 'Tristan', 'Preston',
+            'Brayden', 'Bryce', 'Weston', 'Axel', 'Brody', 'Ashton', 'Ryder', 'Silas', 'Miles', 'Maxwell',
+            'Kaiden', 'Max', 'Cole', 'Damian', 'Zachary', 'Luke', 'Grayson', 'Jackson', 'Levi', 'Mateo',
+            // Italian Male Names
+            'Marco', 'Luca', 'Andrea', 'Matteo', 'Alessandro', 'Leonardo', 'Francesco', 'Antonio', 'Giuseppe', 'Giovanni',
+            'Stefano', 'Roberto', 'Alessio', 'Davide', 'Federico', 'Simone', 'Riccardo', 'Gabriele', 'Lorenzo', 'Mattia',
+            'Emanuele', 'Nicola', 'Fabio', 'Daniele', 'Michele', 'Giacomo', 'Paolo', 'Enrico', 'Salvatore', 'Vincenzo',
+            'Angelo', 'Raffaele', 'Massimo', 'Claudio', 'Gianluca', 'Alessandro', 'Domenico', 'Gianni', 'Pietro', 'Sergio',
+            // Italian Female Names
+            'Sofia', 'Giulia', 'Aurora', 'Alice', 'Ginevra', 'Emma', 'Giorgia', 'Greta', 'Beatrice', 'Anna',
+            'Francesca', 'Matilde', 'Vittoria', 'Noemi', 'Bianca', 'Elisa', 'Ludovica', 'Elena', 'Alessia', 'Martina',
+            'Chiara', 'Sara', 'Valentina', 'Camilla', 'Rebecca', 'Caterina', 'Arianna', 'Nicole', 'Gaia', 'Isabella',
+            // French Male Names
+            'Lucas', 'Louis', 'Hugo', 'Gabriel', 'Raphael', 'Léo', 'Arthur', 'Adam', 'Paul', 'Nathan',
+            'Noah', 'Ethan', 'Liam', 'Mael', 'Jules', 'Gabin', 'Sacha', 'Nolan', 'Aaron', 'Eden',
+            'Naël', 'Marius', 'Mohamed', 'Tom', 'Timéo', 'Léon', 'Axel', 'Maël', 'Noé', 'Théo',
+            'Antoine', 'Pierre', 'Jean', 'François', 'Philippe', 'Michel', 'Bernard', 'Claude', 'Daniel', 'Alain',
+            // French Female Names
+            'Emma', 'Jade', 'Louise', 'Alice', 'Chloé', 'Lina', 'Mila', 'Léa', 'Rose', 'Anna',
+            'Amélie', 'Inès', 'Julia', 'Léna', 'Manon', 'Zoé', 'Lola', 'Lucie', 'Jeanne', 'Lilou',
+            'Élise', 'Camille', 'Sarah', 'Éva', 'Maëlys', 'Romane', 'Agathe', 'Lou', 'Louna', 'Mia',
+            // German Male Names
+            'Maximilian', 'Alexander', 'Paul', 'Leon', 'Luka', 'Ben', 'Jonas', 'Noah', 'Finn', 'Henry',
+            'Emil', 'Anton', 'Theo', 'Felix', 'Matteo', 'Liam', 'Milan', 'Elias', 'Luis', 'Jakob',
+            'Julian', 'Moritz', 'Carl', 'Oskar', 'Philipp', 'Lukas', 'Max', 'Tim', 'Tom', 'David',
+            // German Female Names
+            'Emma', 'Hannah', 'Mia', 'Sophia', 'Emilia', 'Lina', 'Ella', 'Leni', 'Clara', 'Frieda',
+            'Mila', 'Marie', 'Ida', 'Luise', 'Mathilda', 'Anna', 'Lea', 'Amelie', 'Lia', 'Charlotte',
+            'Greta', 'Lilly', 'Nora', 'Helena', 'Elisa', 'Lara', 'Marlene', 'Thea', 'Paula', 'Lotta',
+            // Russian Male Names
+            'Alexander', 'Dmitri', 'Ivan', 'Sergei', 'Andrei', 'Aleksei', 'Mikhail', 'Vladimir', 'Nikolai', 'Pavel',
+            'Maxim', 'Artem', 'Daniil', 'Kirill', 'Ilya', 'Roman', 'Yaroslav', 'Timofei', 'Artyom', 'Matvey',
+            'Fyodor', 'Viktor', 'Oleg', 'Boris', 'Yuri', 'Grigory', 'Konstantin', 'Anatoly', 'Vadim', 'Denis',
+            // Russian Female Names
+            'Anna', 'Maria', 'Ekaterina', 'Anastasia', 'Daria', 'Elizaveta', 'Sofia', 'Viktoria', 'Polina', 'Arina',
+            'Alina', 'Yulia', 'Kristina', 'Veronika', 'Valeria', 'Milana', 'Varvara', 'Aleksandra', 'Ksenia', 'Margarita',
+            'Natalia', 'Tatiana', 'Olga', 'Irina', 'Elena', 'Svetlana', 'Ludmila', 'Galina', 'Nina', 'Larisa',
+            // Arabic Male Names
+            'Mohammed', 'Ahmed', 'Ali', 'Hassan', 'Hussein', 'Omar', 'Ibrahim', 'Yusuf', 'Khalid', 'Abdullah',
+            'Mahmoud', 'Said', 'Tariq', 'Rashid', 'Malik', 'Amir', 'Karim', 'Jamal', 'Nasser', 'Faisal',
+            'Salim', 'Zaid', 'Hamza', 'Bilal', 'Yasin', 'Taha', 'Anwar', 'Farid', 'Samir', 'Walid',
+            // Arabic Female Names
+            'Fatima', 'Aisha', 'Zainab', 'Mariam', 'Khadija', 'Safiya', 'Layla', 'Noor', 'Hana', 'Salma',
+            'Yasmin', 'Amira', 'Leila', 'Nadia', 'Rania', 'Dina', 'Sara', 'Lina', 'Nour', 'Rana',
+            'Hala', 'Mona', 'Dalia', 'Rania', 'Samira', 'Nadia', 'Laila', 'Soraya', 'Zara', 'Amina',
+            // Hebrew/Jewish Names
+            'David', 'Daniel', 'Michael', 'Benjamin', 'Jacob', 'Samuel', 'Joseph', 'Joshua', 'Aaron', 'Isaac',
+            'Noah', 'Ethan', 'Levi', 'Adam', 'Jonathan', 'Nathan', 'Gabriel', 'Raphael', 'Eli', 'Zachary',
+            'Sarah', 'Rachel', 'Rebecca', 'Leah', 'Esther', 'Miriam', 'Hannah', 'Deborah', 'Ruth', 'Naomi',
+            'Judith', 'Tamar', 'Aviva', 'Shira', 'Talia', 'Maya', 'Eliana', 'Adina', 'Yael', 'Shoshana',
+            // Indian/South Asian Names
+            'Arjun', 'Aryan', 'Rohan', 'Vihaan', 'Advik', 'Krishna', 'Dev', 'Aarav', 'Ishaan', 'Reyansh',
+            'Ananya', 'Diya', 'Aadhya', 'Anika', 'Ishani', 'Kavya', 'Mira', 'Pooja', 'Priya', 'Riya',
+            'Saanvi', 'Sara', 'Shreya', 'Tara', 'Veda', 'Zara', 'Aarushi', 'Avani', 'Isha', 'Jiya',
+            'Raj', 'Kumar', 'Singh', 'Patel', 'Sharma', 'Gupta', 'Khan', 'Ahmed', 'Ali', 'Hassan',
+            // Additional Spanish Male Names
+            'Diego', 'Antonio', 'Jorge', 'Alejandro', 'Fernando', 'Rafael', 'Mario', 'Sergio', 'Roberto', 'Alberto',
+            'Ricardo', 'Eduardo', 'Andres', 'Oscar', 'Raul', 'Ruben', 'Adrian', 'Alvaro', 'Victor', 'Hector',
+            'Gonzalo', 'Ignacio', 'Joaquin', 'Marcos', 'Nicolas', 'Rodrigo', 'Sebastian', 'Tomas', 'Vicente', 'Alfonso',
+            'Arturo', 'Cesar', 'Emilio', 'Felipe', 'Gabriel', 'Guillermo', 'Hugo', 'Julian', 'Leandro', 'Martin',
+            'Nestor', 'Octavio', 'Patricio', 'Ramon', 'Salvador', 'Simon', 'Tadeo', 'Ulises', 'Valentin', 'Xavier',
+            'Yago', 'Zacarias', 'Abel', 'Bruno', 'Ciro', 'Damian', 'Elias', 'Fabian', 'Gael', 'Hernan',
+            'Iker', 'Jairo', 'Kai', 'Lautaro', 'Mateo', 'Nicolas',
+            'Catalina', 'Adriana', 'Alejandra', 'Bárbara', 'Cecilia', 'Claudia', 'Diana', 'Esther', 'Gabriela', 'Inés',
+            'Jimena', 'Karina', 'Lorena', 'Mariana', 'Natalia', 'Patricia', 'Rebeca', 'Silvia', 'Verónica', 'Yolanda',
+            // Common surnames (English)
+            'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+            'Hernandez', 'Lopez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee',
+            'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker', 'Young',
+            'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores', 'Green', 'Adams',
+            'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell', 'Mitchell', 'Carter', 'Roberts', 'Gomez', 'Phillips',
+            'Evans', 'Turner', 'Diaz', 'Parker', 'Cruz', 'Edwards', 'Collins', 'Reyes', 'Stewart', 'Morris',
+            'Morales', 'Murphy', 'Cook', 'Rogers', 'Gutierrez', 'Ortiz', 'Morgan', 'Cooper', 'Peterson', 'Bailey',
+            'Reed', 'Kelly', 'Howard', 'Ramos', 'Kim', 'Cox', 'Ward', 'Richardson', 'Watson', 'Brooks',
+            'Chavez', 'Wood', 'James', 'Bennett', 'Gray', 'Mendoza', 'Ruiz', 'Hughes', 'Price', 'Alvarez',
+            'Castillo', 'Sanders', 'Patel', 'Myers', 'Long', 'Ross', 'Foster', 'Jimenez', 'Powell', 'Jenkins',
+            'Perry', 'Patterson', 'Hughes', 'Flores', 'Washington', 'Butler', 'Simmons', 'Foster', 'Gonzales', 'Bryant',
+            'Alexander', 'Russell', 'Griffin', 'Diaz', 'Hayes', 'Myers', 'Ford', 'Hamilton', 'Graham', 'Sullivan',
+            'Wallace', 'Woods', 'Cole', 'West', 'Jordan', 'Owens', 'Reynolds', 'Fisher', 'Ellis', 'Harrison',
+            'Gibson', 'Mcdonald', 'Cruz', 'Marshall', 'Ortiz', 'Gomez', 'Murray', 'Freeman', 'Wells', 'Webb',
+            'Simpson', 'Stevens', 'Tucker', 'Porter', 'Hunter', 'Hicks', 'Crawford', 'Henry', 'Boyd', 'Mason',
+            'Morales', 'Kennedy', 'Warren', 'Dixon', 'Ramos', 'Reyes', 'Burns', 'Gordon', 'Shaw', 'Holmes',
+            'Rice', 'Robertson', 'Hunt', 'Black', 'Daniels', 'Palmer', 'Mills', 'Nichols', 'Grant', 'Knight',
+            'Ferguson', 'Rose', 'Stone', 'Hawkins', 'Dunn', 'Perkins', 'Hudson', 'Spencer', 'Gardner', 'Stephens',
+            'Payne', 'Pierce', 'Berry', 'Matthews', 'Arnold', 'Wagner', 'Willis', 'Ray', 'Watkins', 'Olson',
+            'Carroll', 'Duncan', 'Snyder', 'Hart', 'Cunningham', 'Bradley', 'Lane', 'Andrews', 'Ruiz', 'Harper',
+            'Fox', 'Riley', 'Armstrong', 'Carpenter', 'Weaver', 'Greene', 'Lawrence', 'Elliott', 'Chavez', 'Sims',
+            'Austin', 'Peters', 'Kelley', 'Franklin', 'Lawson', 'Fields', 'Gutierrez', 'Ryan', 'Schmidt', 'Carr',
+            'Vasquez', 'Castillo', 'Wheeler', 'Chapman', 'Oliver', 'Montgomery', 'Richards', 'Williamson', 'Johnston', 'Banks',
+            'Meyer', 'Bishop', 'Mccoy', 'Howell', 'Alvarez', 'Morrison', 'Hansen', 'Fernandez', 'Garza', 'Harvey',
+            'Little', 'Burton', 'Stanley', 'Nguyen', 'George', 'Jacobs', 'Reid', 'Kim', 'Fuller', 'Lynch',
+            'Dean', 'Gilbert', 'Garrett', 'Romero', 'Welch', 'Larson', 'Frazier', 'Burke', 'Hanson', 'Day',
+            'Mendoza', 'Moreno', 'Bowman', 'Medina', 'Fowler', 'Brewer', 'Hoffman', 'Carlson', 'Silva', 'Pearson',
+            'Holland', 'Douglas', 'Fleming', 'Jensen', 'Vargas', 'Byrd', 'Davidson', 'Hopkins', 'May', 'Terry',
+            'Herrera', 'Wade', 'Soto', 'Walters', 'Curtis', 'Neal', 'Caldwell', 'Lowe', 'Jennings', 'Barnett',
+            'Graves', 'Jimenez', 'Horton', 'Shelton', 'Barrett', 'Obrien', 'Castro', 'Sutton', 'Gregory', 'Mckinney',
+            'Lucas', 'Miles', 'Craig', 'Rodriquez', 'Chambers', 'Holt', 'Lambert', 'Fletcher', 'Watts', 'Bates',
+            'Hale', 'Rhodes', 'Pena', 'Beck', 'Newman', 'Haynes', 'Mcdaniel', 'Mendez', 'Bush', 'Vaughn',
+            'Parks', 'Dawson', 'Santiago', 'Norris', 'Hardy', 'Love', 'Steele', 'Curry', 'Powers', 'Schultz',
+            'Barker', 'Guzman', 'Page', 'Munoz', 'Ball', 'Keller', 'Chandler', 'Weber', 'Leonard', 'Walsh',
+            'Lyons', 'Ramsey', 'Wolfe', 'Schneider', 'Mullins', 'Benson', 'Sharp', 'Bowen', 'Daniel', 'Barber',
+            'Cummings', 'Hines', 'Baldwin', 'Griffith', 'Valdez', 'Hubbard', 'Salazar', 'Reeves', 'Warner', 'Stevenson',
+            'Burgess', 'Santos', 'Tate', 'Cross', 'Garner', 'Mann', 'Mack', 'Moss', 'Thornton', 'Dennis',
+            'Mcgee', 'Farmer', 'Delgado', 'Aguilar', 'Vega', 'Glover', 'Manning', 'Cohen', 'Harmon', 'Rodgers',
+            'Robbins', 'Newton', 'Todd', 'Blair', 'Higgins', 'Ingram', 'Reese', 'Cannon', 'Strickland', 'Townsend',
+            'Potter', 'Goodwin', 'Walton', 'Rowe', 'Hampton', 'Ortega', 'Patton', 'Swanson', 'Joseph', 'Francis',
+            'Goodman', 'Maldonado', 'Yates', 'Becker', 'Erickson', 'Hodges', 'Rios', 'Conner', 'Adkins', 'Webster',
+            'Norman', 'Malone', 'Hammond', 'Flowers', 'Cobb', 'Moody', 'Quinn', 'Blake', 'Maxwell', 'Pope',
+            'Floyd', 'Osborne', 'Paul', 'Mccarthy', 'Guerrero', 'Lindsey', 'Estrada', 'Sandoval', 'Gibbs', 'Tyler',
+            'Gross', 'Fitzgerald', 'Stokes', 'Doyle', 'Sherman', 'Saunders', 'Wise', 'Colon', 'Gill', 'Alvarado',
+            'Greer', 'Padilla', 'Simon', 'Waters', 'Nunez', 'Ballard', 'Schwartz', 'Mcbride', 'Houston', 'Christensen',
+            'Klein', 'Pratt', 'Briggs', 'Parsons', 'Mclaughlin', 'Zimmerman', 'French', 'Buchanan', 'Nash', 'Dickerson',
+            'Zamora', 'Escobar', 'Valencia', 'Maddox', 'Mccall', 'Morton', 'Stokes', 'Espinoza', 'Cisneros', 'Velazquez',
+            // Common surnames (Spanish)
+            'García', 'Rodríguez', 'González', 'Fernández', 'López', 'Martínez', 'Sánchez', 'Pérez', 'Gómez', 'Martín',
+            'Jiménez', 'Ruiz', 'Hernández', 'Díaz', 'Moreno', 'Muñoz', 'Álvarez', 'Romero', 'Alonso', 'Gutiérrez',
+            'Navarro', 'Torres', 'Domínguez', 'Vázquez', 'Ramos', 'Gil', 'Ramírez', 'Serrano', 'Blanco', 'Suárez',
+            'Molina', 'Morales', 'Ortega', 'Delgado', 'Castro', 'Ortiz', 'Rubio', 'Marín', 'Sanz', 'Iglesias',
+            'Nuñez', 'Medina', 'Garrido', 'Cortés', 'Castillo', 'Lozano', 'Guerrero', 'Cano', 'Prieto', 'Méndez',
+            'Cruz', 'Calvo', 'Gallego', 'Vidal', 'León', 'Márquez', 'Herrera', 'Peña', 'Flores', 'Campos',
+            'Vega', 'Fuentes', 'Carrasco', 'Diez', 'Cabrera', 'Reyes', 'Caballero', 'Nieto', 'Aguilar', 'Santana',
+            'Pascual', 'Herrero', 'Lorenzo', 'Montero', 'Hidalgo', 'Giménez', 'Ibáñez', 'Ferrer', 'Durán', 'Santiago',
+            'Benítez', 'Vargas', 'Mora', 'Vicente', 'Arias', 'Carmona', 'Crespo', 'Soto', 'Ramos', 'Romero',
+            'Soler', 'Bravo', 'Gallardo', 'Rojas', 'Parra', 'Pacheco', 'Lara', 'Contreras', 'Miranda', 'Salazar',
+            'Cordero', 'Roldán', 'Quintana', 'Merino', 'Sáez', 'Burgos', 'Rey', 'Luna', 'Segura', 'Camacho',
+            'Villa', 'Mesa', 'Paredes', 'Rivera', 'Esteban', 'Sierra', 'Carrillo', 'Guzmán', 'Villar', 'Espinosa',
+            'Carbajal', 'Ponce', 'Palacios', 'Vera', 'Aparicio', 'Sarmiento', 'Rocha', 'Valle', 'Acosta', 'Montes',
+            'Aguirre', 'Alvarado', 'Arias', 'Bautista', 'Benitez', 'Blanco', 'Bravo', 'Cabrera', 'Calderon', 'Campos',
+            'Cano', 'Carrasco', 'Castillo', 'Castro', 'Cervantes', 'Contreras', 'Cordero', 'Corona', 'Cortes', 'Cruz',
+            'Delgado', 'Diaz', 'Dominguez', 'Duarte', 'Escobar', 'Espinoza', 'Estrada', 'Fernandez', 'Flores', 'Franco',
+            'Fuentes', 'Gallegos', 'Galvan', 'Garcia', 'Garza', 'Gil', 'Gomez', 'Gonzalez', 'Guerrero', 'Gutierrez',
+            'Guzman', 'Hernandez', 'Herrera', 'Huerta', 'Ibarra', 'Iglesias', 'Jimenez', 'Juarez', 'Lara', 'Leon',
+            'Lopez', 'Lozano', 'Luna', 'Madrid', 'Marin', 'Marquez', 'Martinez', 'Mata', 'Medina', 'Mejia',
+            'Mendez', 'Mendoza', 'Molina', 'Montero', 'Morales', 'Moreno', 'Munoz', 'Navarro', 'Nieto', 'Nunez',
+            'Ochoa', 'Olvera', 'Ortega', 'Ortiz', 'Padilla', 'Palacios', 'Paredes', 'Pena', 'Perez', 'Pineda',
+            'Ponce', 'Quintero', 'Ramirez', 'Ramos', 'Reyes', 'Rios', 'Rivera', 'Robles', 'Rodriguez', 'Rojas',
+            'Romero', 'Rosales', 'Rubio', 'Ruiz', 'Salazar', 'Salinas', 'Sanchez', 'Sandoval', 'Santana', 'Santiago',
+            'Santos', 'Sierra', 'Silva', 'Solis', 'Soto', 'Suarez', 'Tapia', 'Torres', 'Trevino', 'Valdez',
+            'Valencia', 'Vargas', 'Vasquez', 'Vega', 'Velazquez', 'Vera', 'Villa', 'Villanueva', 'Villarreal', 'Villegas',
+            'Yanez', 'Zamora', 'Zavala', 'Zuniga', 'Acevedo', 'Acuna', 'Aguilar', 'Alarcon', 'Alfaro', 'Alonso',
+            'Altamirano', 'Amaro', 'Andrade', 'Anguiano', 'Aparicio', 'Aragon', 'Aranda', 'Arce', 'Arguello', 'Arredondo',
+            'Arreola', 'Arroyo', 'Arteaga', 'Avila', 'Ayala', 'Baca', 'Badillo', 'Baez', 'Bahena', 'Ballesteros',
+            'Banuelos', 'Barajas', 'Barbosa', 'Barela', 'Barragan', 'Barrientos', 'Barrios', 'Bautista', 'Becerra', 'Belmonte',
+            'Beltran', 'Benavides', 'Benavidez', 'Benitez', 'Bermudez', 'Bernal', 'Betancourt', 'Blanco', 'Bonilla', 'Borrego',
+            'Botello', 'Bravo', 'Briceno', 'Brito', 'Bueno', 'Burgos', 'Bustamante', 'Bustos', 'Caballero', 'Cabrera',
+            'Caceres', 'Cadena', 'Calderon', 'Calero', 'Calvillo', 'Camacho', 'Camarena', 'Campos', 'Canales', 'Canas',
+            'Candelaria', 'Cano', 'Cantrell', 'Cantu', 'Caraballo', 'Carbajal', 'Cardona', 'Cardoso', 'Cardozo', 'Cardenas',
+            'Cardiel', 'Careaga', 'Carillo', 'Carranza', 'Carrasco', 'Carrera', 'Carrillo', 'Carrizales', 'Carruthers', 'Carson',
+            'Carter', 'Cartwright', 'Caruso', 'Carvalho', 'Carvajal', 'Casa', 'Casado', 'Casares', 'Casas', 'Casillas',
+            'Castañeda', 'Castaneda', 'Castellanos', 'Castillo', 'Castro', 'Cavazos', 'Cazares', 'Ceballos', 'Cedillo', 'Cepeda',
+            'Cerda', 'Cervantes', 'Cespedes', 'Chacon', 'Chapa', 'Chavez', 'Chavira', 'Chico', 'Chinchilla', 'Cid',
+            'Cisneros', 'Clemente', 'Cobos', 'Coca', 'Colin', 'Collado', 'Collazo', 'Colon', 'Colunga', 'Compean',
+            'Conde', 'Contreras', 'Cordero', 'Cordoba', 'Cordova', 'Cornejo', 'Corona', 'Coronado', 'Coronel', 'Corral',
+            'Corrales', 'Correa', 'Cortes', 'Cortez', 'Cortina', 'Cota', 'Coto', 'Covarrubias', 'Crespo', 'Cruz',
+            'Cuadrado', 'Cuellar', 'Cuenca', 'Cuevas', 'Cummings', 'Curiel', 'Davalos', 'Davila', 'De la Cruz', 'De la Fuente',
+            'De la Garza', 'De la O', 'De la Rosa', 'De la Torre', 'De Leon', 'De los Santos', 'Del Angel', 'Del Campo', 'Del Castillo', 'Delgado',
+            'Del Rio', 'Del Valle', 'Diaz', 'Diez', 'Dominguez', 'Donato', 'Dones', 'Doval', 'Duarte', 'Duenas',
+            'Duran', 'Echeverria', 'Elias', 'Enriquez', 'Escalante', 'Escamilla', 'Escobar', 'Escobedo', 'Escudero', 'Esparza',
+            'Espejo', 'Espinal', 'Espinosa', 'Espinoza', 'Esquivel', 'Esteban', 'Estrada', 'Fajardo', 'Falcon', 'Farias',
+            'Favela', 'Felix', 'Fernandez', 'Ferrer', 'Fierro', 'Figueroa', 'Flores', 'Fonseca', 'Font', 'Franco',
+            'Frias', 'Fuentes', 'Fuentes', 'Gaitan', 'Galindo', 'Gallegos', 'Galvan', 'Gama', 'Gamboa', 'Gamez',
+            'Gandara', 'Garcia', 'Garibay', 'Garrido', 'Garza', 'Gasca', 'Gastelum', 'Gaytan', 'Gil', 'Giron',
+            'Godinez', 'Gomez', 'Gonzales', 'Gonzalez', 'Grajeda', 'Granados', 'Grijalva', 'Guajardo', 'Guardado', 'Guerra',
+            'Guerrero', 'Guevara', 'Guillen', 'Gutierrez', 'Guzman', 'Haro', 'Hernandez', 'Herrera', 'Hidalgo', 'Hinojosa',
+            'Holguin', 'Huerta', 'Huizar', 'Ibarra', 'Iglesias', 'Infante', 'Iniguez', 'Irizarry', 'Islas', 'Jaime',
+            'Jaimes', 'Jauregui', 'Jimenez', 'Juarez', 'Jurado', 'Labrador', 'Lara', 'Larios', 'Lazaro', 'Leal',
+            'Lebron', 'Ledesma', 'Lemus', 'Leon', 'Lerma', 'Leyva', 'Linares', 'Lira', 'Lizama', 'Llamas',
+            'Llanos', 'Lobato', 'Lobo', 'Lomeli', 'Lona', 'Longoria', 'Lopez', 'Lorenzo', 'Lozano', 'Lucero',
+            'Luevano', 'Lugo', 'Luna', 'Macias', 'Madera', 'Madrid', 'Madrigal', 'Magaña', 'Magana', 'Maldonado',
+            'Manriquez', 'Manzano', 'Marin', 'Mariscal', 'Marquez', 'Marroquin', 'Martinez', 'Mascarenas', 'Mata', 'Mateo',
+            'Matos', 'Maya', 'Mayorga', 'Medina', 'Medrano', 'Mejia', 'Melendez', 'Mena', 'Mendez', 'Mendoza',
+            'Menendez', 'Meraz', 'Merino', 'Mesa', 'Meza', 'Mier', 'Mijares', 'Millan', 'Mireles', 'Miranda',
+            'Mireles', 'Mojica', 'Molina', 'Moncada', 'Monreal', 'Monsivais', 'Montano', 'Montero', 'Montes', 'Montoya',
+            'Mora', 'Morales', 'Moreno', 'Morin', 'Mota', 'Moya', 'Munguia', 'Muniz', 'Munoz', 'Murillo',
+            'Najar', 'Najera', 'Naranjo', 'Navarrete', 'Navarro', 'Nazario', 'Negrete', 'Neri', 'Nieto', 'Nino',
+            'Noriega', 'Nunez', 'Ocampo', 'Ocasio', 'Ochoa', 'Ojeda', 'Olguin', 'Olivares', 'Olivas', 'Oliveira',
+            'Olmos', 'Olvera', 'Ontiveros', 'Oquendo', 'Ordaz', 'Ordonez', 'Orellana', 'Ornelas', 'Oropeza', 'Ortega',
+            'Ortiz', 'Osorio', 'Osuna', 'Otero', 'Pacheco', 'Padilla', 'Padron', 'Paez', 'Palacios', 'Palma',
+            'Palomino', 'Palomo', 'Paniagua', 'Pantoja', 'Paredes', 'Parra', 'Partida', 'Pascual', 'Pastor', 'Patino',
+            'Paz', 'Pedraza', 'Pedroza', 'Pena', 'Penaloza', 'Perales', 'Peralta', 'Perea', 'Pereira', 'Perez',
+            'Pichardo', 'Piedra', 'Pina', 'Pineda', 'Pinero', 'Pinto', 'Pizarro', 'Plascencia', 'Plaza', 'Polanco',
+            'Ponce', 'Porras', 'Portillo', 'Posada', 'Prado', 'Prieto', 'Puente', 'Puerta', 'Puga', 'Pulido',
+            'Quesada', 'Quezada', 'Quinones', 'Quinonez', 'Quintero', 'Quiroz', 'Quiroga', 'Rael', 'Ramos', 'Ramirez',
+            'Rangel', 'Raya', 'Recio', 'Regalado', 'Rendon', 'Renteria', 'Resendez', 'Reyes', 'Reyna', 'Reynoso',
+            'Rico', 'Rincon', 'Riojas', 'Rios', 'Rivas', 'Rivera', 'Rizo', 'Robledo', 'Robles', 'Rocha',
+            'Rodarte', 'Rodela', 'Rodriguez', 'Rojas', 'Rojo', 'Roldan', 'Rolon', 'Roman', 'Romero', 'Romo',
+            'Roque', 'Rosado', 'Rosales', 'Rosario', 'Rosas', 'Rosenberg', 'Rovira', 'Rubalcava', 'Rubio', 'Ruiz',
+            'Saavedra', 'Saenz', 'Salas', 'Salazar', 'Salcedo', 'Salcido', 'Saldivar', 'Salgado', 'Salinas', 'Salvador',
+            'Samaniego', 'Sanabria', 'Sanchez', 'Sandoval', 'Sang', 'Sanjuan', 'Santacruz', 'Santana', 'Santiago', 'Santillan',
+            'Santos', 'Sarabia', 'Sauceda', 'Saucedo', 'Segovia', 'Segura', 'Sena', 'Sepulveda', 'Serrano', 'Serrato',
+            'Sifuentes', 'Silva', 'Silveira', 'Simo', 'Sisneros', 'Solis', 'Solorio', 'Solorzano', 'Soria', 'Sosa',
+            'Sotelo', 'Soto', 'Suarez', 'Subia', 'Tafoya', 'Tamayo', 'Tamez', 'Tapia', 'Tarango', 'Tarin',
+            'Taveras', 'Tejada', 'Tejeda', 'Tellez', 'Tello', 'Teran', 'Terrazas', 'Tijerina', 'Tirado', 'Toledo',
+            'Tomas', 'Toro', 'Torralba', 'Torre', 'Torres', 'Tovar', 'Trevino', 'Trujillo', 'Truong', 'Ugalde',
+            'Ulloa', 'Umana', 'Urena', 'Urbina', 'Urbino', 'Uribe', 'Urrutia', 'Uvalle', 'Vaca', 'Vadillo',
+            'Valadez', 'Valdes', 'Valdez', 'Valdivia', 'Valencia', 'Valentin', 'Valenzuela', 'Valera', 'Valle', 'Vallejo',
+            'Valles', 'Vallin', 'Valverde', 'Vanegas', 'Varela', 'Vargas', 'Vasquez', 'Vazquez', 'Vega', 'Velarde',
+            'Velasquez', 'Velazquez', 'Velez', 'Vela', 'Vera', 'Verdugo', 'Vergara', 'Vicente', 'Vidal', 'Viera',
+            'Vigil', 'Villa', 'Villagomez', 'Villagran', 'Villalobos', 'Villalon', 'Villalpando', 'Villanueva', 'Villar', 'Villareal',
+            'Villarreal', 'Villasenor', 'Villegas', 'Vina', 'Vinales', 'Viramontes', 'Viveros', 'Vizcarra', 'Yanez', 'Ybarra',
+            'Yepez', 'Yepes', 'Yglesias', 'Ynoa', 'Yordan', 'Yost', 'Young', 'Yturralde', 'Zabaleta', 'Zabala',
+            'Zacarias', 'Zamarripa', 'Zambrano', 'Zamora', 'Zamudio', 'Zapata', 'Zapien', 'Zaragoza', 'Zarate', 'Zarco',
+            'Zavala', 'Zayas', 'Zea', 'Zelaya', 'Zendejas', 'Zepeda', 'Zermeno', 'Zertuche', 'Zetina', 'Zorrilla',
+            'Zubia', 'Zubieta', 'Zubizarreta', 'Zuluaga', 'Zuniga', 'Zurita', 'Zuvia', 'Zuzunaga', 'Zwanziger', 'Zwillinger',
+            // Common surnames (Other languages)
+            'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Schulz', 'Hoffmann', 'Koch',
+            'Bauer', 'Richter', 'Klein', 'Wolf', 'Schröder', 'Neumann', 'Schwarz', 'Zimmermann', 'Braun', 'Krüger',
+            'Hofmann', 'Hartmann', 'Lange', 'Schmitt', 'Werner', 'Schmitz', 'Krause', 'Meier', 'Lehmann', 'Schmid',
+            'Schulze', 'Maier', 'Köhler', 'Herrmann', 'König', 'Walter', 'Mayer', 'Huber', 'Kaiser', 'Fuchs',
+            'Peters', 'Lang', 'Scholz', 'Möller', 'Weiß', 'Jung', 'Hahn', 'Schubert', 'Vogel', 'Friedrich',
+            'Martin', 'Keller', 'Günther', 'Frank', 'Winkler', 'Roth', 'Beck', 'Lorenz', 'Baumann', 'Franke',
+            'Almeida', 'Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira', 'Lima',
+            'Ribeiro', 'Carvalho', 'Gomes', 'Costa', 'Martins', 'Rocha', 'Ramos', 'Reis', 'Morais', 'Mendes',
+            'Freitas', 'Fernandes', 'Monteiro', 'Araújo', 'Correia', 'Teixeira', 'Moreira', 'Gonçalves', 'Mendes', 'Nunes',
+            'Machado', 'Dias', 'Castro', 'Cardoso', 'Barros', 'Campos', 'Azevedo', 'Cunha', 'Pinto', 'Lopes',
+            'Rossi', 'Russo', 'Ferrari', 'Esposito', 'Bianchi', 'Romano', 'Colombo', 'Ricci', 'Marino', 'Greco',
+            'Bruno', 'Gallo', 'Conti', 'De Luca', 'Costa', 'Fontana', 'Caruso', 'Mario', 'Rizzo', 'Lombardi',
+            'Moretti', 'Barbieri', 'Fontana', 'Mancini', 'Rizzo', 'Lombardi', 'Moretti', 'Barbieri', 'Fontana', 'Mancini',
+            'Bernard', 'Dubois', 'Thomas', 'Robert', 'Richard', 'Petit', 'Durand', 'Leroy', 'Moreau', 'Simon',
+            'Laurent', 'Lefebvre', 'Michel', 'Garcia', 'David', 'Bertrand', 'Roux', 'Vincent', 'Fournier', 'Morel',
+            'Girard', 'André', 'Lefevre', 'Mercier', 'Dupont', 'Lambert', 'Bonnet', 'François', 'Martinez', 'Legrand',
+            'Garnier', 'Faure', 'Rousseau', 'Blanc', 'Guerin', 'Muller', 'Henry', 'Roussel', 'Nicolas', 'Perrin',
+            'Morin', 'Mathieu', 'Clement', 'Gauthier', 'Dumont', 'Lopez', 'Fabre', 'Blanchard', 'Marie', 'Lopez',
+            'Wang', 'Li', 'Zhang', 'Liu', 'Chen', 'Yang', 'Huang', 'Zhao', 'Wu', 'Zhou',
+            'Xu', 'Sun', 'Ma', 'Zhu', 'Hu', 'Guo', 'He', 'Gao', 'Lin', 'Luo',
+            'Song', 'Zheng', 'Tang', 'Han', 'Cao', 'Deng', 'Yuan', 'Jiang', 'Fan', 'Cai',
+            'Tanaka', 'Sato', 'Suzuki', 'Takahashi', 'Watanabe', 'Ito', 'Yamamoto', 'Nakamura', 'Kobayashi', 'Kato',
+            'Yoshida', 'Yamada', 'Sasaki', 'Yamaguchi', 'Saito', 'Matsumoto', 'Inoue', 'Kimura', 'Hayashi', 'Shimizu',
+            'Yamazaki', 'Mori', 'Abe', 'Ikeda', 'Hashimoto', 'Yamashita', 'Ishikawa', 'Nakajima', 'Maeda', 'Fujita',
+            'Ogawa', 'Goto', 'Okada', 'Hasegawa', 'Murakami', 'Kondo', 'Ishii', 'Saito', 'Sakamoto', 'Endo',
             // Major cities (English)
             'Paris', 'London', 'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego',
             'Dallas', 'San Jose', 'Austin', 'Jacksonville', 'San Francisco', 'Indianapolis', 'Columbus', 'Fort Worth', 'Charlotte', 'Seattle',
@@ -3593,14 +4066,195 @@
             'Nintendo', 'Sony', 'Samsung', 'Volkswagen', 'Toyota', 'Honda', 'Ford', 'BMW', 'Mercedes', 'Audi',
             'Einstein', 'Shakespeare', 'Picasso', 'Mozart', 'Beethoven', 'Da Vinci', 'Galileo', 'Newton', 'Darwin', 'Freud',
             'Jesus', 'Buddha', 'Muhammad', 'Moses', 'Abraham', 'Noah', 'Adam', 'Eve', 'Mary', 'Joseph',
-            'Carbajal'
+            // Extended English Names Database (Top 1000+)
+            'Aaliyah', 'Aaron', 'Abby', 'Abigail', 'Adam', 'Addison', 'Adeline', 'Adrian', 'Adriana', 'Aiden',
+            'Ainsley', 'Alaina', 'Alan', 'Alana', 'Alanna', 'Alayna', 'Albert', 'Alberto', 'Alden', 'Alec',
+            'Alejandro', 'Alessandra', 'Alessandro', 'Alex', 'Alexa', 'Alexander', 'Alexandra', 'Alexandria', 'Alexis', 'Alfred',
+            'Ali', 'Alice', 'Alicia', 'Alina', 'Alison', 'Alivia', 'Allan', 'Allen', 'Allison', 'Allyson',
+            'Alondra', 'Alvin', 'Alyssa', 'Amanda', 'Amani', 'Amara', 'Amari', 'Amaya', 'Amber', 'Amelia',
+            'Amir', 'Amiyah', 'Amy', 'Ana', 'Anahi', 'Anastasia', 'Andre', 'Andres', 'Andrew', 'Andy',
+            'Angel', 'Angela', 'Angelica', 'Angelina', 'Angelo', 'Angie', 'Anika', 'Aniyah', 'Ann', 'Anna',
+            'Annabelle', 'Anne', 'Annie', 'Annika', 'Ansley', 'Anthony', 'Antonio', 'Anton', 'Antonia', 'Antonio',
+            'Anya', 'April', 'Arabella', 'Archer', 'Aria', 'Ariana', 'Arianna', 'Ariel', 'Ariella', 'Arielle',
+            'Arjun', 'Arlo', 'Armando', 'Armani', 'Arnav', 'Arthur', 'Arturo', 'Arya', 'Asher', 'Ashley',
+            'Ashlyn', 'Ashton', 'Aspen', 'Athena', 'Atlas', 'Atticus', 'Aubree', 'Aubrey', 'Audrey', 'August',
+            'Augustus', 'Aurora', 'Austin', 'Autumn', 'Ava', 'Avery', 'Axel', 'Ayaan', 'Ayden', 'Ayla',
+            'Aylin', 'Bailey', 'Barrett', 'Beau', 'Beckett', 'Beckham', 'Bella', 'Benjamin', 'Bennett', 'Bentley',
+            'Berkley', 'Bethany', 'Blake', 'Blakely', 'Blake', 'Bodhi', 'Braden', 'Bradley', 'Brady', 'Brandon',
+            'Brantley', 'Braxton', 'Brayden', 'Braylen', 'Braylon', 'Breanna', 'Brendan', 'Brennan', 'Brent', 'Brett',
+            'Brian', 'Brianna', 'Brielle', 'Briggs', 'Brinley', 'Bristol', 'Brittany', 'Brody', 'Brooke', 'Brooklyn',
+            'Brooks', 'Bruce', 'Bruno', 'Bryan', 'Bryce', 'Brynn', 'Bryson', 'Cade', 'Caden', 'Cael',
+            'Caiden', 'Caitlin', 'Caitlyn', 'Caleb', 'Callie', 'Callum', 'Calvin', 'Camden', 'Cameron', 'Camila',
+            'Camille', 'Camryn', 'Cannon', 'Cara', 'Carina', 'Carl', 'Carla', 'Carlo', 'Carlos', 'Carlton',
+            'Carly', 'Carmen', 'Carol', 'Carolina', 'Caroline', 'Carolyn', 'Carson', 'Carter', 'Casey', 'Cash',
+            'Cassandra', 'Cassidy', 'Cassius', 'Catalina', 'Catherine', 'Cayden', 'Cecilia', 'Cedric', 'Celeste', 'Cesar',
+            'Chance', 'Chandler', 'Chanel', 'Charlee', 'Charleigh', 'Charles', 'Charlie', 'Charlotte', 'Chase', 'Chaya',
+            'Chelsea', 'Cheyenne', 'Chloe', 'Chris', 'Christian', 'Christina', 'Christine', 'Christopher', 'Claire', 'Clara',
+            'Clare', 'Clarissa', 'Clark', 'Clarke', 'Claudia', 'Clay', 'Clayton', 'Clementine', 'Cleo', 'Clifford',
+            'Clinton', 'Clyde', 'Cody', 'Cohen', 'Colby', 'Cole', 'Coleman', 'Colin', 'Collin', 'Colt',
+            'Colton', 'Conner', 'Connor', 'Conor', 'Conrad', 'Cooper', 'Cora', 'Coraline', 'Corbin', 'Corey',
+            'Cory', 'Courtney', 'Craig', 'Crew', 'Cristian', 'Cristina', 'Cruz', 'Crystal', 'Cullen', 'Curtis',
+            'Cynthia', 'Cyrus', 'Daisy', 'Dakota', 'Dale', 'Dallas', 'Dalton', 'Damian', 'Damien', 'Damon',
+            'Dana', 'Daniel', 'Daniela', 'Daniella', 'Danielle', 'Danny', 'Dante', 'Daphne', 'Darcy', 'Darian',
+            'Darius', 'Darren', 'Darryl', 'Darwin', 'Dash', 'Dashiell', 'Dave', 'David', 'Davin', 'Davis',
+            'Dawson', 'Dax', 'Daxton', 'Dayton', 'Deacon', 'Dean', 'Deandre', 'Declan', 'Delaney', 'Delilah',
+            'Della', 'Demetrius', 'Demi', 'Dennis', 'Derek', 'Derrick', 'Desmond', 'Destiny', 'Devin', 'Devon',
+            'Dexter', 'Diana', 'Diego', 'Dillon', 'Dimitri', 'Dixie', 'Dolores', 'Dominic', 'Dominick', 'Dominik',
+            'Dominique', 'Donald', 'Donovan', 'Dorian', 'Doris', 'Dorothy', 'Douglas', 'Drew', 'Duke', 'Dulce',
+            'Duncan', 'Dustin', 'Dwayne', 'Dylan', 'Easton', 'Eddie', 'Eden', 'Edgar', 'Edison', 'Edmund',
+            'Eduardo', 'Edward', 'Edwin', 'Eileen', 'Elaine', 'Eleanor', 'Elena', 'Eli', 'Eliana', 'Elianna',
+            'Elias', 'Elijah', 'Elise', 'Eliza', 'Elizabeth', 'Ella', 'Elle', 'Ellen', 'Elliana', 'Ellie',
+            'Elliot', 'Elliott', 'Ellis', 'Ellison', 'Eloise', 'Elsa', 'Elsie', 'Elvis', 'Elyse', 'Ember',
+            'Emberly', 'Emelia', 'Emely', 'Emerson', 'Emery', 'Emilia', 'Emiliano', 'Emily', 'Emma', 'Emmanuel',
+            'Emmett', 'Emmie', 'Emmy', 'Emory', 'Enrique', 'Enzo', 'Eric', 'Erica', 'Erick', 'Erik',
+            'Erika', 'Erin', 'Ernest', 'Ernesto', 'Esme', 'Esmeralda', 'Esteban', 'Esther', 'Ethan', 'Eugene',
+            'Eva', 'Evalyn', 'Evan', 'Evangeline', 'Eve', 'Evelyn', 'Everett', 'Everleigh', 'Everly', 'Ezekiel',
+            'Ezra', 'Fabian', 'Faith', 'Farrah', 'Fatima', 'Felix', 'Felicity', 'Fernando', 'Finley', 'Finn',
+            'Fiona', 'Flora', 'Florence', 'Ford', 'Forest', 'Forrest', 'Foster', 'Fox', 'Frances', 'Francesca',
+            'Francis', 'Francisco', 'Franco', 'Frank', 'Frankie', 'Franklin', 'Fred', 'Freddie', 'Frederick', 'Freya',
+            'Frida', 'Gabriel', 'Gabriela', 'Gabriella', 'Gabrielle', 'Gael', 'Gage', 'Gail', 'Gannon', 'Garrett',
+            'Garrison', 'Gary', 'Gavin', 'Gayle', 'Gemma', 'Genesis', 'Genevieve', 'George', 'Georgia', 'Georgiana',
+            'Gerald', 'Geraldine', 'Gerardo', 'Gia', 'Gianna', 'Gianni', 'Gibson', 'Gideon', 'Gilbert', 'Gillian',
+            'Gina', 'Gino', 'Giovanni', 'Giselle', 'Gloria', 'Goldie', 'Grace', 'Gracelyn', 'Gracie', 'Grady',
+            'Graham', 'Grant', 'Grayson', 'Greyson', 'Gregory', 'Greta', 'Grey', 'Greyson', 'Griffin', 'Guadalupe',
+            'Guillermo', 'Gunnar', 'Gunner', 'Gus', 'Gustavo', 'Guy', 'Gwen', 'Gwendolyn', 'Hadley', 'Hailey',
+            'Haisley', 'Haley', 'Hallie', 'Hamza', 'Hana', 'Hank', 'Hanna', 'Hannah', 'Harley', 'Harmony',
+            'Harold', 'Harper', 'Harriet', 'Harris', 'Harrison', 'Harry', 'Harvey', 'Hassan', 'Hattie', 'Haven',
+            'Hayden', 'Hayes', 'Hayley', 'Hazel', 'Heath', 'Heather', 'Heaven', 'Hector', 'Heidi', 'Helen',
+            'Helena', 'Helene', 'Hendrix', 'Henley', 'Henri', 'Henry', 'Hensley', 'Herbert', 'Herman', 'Hernan',
+            'Heston', 'Holden', 'Holland', 'Hollis', 'Holly', 'Hope', 'Howard', 'Hudson', 'Hugh', 'Hugo',
+            'Hunter', 'Ian', 'Ibrahim', 'Iker', 'Imani', 'Imogen', 'India', 'Indie', 'Indigo', 'Ira',
+            'Irene', 'Iris', 'Irving', 'Isaac', 'Isabel', 'Isabela', 'Isabella', 'Isabelle', 'Isaias', 'Ishaan',
+            'Isla', 'Ismael', 'Israel', 'Issac', 'Itzel', 'Ivan', 'Ivana', 'Ivy', 'Iyla', 'Jace',
+            'Jack', 'Jackson', 'Jacob', 'Jacqueline', 'Jada', 'Jade', 'Jaden', 'Jadiel', 'Jadon', 'Jagger',
+            'Jaiden', 'Jaime', 'Jake', 'Jakob', 'Jalen', 'Jamal', 'Jamar', 'James', 'Jameson', 'Jamie',
+            'Jamil', 'Jamison', 'Jana', 'Jane', 'Janelle', 'Janet', 'Janice', 'Janiyah', 'Jared', 'Jase',
+            'Jasiah', 'Jasmine', 'Jason', 'Jasper', 'Javier', 'Jax', 'Jaxon', 'Jaxson', 'Jaxxon', 'Jay',
+            'Jayce', 'Jayceon', 'Jayda', 'Jayden', 'Jayla', 'Jaylah', 'Jaylee', 'Jaylen', 'Jaylin', 'Jaylon',
+            'Jayson', 'Jaziel', 'Jazlyn', 'Jazmin', 'Jazmine', 'Jean', 'Jefferson', 'Jeffrey', 'Jemma', 'Jenesis',
+            'Jenna', 'Jennifer', 'Jenny', 'Jeremiah', 'Jeremy', 'Jericho', 'Jerry', 'Jesse', 'Jessica', 'Jessie',
+            'Jesus', 'Jett', 'Jewel', 'Jillian', 'Jim', 'Jimena', 'Jimmy', 'Joan', 'Joaquin', 'Jocelyn',
+            'Jody', 'Joe', 'Joel', 'Joey', 'Johan', 'Johanna', 'John', 'Johnathan', 'Johnny', 'Jolene',
+            'Jon', 'Jonah', 'Jonas', 'Jonathan', 'Jones', 'Jordan', 'Jordyn', 'Jorge', 'Jose', 'Josef',
+            'Joseph', 'Josephine', 'Josh', 'Joshua', 'Josiah', 'Josie', 'Josue', 'Journey', 'Jovan', 'Joy',
+            'Joyce', 'Juan', 'Judah', 'Jude', 'Judith', 'Judy', 'Julia', 'Julian', 'Juliana', 'Julianna',
+            'Julianne', 'Julie', 'Julien', 'Juliet', 'Juliette', 'Julio', 'Julius', 'June', 'Juniper', 'Juno',
+            'Justice', 'Justin', 'Justus', 'Kade', 'Kaden', 'Kai', 'Kaia', 'Kaiden', 'Kailani', 'Kairo',
+            'Kaiser', 'Kaitlyn', 'Kaiya', 'Kaleb', 'Kali', 'Kaliyah', 'Kallie', 'Kamari', 'Kamden', 'Kameron',
+            'Kamila', 'Kamilah', 'Kamryn', 'Kane', 'Kara', 'Karen', 'Karina', 'Karla', 'Karlee', 'Karly',
+            'Karson', 'Karter', 'Kasey', 'Kash', 'Kason', 'Kassidy', 'Kate', 'Katelyn', 'Katherine', 'Kathleen',
+            'Kathryn', 'Kathy', 'Katie', 'Katrina', 'Kaya', 'Kayden', 'Kaydence', 'Kayla', 'Kaylee', 'Kayleigh',
+            'Kaylie', 'Kaylin', 'Kayson', 'Keanu', 'Keaton', 'Keegan', 'Kehlani', 'Keira', 'Keith', 'Kellan',
+            'Kellen', 'Kelly', 'Kelsey', 'Kelvin', 'Kendall', 'Kendra', 'Kendrick', 'Kennedy', 'Kenneth', 'Kenny',
+            'Kensley', 'Kent', 'Kenzie', 'Kevin', 'Khalil', 'Khari', 'Khloe', 'Kian', 'Kiana', 'Kiara',
+            'Kiera', 'Kieran', 'Kierra', 'Kiley', 'Killian', 'Kim', 'Kimber', 'Kimberly', 'Kingsley', 'Kingston',
+            'Kinsley', 'Kira', 'Kira', 'Kirk', 'Kirsten', 'Kit', 'Kobe', 'Koda', 'Kody', 'Kohen',
+            'Kole', 'Kolton', 'Konner', 'Kora', 'Korbin', 'Kori', 'Kourtney', 'Kris', 'Kristen', 'Kristin',
+            'Kristina', 'Kristine', 'Kristopher', 'Krystal', 'Kurt', 'Kyla', 'Kylan', 'Kyle', 'Kylee', 'Kyleigh',
+            'Kyler', 'Kylie', 'Kyra', 'Kyrie', 'Lacey', 'Laila', 'Lainey', 'Lakelyn', 'Lana', 'Lance',
+            'Landen', 'Landon', 'Landry', 'Lane', 'Langston', 'Lara', 'Larry', 'Lars', 'Larissa', 'Laura',
+            'Laurel', 'Lauren', 'Lauryn', 'Lautaro', 'Lawrence', 'Lawson', 'Layla', 'Laylah', 'Layne', 'Layton',
+            'Lea', 'Leah', 'Leander', 'Leandro', 'Leanna', 'Leanne', 'Ledger', 'Lee', 'Leela', 'Leia',
+            'Leif', 'Leigh', 'Leila', 'Leilani', 'Leland', 'Lena', 'Lennon', 'Lennox', 'Leo', 'Leon',
+            'Leona', 'Leonard', 'Leonardo', 'Leonel', 'Leonidas', 'Leopold', 'Leroy', 'Leslie', 'Lester', 'Levi',
+            'Lewis', 'Lexi', 'Lexie', 'Leyla', 'Lia', 'Liam', 'Liana', 'Lianna', 'Libby', 'Lila',
+            'Lilah', 'Liliana', 'Lilianna', 'Lilith', 'Lillian', 'Lilliana', 'Lillie', 'Lilly', 'Lily', 'Lilyana',
+            'Lina', 'Lincoln', 'Linda', 'Lindsay', 'Lindsey', 'Linus', 'Lionel', 'Lisa', 'Livia', 'Livvy',
+            'Lizbeth', 'Lizzie', 'Logan', 'Lola', 'London', 'Londyn', 'Lorelai', 'Lorelei', 'Loren', 'Lorena',
+            'Lorenzo', 'Lori', 'Lorna', 'Lorraine', 'Louie', 'Louis', 'Louisa', 'Louise', 'Lourdes', 'Luca',
+            'Lucas', 'Lucian', 'Luciana', 'Luciano', 'Lucille', 'Lucy', 'Luella', 'Luisa', 'Luka', 'Lukas',
+            'Luke', 'Lula', 'Luna', 'Lydia', 'Lyla', 'Lylah', 'Lynn', 'Lynnette', 'Lyra', 'Lyric',
+            'Mabel', 'Maci', 'Macie', 'Mack', 'Mackenzie', 'Macy', 'Madalyn', 'Maddison', 'Maddox', 'Madeleine',
+            'Madeline', 'Madelyn', 'Madelynn', 'Madilyn', 'Madilynn', 'Madison', 'Madisyn', 'Mae', 'Maeve', 'Maggie',
+            'Magnolia', 'Magnus', 'Maia', 'Maite', 'Makayla', 'Makenna', 'Makenzie', 'Malachi', 'Malakai', 'Malaya',
+            'Malcolm', 'Maleah', 'Malia', 'Malik', 'Mallory', 'Mallory', 'Mara', 'Marc', 'Marcel', 'Marcela',
+            'Marcella', 'Marcelo', 'Marco', 'Marcos', 'Marcus', 'Margaret', 'Margarita', 'Margot', 'Maria', 'Mariah',
+            'Mariam', 'Marian', 'Mariana', 'Marianna', 'Marie', 'Mariela', 'Marilyn', 'Marina', 'Mario', 'Marion',
+            'Marisa', 'Marisol', 'Marissa', 'Maritza', 'Marjorie', 'Mark', 'Marlene', 'Marley', 'Marlon', 'Marshall',
+            'Martha', 'Martin', 'Martina', 'Marvin', 'Mary', 'Maryam', 'Mason', 'Mateo', 'Mathew', 'Mathias',
+            'Matias', 'Matilda', 'Matteo', 'Matthew', 'Matthias', 'Maurice', 'Mauricio', 'Maverick', 'Max', 'Maxim',
+            'Maximilian', 'Maximus', 'Maxine', 'Maxwell', 'Maya', 'Mayra', 'Mckenna', 'Mckenzie', 'Mckinley', 'Meadow',
+            'Megan', 'Meghan', 'Meilani', 'Melanie', 'Melany', 'Melina', 'Melinda', 'Melissa', 'Melody', 'Melvin',
+            'Memphis', 'Meredith', 'Merrick', 'Messiah', 'Mia', 'Micah', 'Michael', 'Michaela', 'Michelle', 'Miguel',
+            'Mikaela', 'Mikayla', 'Mike', 'Mila', 'Milana', 'Milani', 'Milena', 'Miles', 'Millie', 'Milo',
+            'Milton', 'Mina', 'Mira', 'Miracle', 'Miranda', 'Miriam', 'Misael', 'Mitchell', 'Mitt', 'Miya',
+            'Moises', 'Molly', 'Monica', 'Monroe', 'Monserrat', 'Montana', 'Monte', 'Montgomery', 'Morgan', 'Moriah',
+            'Moses', 'Moshe', 'Muhammad', 'Mya', 'Myah', 'Myla', 'Mylah', 'Myles', 'Myra', 'Nadia',
+            'Nala', 'Nalani', 'Nancy', 'Naomi', 'Nash', 'Nasir', 'Natalia', 'Natalie', 'Nataly', 'Natasha',
+            'Nathalie', 'Nathan', 'Nathanael', 'Nathaniel', 'Naya', 'Nayeli', 'Nehemiah', 'Neil', 'Nelson', 'Nevaeh',
+            'Nia', 'Nicholas', 'Nick', 'Nickolas', 'Nico', 'Nicole', 'Nicolette', 'Nicolas', 'Nigel', 'Niko',
+            'Nikolai', 'Nikolas', 'Nila', 'Nina', 'Nixon', 'Noah', 'Noe', 'Noel', 'Noelle', 'Noemi',
+            'Nola', 'Nolan', 'Nora', 'Norah', 'Norman', 'Nova', 'Novah', 'Nyla', 'Nylah', 'Oakley',
+            'Oaklyn', 'Oaklynn', 'Ocean', 'Octavia', 'Odin', 'Olive', 'Oliver', 'Olivia', 'Omar', 'Omari',
+            'Onyx', 'Opal', 'Ophelia', 'Ora', 'Orion', 'Orlando', 'Oscar', 'Oswald', 'Otis', 'Otto',
+            'Owen', 'Pablo', 'Paislee', 'Paisley', 'Paityn', 'Palmer', 'Paloma', 'Pamela', 'Paola', 'Paris',
+            'Parker', 'Pascal', 'Patricia', 'Patrick', 'Paul', 'Paula', 'Paulina', 'Pauline', 'Paxton', 'Payton',
+            'Pearl', 'Pedro', 'Penelope', 'Penny', 'Percival', 'Percy', 'Perla', 'Peyton', 'Philip', 'Philippa',
+            'Phillip', 'Phoebe', 'Phoenix', 'Pierce', 'Pierre', 'Piper', 'Pippa', 'Poppy', 'Porter', 'Poseidon',
+            'Presley', 'Preston', 'Prince', 'Princess', 'Princeton', 'Priscilla', 'Quentin', 'Quincy', 'Quinn', 'Quinton',
+            'Rachel', 'Rafael', 'Raiden', 'Raina', 'Ramiro', 'Ramon', 'Ramona', 'Randy', 'Raquel', 'Rashad',
+            'Raul', 'Raven', 'Rayan', 'Rayden', 'Raylan', 'Raymond', 'Reagan', 'Rebecca', 'Rebekah', 'Reece',
+            'Reed', 'Reese', 'Reese', 'Regan', 'Regina', 'Reid', 'Reign', 'Reina', 'Remi', 'Remington',
+            'Remy', 'Renata', 'Rene', 'Renee', 'Rex', 'Rey', 'Reyansh', 'Reyna', 'Reynaldo', 'Rhea',
+            'Rhett', 'Rhiannon', 'Rhys', 'Ricardo', 'Richard', 'Richie', 'Ricky', 'Ridge', 'Riley', 'Rio',
+            'Rita', 'River', 'Rivka', 'Riya', 'Roan', 'Robert', 'Roberto', 'Robin', 'Robyn', 'Rocco',
+            'Rocky', 'Rodney', 'Rodrigo', 'Rogelio', 'Roger', 'Rohan', 'Roland', 'Rolando', 'Roman', 'Rome',
+            'Romeo', 'Romina', 'Ronald', 'Ronan', 'Ronin', 'Rory', 'Rosa', 'Rosalee', 'Rosalia', 'Rosalie',
+            'Rosalind', 'Rosalinda', 'Rosalyn', 'Rosario', 'Rose', 'Roselyn', 'Rosemary', 'Rosie', 'Ross', 'Rowan',
+            'Rowen', 'Roxana', 'Roxanne', 'Roy', 'Royal', 'Royalty', 'Royce', 'Ruby', 'Rudy', 'Rue',
+            'Rufus', 'Rupert', 'Russell', 'Ruth', 'Ryan', 'Ryann', 'Ryder', 'Ryker', 'Rylan', 'Ryland',
+            'Rylee', 'Ryleigh', 'Rylie', 'Rylen', 'Ryley', 'Sabrina', 'Sadie', 'Sage', 'Sahil', 'Saige',
+            'Salma', 'Salvador', 'Salvatore', 'Sam', 'Samantha', 'Samara', 'Samir', 'Samson', 'Samuel', 'Sanaa',
+            'Sandra', 'Sandy', 'Sanjay', 'Santiago', 'Santino', 'Santos', 'Saoirse', 'Sara', 'Sarah', 'Sarai',
+            'Sariah', 'Sariyah', 'Sasha', 'Savanna', 'Savannah', 'Sawyer', 'Scarlet', 'Scarlett', 'Scout', 'Sebastian',
+            'Selena', 'Selina', 'Serena', 'Serenity', 'Sergio', 'Seth', 'Shane', 'Shania', 'Shannon', 'Sharon',
+            'Shaun', 'Shawn', 'Shay', 'Shea', 'Sheila', 'Shelby', 'Shelton', 'Sheridan', 'Sherman', 'Shiloh',
+            'Shirley', 'Shiv', 'Shmuel', 'Shreya', 'Sidney', 'Sienna', 'Sierra', 'Silas', 'Silvia', 'Simone',
+            'Simon', 'Sincere', 'Sky', 'Skye', 'Skyla', 'Skylar', 'Skyler', 'Sloane', 'Sofia', 'Sofie',
+            'Sofiya', 'Sol', 'Solomon', 'Sonia', 'Sonny', 'Sonya', 'Sophia', 'Sophie', 'Soren', 'Spencer',
+            'Stella', 'Stephanie', 'Stephen', 'Sterling', 'Steve', 'Steven', 'Stevie', 'Stewart', 'Stone', 'Storm',
+            'Stuart', 'Sue', 'Sullivan', 'Summer', 'Sunny', 'Susan', 'Susanna', 'Susannah', 'Sutton', 'Suzanne',
+            'Sven', 'Sylvia', 'Sylvie', 'Tadeo', 'Tahlia', 'Talia', 'Taliyah', 'Talon', 'Tamara', 'Tamia',
+            'Tanner', 'Tara', 'Taryn', 'Tate', 'Tatiana', 'Tatum', 'Tatyana', 'Taya', 'Taylor', 'Teagan',
+            'Tegan', 'Temperance', 'Teresa', 'Terrance', 'Terrence', 'Terry', 'Tessa', 'Thaddeus', 'Thalia', 'Thatcher',
+            'Thea', 'Theo', 'Theodore', 'Theresa', 'Thomas', 'Thora', 'Tiana', 'Tianna', 'Tiago', 'Tiana',
+            'Tiffany', 'Timothy', 'Tinsley', 'Titan', 'Titus', 'Tobias', 'Toby', 'Todd', 'Tom', 'Tomas',
+            'Tommy', 'Toni', 'Tony', 'Tonya', 'Torin', 'Tori', 'Trace', 'Traci', 'Tracy', 'Travis',
+            'Trent', 'Trenton', 'Trevor', 'Trey', 'Tristan', 'Tristen', 'Tristian', 'Triston', 'Troy', 'Tru',
+            'Tucker', 'Turner', 'Ty', 'Tyler', 'Tylor', 'Tyree', 'Tyrell', 'Tyrone', 'Tyson', 'Ulises',
+            'Ulrich', 'Uma', 'Uriel', 'Uriah', 'Urijah', 'Ursula', 'Valentin', 'Valentina', 'Valentine', 'Valeria',
+            'Valerie', 'Valery', 'Van', 'Vance', 'Vanessa', 'Vaughn', 'Veda', 'Vera', 'Veronica', 'Vicente',
+            'Vickie', 'Vicky', 'Victor', 'Victoria', 'Vida', 'Vienna', 'Vihaan', 'Viktor', 'Vince', 'Vincent',
+            'Vincenzo', 'Violet', 'Violeta', 'Violetta', 'Virginia', 'Vito', 'Vivaan', 'Vivian', 'Viviana', 'Vivienne',
+            'Vladimir', 'Wade', 'Walker', 'Wallace', 'Walter', 'Warren', 'Watson', 'Wayne', 'Wells', 'Wendy',
+            'Wesley', 'Westin', 'Weston', 'Wheeler', 'Whitney', 'Wilder', 'Will', 'Willa', 'William', 'Willie',
+            'Willow', 'Wilson', 'Winston', 'Winter', 'Wren', 'Wyatt', 'Wynter', 'Xander', 'Xavier', 'Ximena',
+            'Xiomara', 'Xzavier', 'Yadiel', 'Yahir', 'Yamileth', 'Yara', 'Yareli', 'Yaretzi', 'Yasmin', 'Yasmine',
+            'Yehuda', 'Yisroel', 'Yolanda', 'Yosef', 'Yousef', 'Yusuf', 'Yvette', 'Yvonne', 'Zachariah', 'Zachary',
+            'Zack', 'Zackary', 'Zackery', 'Zahra', 'Zaid', 'Zain', 'Zaire', 'Zander', 'Zane', 'Zaniyah',
+            'Zara', 'Zaria', 'Zariah', 'Zariyah', 'Zavier', 'Zayden', 'Zaylee', 'Zayn', 'Zayne', 'Zechariah',
+            'Zeke', 'Zelda', 'Zendaya', 'Zephyr', 'Zeppelin', 'Zev', 'Zia', 'Ziggy', 'Zion', 'Zoe',
+            'Zoey', 'Zoie', 'Zola', 'Zora', 'Zoya', 'Zula', 'Zuri', 'Zuriel', 'Zyaire', 'Zyla',
+            'Zylah', 'Zyon'
         ]);
-        
+
+        // Create a lowercase version of the database for case-insensitive matching
+        const KNOWN_PROPER_NOUNS_LOWER = new Set();
+        KNOWN_PROPER_NOUNS.forEach(name => {
+            KNOWN_PROPER_NOUNS_LOWER.add(name.toLowerCase());
+            // Also add with first letter lowercase (common in text)
+            if (name.length > 0) {
+                KNOWN_PROPER_NOUNS_LOWER.add(name.charAt(0).toLowerCase() + name.slice(1));
+            }
+        });
+
         function isName(word, index) {
             const cleanWord = word.replace(/[^\w\u4e00-\u9fff]/g, '');
-            
-            // First check against known proper nouns database (includes "Carbajal" and other surnames)
-            if (KNOWN_PROPER_NOUNS.has(cleanWord)) {
+            const cleanWordLower = cleanWord.toLowerCase();
+
+            // First check against known proper nouns database (case-insensitive)
+            // Check both original case and lowercase versions
+            if (KNOWN_PROPER_NOUNS.has(cleanWord) || KNOWN_PROPER_NOUNS_LOWER.has(cleanWordLower)) {
                 return true;
             }
             
@@ -3617,15 +4271,23 @@
             }
             
             // Check if this word appears after a name (likely a surname like "Carbajal")
+            // This works even if the word is not capitalized
             if (index > 0 && analyzedWords && analyzedWords.length > 0) {
                 const previousWord = analyzedWords[index - 1];
                 if (previousWord && previousWord.isName && previousWord.pos === 'noun') {
-                    // Previous word is a name, so this capitalized word is likely a surname
-                    if (isCapitalized && cleanWord.length >= 2) {
-                        const context = { prevWord: previousWord.text, nextWord: '', index: index, allWords: analyzedWords || [] };
-                        const pos = getPOS(word, context);
-                        if (pos === 'noun') {
+                    // Previous word is a name, so this word is likely a surname (even if lowercase)
+                    if (cleanWord.length >= 2) {
+                        // Check if it's in our database (case-insensitive)
+                        if (KNOWN_PROPER_NOUNS_LOWER.has(cleanWordLower)) {
                             return true;
+                        }
+                        // Also check if it looks like a name (capitalized or after a name)
+                        if (isCapitalized) {
+                            const context = { prevWord: previousWord.text, nextWord: '', index: index, allWords: analyzedWords || [] };
+                            const pos = getPOS(word, context);
+                            if (pos === 'noun') {
+                                return true;
+                            }
                         }
                     }
                 }
@@ -3647,6 +4309,20 @@
                 }
             }
             
+            // Additional check: if word is in database (case-insensitive) and length suggests it's a name
+            // This catches names written in lowercase
+            if (KNOWN_PROPER_NOUNS_LOWER.has(cleanWordLower) && cleanWord.length >= 2) {
+                // Verify it's not a common word by checking POS
+                const prevWord = index > 0 && analyzedWords ? analyzedWords[index - 1]?.text || '' : '';
+                const nextWord = analyzedWords && index < analyzedWords.length - 1 ? analyzedWords[index + 1]?.text || '' : '';
+                const context = { prevWord: prevWord, nextWord: nextWord, index: index, allWords: analyzedWords || [] };
+                const pos = getPOS(word, context);
+                // If it's classified as a noun and in our name database, it's likely a name
+                if (pos === 'noun') {
+                    return true;
+                }
+            }
+
             return false;
         }
         
@@ -5101,9 +5777,6 @@
             removeNametags();
             nametagsVisible = false;
             
-            // Ocultar todos los paneles de nodos ampliados cuando se limpia la escena
-            hideNodeDetails();
-            
             // Clear max-value-panel
             maxValueNode = null;
             if (maxValuePanelMesh) {
@@ -5175,6 +5848,18 @@
             // Limpiar escena anterior
             clearScene();
             
+            // Si GALLERY está activo, ocultarlo
+            if (galleryVisible) {
+                const container = document.getElementById('node-list-container');
+                if (container) {
+                    container.classList.remove('visible');
+                }
+                if (typeof clearGallery === 'function') {
+                    clearGallery();
+                }
+                galleryVisible = false;
+            }
+            
             // Store generation date/time
             visualizationGenerationDate = new Date();
             
@@ -5197,57 +5882,6 @@
             
             // Update max value panel
             updateMaxValuePanel();
-            
-            // Si la ventana de CLAIM está abierta, actualizar su contenido
-            updateClaimModalIfOpen();
-            
-            // Enable export button
-            // Export button removed - CLAIM button is now in TOTAL VALUE modal
-        }
-        
-        function updateClaimModalIfOpen() {
-            const claimModal = document.getElementById('claim-modal');
-            if (!claimModal || claimModal.style.display === 'none') return;
-            
-            // Actualizar visualización 3D
-            initClaim3DScene();
-            
-            // Actualizar Total Value
-            showClaimTotalValue();
-            
-            // Actualizar botón PURCHASE con el valor en ETH
-            updateClaimPurchaseButton();
-            
-            // Resetear completamente la sección expandida cuando se actualiza con nuevos datos
-            const expandedSection = document.getElementById('claim-expanded-section');
-            const expandBtn = document.getElementById('claim-expand-btn');
-            const grid = document.getElementById('claim-top4-fractals-grid');
-            const totalValueContainer = document.getElementById('claim-total-value-container');
-            
-            // Forzar ocultación de la sección expandida
-            if (expandedSection) {
-                expandedSection.style.display = 'none';
-                expandedSection.style.visibility = 'hidden';
-            }
-            
-            // Limpiar grid completamente
-            if (grid) {
-                grid.innerHTML = '';
-                while (grid.firstChild) {
-                    grid.removeChild(grid.firstChild);
-                }
-            }
-            
-            // Resetear botón de expand
-            if (expandBtn) {
-                expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
-            }
-            
-            // Restaurar altura original del recuadro de TOTAL VALUE
-            if (totalValueContainer) {
-                totalValueContainer.style.height = '500px';
-                totalValueContainer.style.minHeight = '500px';
-            }
         }
 
         // ==================== NAVEGACIÓN A CLAIM ====================
@@ -5283,374 +5917,30 @@
             
             // Mostrar Total Value (idéntico al modal original)
             showClaimTotalValue();
-            
+
             // Actualizar botón PURCHASE con el valor en ETH
             updateClaimPurchaseButton();
-            
-            // Limpiar y resetear sección expandida completamente
+
+            // Resetear completamente la sección expandida cuando se actualiza con nuevos datos
             const expandedSection = document.getElementById('claim-expanded-section');
             const expandBtn = document.getElementById('claim-expand-btn');
             const grid = document.getElementById('claim-top4-fractals-grid');
             const totalValueContainer = document.getElementById('claim-total-value-container');
-            
+
             // Forzar ocultación de la sección expandida
             if (expandedSection) {
                 expandedSection.style.display = 'none';
                 expandedSection.style.visibility = 'hidden';
             }
-            
-            // Limpiar grid completamente para asegurar que no queden imágenes antiguas
-            if (grid) {
-                grid.innerHTML = '';
-                // Remover todos los hijos por si acaso
-                while (grid.firstChild) {
-                    grid.removeChild(grid.firstChild);
-                }
-            }
-            
-            // Resetear botón de expand al estado inicial
             if (expandBtn) {
                 expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
             }
-            
-            // Restaurar altura original del recuadro de TOTAL VALUE
+            if (grid) {
+                grid.innerHTML = '';
+            }
             if (totalValueContainer) {
                 totalValueContainer.style.height = '500px';
                 totalValueContainer.style.minHeight = '500px';
-            }
-        }
-        
-        function toggleClaimExpanded() {
-            const expandedSection = document.getElementById('claim-expanded-section');
-            const expandBtn = document.getElementById('claim-expand-btn');
-            const totalValueContainer = document.getElementById('claim-total-value-container');
-            
-            if (!expandedSection || !expandBtn) return;
-            
-            if (expandedSection.style.display === 'none' || expandedSection.style.display === '') {
-                // Expandir
-                expandedSection.style.display = 'block';
-                expandedSection.style.visibility = 'visible'; // Asegurar que sea visible
-                expandBtn.innerHTML = '<span>COLLAPSE</span><span style="font-size: 7px;">↑</span>';
-                
-                // Ampliar el recuadro de TOTAL VALUE verticalmente
-                if (totalValueContainer) {
-                    // Calcular altura adicional según el número de nodos
-                    const containerWidth = 350;
-                    const padding = 5;
-                    const gridWidth = containerWidth - (padding * 2);
-                    const gap = 2;
-                    
-                    // Obtener el número de nodos para calcular la altura correcta
-                    const top8Words = analyzedWords ? [...analyzedWords]
-                        .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
-                        .slice(0, 8) : [];
-                    const totalNodes = top8Words.length;
-                    
-                    let squareSize;
-                    let rows;
-                    
-                    if (totalNodes === 2) {
-                        // 1 fila de 2 columnas
-                        squareSize = Math.floor((gridWidth - (gap * 1)) / 2);
-                        rows = 1;
-                    } else {
-                        // 2 filas de 4 columnas
-                        squareSize = Math.floor((gridWidth - (gap * 3)) / 4);
-                        rows = 2;
-                    }
-                    
-                    const expandedHeight = (squareSize * rows) + (gap * (rows - 1)) + (padding * 2) + 5;
-                    const newHeight = 500 + expandedHeight;
-                    totalValueContainer.style.height = newHeight + 'px';
-                    totalValueContainer.style.minHeight = newHeight + 'px';
-                }
-                
-                // Siempre limpiar y regenerar para asegurar que se usen los datos actuales
-                const grid = document.getElementById('claim-top4-fractals-grid');
-                if (grid) {
-                    grid.innerHTML = '';
-                    // Esperar un momento para que el DOM se actualice y la sección sea visible antes de generar
-                    setTimeout(() => {
-                        // Verificar que la sección esté visible antes de generar
-                        if (expandedSection.style.display === 'block' && expandedSection.style.visibility !== 'hidden') {
-                            generateClaimTop4Fractals();
-                        }
-                    }, 100);
-                }
-            } else {
-                // Contraer
-                expandedSection.style.display = 'none';
-                // No establecer visibility: hidden aquí para que pueda expandirse de nuevo
-                expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
-                
-                // Restaurar altura original del recuadro de TOTAL VALUE
-                if (totalValueContainer) {
-                    totalValueContainer.style.height = '500px';
-                    totalValueContainer.style.minHeight = '500px';
-                }
-            }
-        }
-        
-        function generateClaimTop4Fractals() {
-            if (!analyzedWords || analyzedWords.length === 0 || !nodes || nodes.length === 0) return;
-            
-            const grid = document.getElementById('claim-top4-fractals-grid');
-            if (!grid) return;
-            
-            // Obtener top 8 palabras por valor (para 2 filas de 4)
-            const top8Words = [...analyzedWords]
-                .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
-                .slice(0, 8);
-            
-            if (top8Words.length === 0) return;
-            
-            // Limpiar grid
-            grid.innerHTML = '';
-            
-            // Calcular tamaño de cada cuadrado
-            const containerWidth = 350;
-            const padding = 5;
-            const gridWidth = containerWidth - (padding * 2);
-            const gap = 2;
-            
-            // Si solo hay 2 nodos, hacerlos el doble de grandes
-            const totalNodes = top8Words.length;
-            let squareSize;
-            let columns;
-            let rows;
-            
-            if (totalNodes === 2) {
-                // 1 fila de 2 columnas, cada cuadrado ocupa el doble de espacio
-                columns = 2;
-                rows = 1;
-                squareSize = Math.floor((gridWidth - (gap * 1)) / 2); // 1 gap entre 2 elementos
-                grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
-                grid.style.gridTemplateRows = 'repeat(1, 1fr)';
-            } else {
-                // Configurar grid para 2 filas de 4 columnas (comportamiento normal)
-                columns = 4;
-                rows = 2;
-                squareSize = Math.floor((gridWidth - (gap * 3)) / 4); // 3 gaps entre 4 elementos
-                grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
-                grid.style.gridTemplateRows = 'repeat(2, 1fr)';
-            }
-            
-            top8Words.forEach((w, idx) => {
-                const wordIndex = analyzedWords.indexOf(w);
-                if (wordIndex < 0) return;
-                
-                // Encontrar el nodo correspondiente (usar los nodos actuales, no en caché)
-                const node = nodes.find(n => n.userData && n.userData.index === wordIndex);
-                if (!node) {
-                    console.warn(`Node not found for word index ${wordIndex}`);
-                    return;
-                }
-                
-                const nodeSectionCanvasId = `claim-expanded-node-section-${idx}`;
-                
-                // Crear contenedor del cuadrado
-                const squareDiv = document.createElement('div');
-                squareDiv.style.cssText = `width: ${squareSize}px; height: ${squareSize}px; background: #000000; border: 1px solid #ffffff; padding: 1px; box-sizing: border-box; overflow: hidden;`;
-                
-                // Crear canvas
-                const canvas = document.createElement('canvas');
-                canvas.id = nodeSectionCanvasId;
-                const canvasSize = squareSize - 2; // menos padding (1px cada lado)
-                canvas.width = canvasSize;
-                canvas.height = canvasSize;
-                canvas.style.cssText = 'display: block; width: 100%; height: 100%; background: #000000;';
-                
-                squareDiv.appendChild(canvas);
-                grid.appendChild(squareDiv);
-            });
-            
-            // Generar imágenes de secciones de nodos después de que los canvas estén en el DOM
-            setTimeout(() => {
-                top8Words.forEach((w, idx) => {
-                    const wordIndex = analyzedWords.indexOf(w);
-                    if (wordIndex >= 0) {
-                        const node = nodes.find(n => n.userData.index === wordIndex);
-                        if (node) {
-                            const nodeSectionCanvasId = `claim-expanded-node-section-${idx}`;
-                            createClaimNodeSectionImage(nodeSectionCanvasId, node, squareSize - 2);
-                        }
-                    }
-                });
-            }, 100);
-        }
-        
-        function createClaimNodeSectionImage(canvasId, centerNode, canvasSize) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas || !centerNode || !nodes || nodes.length === 0) return;
-            
-            try {
-                // Crear renderer compartido si no existe
-                if (!sharedTopNodesRenderer) {
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = canvasSize;
-                    tempCanvas.height = canvasSize;
-                    sharedTopNodesRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: false });
-                    sharedTopNodesRenderer.setSize(canvasSize, canvasSize);
-                    sharedTopNodesRenderer.setPixelRatio(0.75);
-                    
-                    sharedTopNodesScene = new THREE.Scene();
-                    sharedTopNodesScene.background = new THREE.Color(0x000000);
-                    
-                    sharedTopNodesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
-                    
-                    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
-                    sharedTopNodesScene.add(ambientLight);
-                    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-                    directionalLight.position.set(2, 2, 2);
-                    sharedTopNodesScene.add(directionalLight);
-                }
-                
-                // Limpiar escena anterior (mantener solo las luces)
-                while (sharedTopNodesScene.children.length > 2) {
-                    const child = sharedTopNodesScene.children[2];
-                    sharedTopNodesScene.remove(child);
-                    if (child.geometry) child.geometry.dispose();
-                    if (child.material) {
-                        if (Array.isArray(child.material)) {
-                            child.material.forEach(m => m.dispose());
-                        } else {
-                            child.material.dispose();
-                        }
-                    }
-                }
-                
-                // Encontrar nodos conectados al nodo central
-                const connectedNodes = new Set([centerNode]);
-                const centerPos = centerNode.position;
-                
-                // Buscar conexiones que incluyan este nodo usando userData
-                connections.forEach(conn => {
-                    if (conn.userData && conn.userData.fromNode && conn.userData.toNode) {
-                        if (conn.userData.fromNode === centerNode) {
-                            connectedNodes.add(conn.userData.toNode);
-                        } else if (conn.userData.toNode === centerNode) {
-                            connectedNodes.add(conn.userData.fromNode);
-                        }
-                    }
-                });
-                
-                // También incluir nodos cercanos en el espacio 3D (dentro de un radio)
-                const radius = 0.4; // Radio para incluir nodos cercanos
-                nodes.forEach(node => {
-                    if (node !== centerNode && !connectedNodes.has(node)) {
-                        const distance = centerPos.distanceTo(node.position);
-                        if (distance < radius) {
-                            connectedNodes.add(node);
-                        }
-                    }
-                });
-                
-                // Clonar nodos y conexiones para la sección
-                const clonedNodes = [];
-                const nodeMap = new Map();
-                
-                connectedNodes.forEach(node => {
-                    const clonedNode = node.isGroup ? node.clone(true) : node.clone();
-                    clonedNodes.push(clonedNode);
-                    nodeMap.set(node, clonedNode);
-                    sharedTopNodesScene.add(clonedNode);
-                });
-                
-                // Clonar conexiones entre los nodos incluidos
-                connections.forEach(conn => {
-                    if (conn.userData && conn.userData.fromNode && conn.userData.toNode) {
-                        const fromNode = conn.userData.fromNode;
-                        const toNode = conn.userData.toNode;
-                        
-                        // Solo clonar si ambos nodos están en la sección
-                        if (connectedNodes.has(fromNode) && connectedNodes.has(toNode) && 
-                            nodeMap.has(fromNode) && nodeMap.has(toNode)) {
-                            const clonedFrom = nodeMap.get(fromNode);
-                            const clonedTo = nodeMap.get(toNode);
-                            
-                            // Crear nueva conexión entre los nodos clonados
-                            const clonedFromPos = clonedFrom.position;
-                            const clonedToPos = clonedTo.position;
-                            const geometry = new THREE.BufferGeometry().setFromPoints([
-                                clonedFromPos,
-                                clonedToPos
-                            ]);
-                            
-                            const material = conn.material.clone();
-                            const clonedConn = new THREE.Line(geometry, material);
-                            sharedTopNodesScene.add(clonedConn);
-                        }
-                    }
-                });
-                
-                // Calcular bounding box de la sección
-                let minX = Infinity, maxX = -Infinity;
-                let minY = Infinity, maxY = -Infinity;
-                let minZ = Infinity, maxZ = -Infinity;
-                
-                clonedNodes.forEach(node => {
-                    const pos = node.position;
-                    minX = Math.min(minX, pos.x);
-                    maxX = Math.max(maxX, pos.x);
-                    minY = Math.min(minY, pos.y);
-                    maxY = Math.max(maxY, pos.y);
-                    minZ = Math.min(minZ, pos.z);
-                    maxZ = Math.max(maxZ, pos.z);
-                });
-                
-                const centerX = (minX + maxX) / 2;
-                const centerY = (minY + maxY) / 2;
-                const centerZ = (minZ + maxZ) / 2;
-                
-                const sizeX = maxX - minX;
-                const sizeY = maxY - minY;
-                const sizeZ = maxZ - minZ;
-                const maxSize = Math.max(sizeX, sizeY, sizeZ, 0.1);
-                
-                // Posicionar cámara para ver toda la sección
-                const distance = maxSize * 2.5;
-                sharedTopNodesCamera.position.set(centerX, centerY, centerZ + distance);
-                sharedTopNodesCamera.lookAt(centerX, centerY, centerZ);
-                
-                // Renderizar a una textura temporal
-                const renderTarget = new THREE.WebGLRenderTarget(canvasSize, canvasSize);
-                
-                // Guardar estado del renderer
-                const originalSize = sharedTopNodesRenderer.getSize(new THREE.Vector2());
-                const originalClearColor = sharedTopNodesRenderer.getClearColor(new THREE.Color());
-                
-                // Renderizar
-                sharedTopNodesRenderer.setRenderTarget(renderTarget);
-                sharedTopNodesRenderer.setClearColor(0x000000, 1);
-                sharedTopNodesRenderer.render(sharedTopNodesScene, sharedTopNodesCamera);
-                
-                // Leer la textura y dibujarla en el canvas 2D
-                const ctx2D = canvas.getContext('2d');
-                canvas.width = canvasSize;
-                canvas.height = canvasSize;
-                const pixels = new Uint8Array(canvasSize * canvasSize * 4);
-                sharedTopNodesRenderer.readRenderTargetPixels(renderTarget, 0, 0, canvasSize, canvasSize, pixels);
-                
-                const imageData = ctx2D.createImageData(canvasSize, canvasSize);
-                for (let i = 0; i < pixels.length; i += 4) {
-                    imageData.data[i] = pixels[i];
-                    imageData.data[i + 1] = pixels[i + 1];
-                    imageData.data[i + 2] = pixels[i + 2];
-                    imageData.data[i + 3] = pixels[i + 3];
-                }
-                ctx2D.putImageData(imageData, 0, 0);
-                
-                // Restaurar estado del renderer
-                sharedTopNodesRenderer.setRenderTarget(null);
-                sharedTopNodesRenderer.setSize(originalSize.x, originalSize.y);
-                sharedTopNodesRenderer.setClearColor(originalClearColor, 1);
-                
-                // Limpiar render target
-                renderTarget.dispose();
-                
-            } catch (e) {
-                console.warn('Error generating node section image:', e);
             }
         }
 
@@ -5795,24 +6085,6 @@
             claimScene = null;
         }
 
-        function updateClaimPurchaseButton() {
-            const purchaseBtn = document.getElementById('claim-purchase-btn');
-            if (!purchaseBtn) return;
-            
-            // Calcular valor total en ETH
-            const totalValueUSD = window.totalTextScore || (analyzedWords ? analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0) : 0);
-            let totalValueETH = 0;
-            if (ethPriceUSD && totalValueUSD > 0) {
-                totalValueETH = totalValueUSD / ethPriceUSD;
-            }
-            
-            const totalValueETHDisplay = totalValueETH >= 0.01 ? 
-                `${totalValueETH.toFixed(6)} ETH` : 
-                `${totalValueETH.toFixed(10)} ETH`;
-            
-            purchaseBtn.textContent = `PURCHASE FOR ${totalValueETHDisplay}`;
-        }
-        
         function showClaimTotalValue() {
             const container = document.getElementById('claim-total-value-container');
             if (!container) return;
@@ -5823,15 +6095,21 @@
             // Crear estructura idéntica al modal de Total Value
             const wrapper = document.createElement('div');
             wrapper.id = 'claim-total-value-wrapper';
-            wrapper.style.cssText = 'position: relative; max-width: 100%; margin: 0; width: 100%;';
+            wrapper.style.cssText = 'position: relative; max-width: 100%; margin: 0;';
             
+            // Get color mode from valueLogicColorMode
+            const boxBg = valueLogicColorMode ? "#ffffff" : "#000000";
+            const boxBorder = valueLogicColorMode ? "#000000" : "#ffffff";
+            const textColor = valueLogicColorMode ? "#000000" : "#ffffff";
+            const dividerColor = valueLogicColorMode ? "#cccccc" : "#333333";
+
             const content = document.createElement('div');
             content.id = 'claim-value-logic-content';
-            content.style.cssText = 'font-size: 11px; line-height: 1.1; color: #000000; margin-top: 5px;';
+            content.style.cssText = `font-size: 11px; line-height: 1.1; color: ${textColor}; margin-top: 5px;`;
             
             const overviewContainer = document.createElement('div');
             overviewContainer.id = 'claim-value-logic-overview-container';
-            overviewContainer.style.cssText = 'width: 100%; max-width: 100%; height: 150px; background: #000000; border: 1px solid #ffffff; margin-top: 5px; margin-bottom: 5px; border-radius: 0; position: relative; display: block; overflow: hidden; box-sizing: border-box;';
+            overviewContainer.style.cssText = `width: 100%; max-width: 100%; height: 150px; background: ${boxBg}; border: 1px solid ${boxBorder}; margin-top: 5px; margin-bottom: 5px; border-radius: 0; position: relative; display: block; overflow: hidden; box-sizing: border-box;`;
             const overviewCanvas = document.createElement('canvas');
             overviewCanvas.id = 'claim-value-logic-overview-canvas';
             overviewCanvas.style.cssText = 'width: 100%; height: 100%; display: block;';
@@ -5843,9 +6121,9 @@
             
             const totalBox = document.createElement('div');
             totalBox.id = 'claim-value-logic-total-box';
-            totalBox.style.cssText = 'background: #000000; border: 1px solid #ffffff; padding: 6px; margin-top: 5px; border-radius: 0; display: none;';
+            totalBox.style.cssText = `background: ${boxBg}; border: 1px solid ${boxBorder}; padding: 6px; margin-top: 5px; border-radius: 0; display: none;`;
             const totalDisplay = document.createElement('div');
-            totalDisplay.style.cssText = 'color: #ffffff; font-size: 11px;';
+            totalDisplay.style.cssText = `color: ${textColor}; font-size: 11px;`;
             totalDisplay.innerHTML = '<strong>Total Value:</strong> <span id="claim-value-logic-total-display">-</span>';
             totalBox.appendChild(totalDisplay);
             
@@ -5876,6 +6154,12 @@
             const avgFinalValueETHDisplay = avgFinalValueETH >= 0.01 ? 
                 `${avgFinalValueETH.toFixed(6)} ETH` : 
                 `${avgFinalValueETH.toFixed(10)} ETH`;
+                window.__totalValueEth = totalValueETH;
+            window.__totalValueDisplay = totalValueETHDisplay;
+            window.__createdAt = visualizationGenerationDate
+            ? visualizationGenerationDate.toISOString()
+            : new Date().toISOString();
+            window.__rawText = (document.getElementById("textInput")?.value || "").trim();
             
             // Calcular multiplicadores promedio (reutilizar lógica existente)
             const avgLengthMultiplier = analyzedWords.reduce((sum, w) => sum + (w.lengthMultiplier || 1), 0) / totalWords;
@@ -5955,14 +6239,16 @@
                 .slice(0, 20);
             
             function highlightNumber(num) {
-                return `<span style="background: #ffffff; color: #000000 !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;">${num}</span>`;
+                if (valueLogicColorMode) {
+                    // White mode: black background, white text
+                    return `<span style="background: #000000; color: #ffffff !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;">${num}</span>`;
+                } else {
+                    // Black mode: white background, black text
+                    return `<span style="background: #ffffff; color: #000000 !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;">${num}</span>`;
+                }
             }
-            
-            const boxBg = "#000000";
-            const boxBorder = "#ffffff";
-            const textColor = "#ffffff";
+
             const borderColor = boxBorder;
-            const dividerColor = "#333333";
             const boxStyle = `background: ${boxBg}; border: 1px solid ${boxBorder}; padding: 4px; margin-bottom: 3px; border-radius: 0;`;
             const itemStyle = "margin: 0.5px 0;";
             
@@ -5993,7 +6279,7 @@
                     <div style="${itemStyle} color: ${textColor};"><strong>Temporal Multiplier:</strong> ×${highlightNumber(avgTenseMultiplier.toFixed(2))}</div>
                     <div style="${itemStyle} color: ${textColor};"><strong>Predominant Tense:</strong> ${highlightNumber(tenseLabels[predominantTense])} (Present: ${presentCount}, Past: ${pastCount}, Future: ${futureCount})</div>
                     <div style="${itemStyle} color: ${textColor};"><strong>Narrative Penalty:</strong> ×${highlightNumber(avgNarrativePenalty.toFixed(2))}</div>
-                    <div style="${itemStyle} color: ${textColor};"><strong>Global Reduction (60%):</strong> ×${highlightNumber('0.4335')}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Global Reduction:</strong> ×${highlightNumber('0.20808')}</div>
                 </div>
                 <div style="${boxStyle}">
                     <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">Distribution by Word Type</h3>
@@ -6051,6 +6337,9 @@
             if (claimTotalDisplay) {
                 claimTotalDisplay.textContent = totalValueETHDisplay;
             }
+
+            // Actualizar botón PURCHASE con el valor en ETH
+            updateClaimPurchaseButton();
             totalBox.style.display = 'block';
         }
 
@@ -6187,9 +6476,10 @@
                 return;
             }
             
-            const boxBorder = "#ffffff";
-            const boxBg = "#000000";
-            const textColor = "#ffffff";
+            // Get color mode from valueLogicColorMode
+            const boxBorder = valueLogicColorMode ? "#000000" : "#ffffff";
+            const boxBg = valueLogicColorMode ? "#ffffff" : "#000000";
+            const textColor = valueLogicColorMode ? "#000000" : "#ffffff";
             
             let gridHTML = '<div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">';
             
@@ -6379,6 +6669,358 @@
                 } else {
                     clone.material.dispose();
                 }
+            }
+        }
+
+        function updateClaimPurchaseButton() {
+            const purchaseBtn = document.getElementById('claim-purchase-btn');
+            if (!purchaseBtn) return;
+
+            // Calcular valor total en ETH
+            const totalValueUSD = window.totalTextScore || (analyzedWords ? analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0) : 0);
+            let totalValueETH = 0;
+            if (ethPriceUSD && totalValueUSD > 0) {
+                totalValueETH = totalValueUSD / ethPriceUSD;
+            }
+
+            const totalValueETHDisplay = totalValueETH >= 0.01 ?
+                `${totalValueETH.toFixed(6)} ETH` :
+                `${totalValueETH.toFixed(10)} ETH`;
+
+            purchaseBtn.textContent = `PURCHASE FOR ${totalValueETHDisplay}`;
+        }
+
+        function toggleClaimExpanded() {
+            const expandedSection = document.getElementById('claim-expanded-section');
+            const expandBtn = document.getElementById('claim-expand-btn');
+            const totalValueContainer = document.getElementById('claim-total-value-container');
+
+            if (!expandedSection || !expandBtn) return;
+
+            if (expandedSection.style.display === 'none' || expandedSection.style.display === '') {
+                // Expandir
+                expandedSection.style.display = 'block';
+                expandedSection.style.visibility = 'visible'; // Asegurar que sea visible
+                expandBtn.innerHTML = '<span>COLLAPSE</span><span style="font-size: 7px;">↑</span>';
+
+                // Ampliar el recuadro de TOTAL VALUE verticalmente
+                if (totalValueContainer) {
+                    // Calcular altura adicional según el número de nodos
+                    const containerWidth = 350;
+                    const padding = 5;
+                    const gridWidth = containerWidth - (padding * 2);
+                    const gap = 2;
+
+                    // Obtener el número de nodos para calcular la altura correcta
+                    const top8Words = analyzedWords ? [...analyzedWords]
+                        .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
+                        .slice(0, 8) : [];
+                    const totalNodes = top8Words.length;
+
+                    let squareSize;
+                    let rows;
+
+                    if (totalNodes === 2) {
+                        // 1 fila de 2 columnas
+                        squareSize = Math.floor((gridWidth - (gap * 1)) / 2);
+                        rows = 1;
+                    } else {
+                        // 2 filas de 4 columnas
+                        squareSize = Math.floor((gridWidth - (gap * 3)) / 4);
+                        rows = 2;
+                    }
+
+                    const expandedHeight = (squareSize * rows) + (gap * (rows - 1)) + (padding * 2) + 5;
+                    const newHeight = 500 + expandedHeight;
+                    totalValueContainer.style.height = newHeight + 'px';
+                    totalValueContainer.style.minHeight = newHeight + 'px';
+                }
+
+                // Siempre limpiar y regenerar para asegurar que se usen los datos actuales
+                const grid = document.getElementById('claim-top4-fractals-grid');
+                if (grid) {
+                    grid.innerHTML = '';
+                    // Esperar un momento para que el DOM se actualice y la sección sea visible antes de generar
+                    setTimeout(() => {
+                        // Verificar que la sección esté visible antes de generar
+                        if (expandedSection.style.display === 'block' && expandedSection.style.visibility !== 'hidden') {
+                            generateClaimTop4Fractals();
+                        }
+                    }, 100);
+                }
+            } else {
+                // Contraer
+                expandedSection.style.display = 'none';
+                // No establecer visibility: hidden aquí para que pueda expandirse de nuevo
+                expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
+
+                // Restaurar altura original del recuadro de TOTAL VALUE
+                if (totalValueContainer) {
+                    totalValueContainer.style.height = '500px';
+                    totalValueContainer.style.minHeight = '500px';
+                }
+            }
+        }
+
+        function generateClaimTop4Fractals() {
+            if (!analyzedWords || analyzedWords.length === 0 || !nodes || nodes.length === 0) return;
+
+            const grid = document.getElementById('claim-top4-fractals-grid');
+            if (!grid) return;
+
+            // Obtener top 8 palabras por valor (para 2 filas de 4)
+            const top8Words = [...analyzedWords]
+                .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
+                .slice(0, 8);
+
+            if (top8Words.length === 0) return;
+
+            // Limpiar grid
+            grid.innerHTML = '';
+
+            // Calcular tamaño de cada cuadrado
+            const containerWidth = 350;
+            const padding = 5;
+            const gridWidth = containerWidth - (padding * 2);
+            const gap = 2;
+
+            // Si solo hay 2 nodos, hacerlos el doble de grandes
+            const totalNodes = top8Words.length;
+            let squareSize;
+            let columns;
+            let rows;
+
+            if (totalNodes === 2) {
+                // 1 fila de 2 columnas, cada cuadrado ocupa el doble de espacio
+                columns = 2;
+                rows = 1;
+                squareSize = Math.floor((gridWidth - (gap * 1)) / 2); // 1 gap entre 2 elementos
+                grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                grid.style.gridTemplateRows = 'repeat(1, 1fr)';
+            } else {
+                // Configurar grid para 2 filas de 4 columnas (comportamiento normal)
+                columns = 4;
+                rows = 2;
+                squareSize = Math.floor((gridWidth - (gap * 3)) / 4); // 3 gaps entre 4 elementos
+                grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+                grid.style.gridTemplateRows = 'repeat(2, 1fr)';
+            }
+
+            top8Words.forEach((w, idx) => {
+                const wordIndex = analyzedWords.indexOf(w);
+                if (wordIndex < 0) return;
+
+                // Encontrar el nodo correspondiente (usar los nodos actuales, no en caché)
+                const node = nodes.find(n => n.userData && n.userData.index === wordIndex);
+                if (!node) {
+                    console.warn(`Node not found for word index ${wordIndex}`);
+                    return;
+                }
+
+                const nodeSectionCanvasId = `claim-expanded-node-section-${idx}`;
+
+                // Crear contenedor del cuadrado
+                const squareDiv = document.createElement('div');
+                squareDiv.style.cssText = `width: ${squareSize}px; height: ${squareSize}px; background: #000000; border: 1px solid #ffffff; padding: 1px; box-sizing: border-box; overflow: hidden;`;
+
+                // Crear canvas
+                const canvas = document.createElement('canvas');
+                canvas.id = nodeSectionCanvasId;
+                const canvasSize = squareSize - 2; // menos padding (1px cada lado)
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                canvas.style.cssText = 'display: block; width: 100%; height: 100%; background: #000000;';
+
+                squareDiv.appendChild(canvas);
+                grid.appendChild(squareDiv);
+            });
+
+            // Generar imágenes de secciones de nodos después de que los canvas estén en el DOM
+            setTimeout(() => {
+                top8Words.forEach((w, idx) => {
+                    const wordIndex = analyzedWords.indexOf(w);
+                    if (wordIndex >= 0) {
+                        const node = nodes.find(n => n.userData && n.userData.index === wordIndex);
+                        if (node) {
+                            const nodeSectionCanvasId = `claim-expanded-node-section-${idx}`;
+                            createClaimNodeSectionImage(nodeSectionCanvasId, node, squareSize - 2);
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        function createClaimNodeSectionImage(canvasId, centerNode, canvasSize) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !centerNode || !nodes || nodes.length === 0) return;
+
+            try {
+                // Crear renderer compartido si no existe
+                if (!sharedTopNodesRenderer) {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvasSize;
+                    tempCanvas.height = canvasSize;
+                    sharedTopNodesRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: false });
+                    sharedTopNodesRenderer.setSize(canvasSize, canvasSize);
+                    sharedTopNodesRenderer.setPixelRatio(0.75);
+
+                    sharedTopNodesScene = new THREE.Scene();
+                    sharedTopNodesScene.background = new THREE.Color(0x000000);
+
+                    sharedTopNodesCamera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+
+                    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                    sharedTopNodesScene.add(ambientLight);
+                    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                    directionalLight.position.set(2, 2, 2);
+                    sharedTopNodesScene.add(directionalLight);
+                }
+
+                // Limpiar escena anterior (mantener solo las luces)
+                while (sharedTopNodesScene.children.length > 2) {
+                    const child = sharedTopNodesScene.children[2];
+                    sharedTopNodesScene.remove(child);
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                }
+
+                // Encontrar nodos conectados al nodo central
+                const connectedNodes = new Set([centerNode]);
+                const centerPos = centerNode.position;
+
+                // Buscar conexiones que incluyan este nodo usando userData
+                connections.forEach(conn => {
+                    if (conn.userData && conn.userData.fromNode && conn.userData.toNode) {
+                        if (conn.userData.fromNode === centerNode) {
+                            connectedNodes.add(conn.userData.toNode);
+                        } else if (conn.userData.toNode === centerNode) {
+                            connectedNodes.add(conn.userData.fromNode);
+                        }
+                    }
+                });
+
+                // También incluir nodos cercanos en el espacio 3D (dentro de un radio)
+                const radius = 0.4; // Radio para incluir nodos cercanos
+                nodes.forEach(node => {
+                    if (node !== centerNode && !connectedNodes.has(node)) {
+                        const distance = centerPos.distanceTo(node.position);
+                        if (distance < radius) {
+                            connectedNodes.add(node);
+                        }
+                    }
+                });
+
+                // Clonar nodos y conexiones para la sección
+                const clonedNodes = [];
+                const nodeMap = new Map();
+
+                connectedNodes.forEach(node => {
+                    const clonedNode = node.isGroup ? node.clone(true) : node.clone();
+                    clonedNodes.push(clonedNode);
+                    nodeMap.set(node, clonedNode);
+                    sharedTopNodesScene.add(clonedNode);
+                });
+
+                // Clonar conexiones entre los nodos incluidos
+                connections.forEach(conn => {
+                    if (conn.userData && conn.userData.fromNode && conn.userData.toNode) {
+                        const fromNode = conn.userData.fromNode;
+                        const toNode = conn.userData.toNode;
+
+                        // Solo clonar si ambos nodos están en la sección
+                        if (connectedNodes.has(fromNode) && connectedNodes.has(toNode) &&
+                            nodeMap.has(fromNode) && nodeMap.has(toNode)) {
+                            const clonedFrom = nodeMap.get(fromNode);
+                            const clonedTo = nodeMap.get(toNode);
+
+                            // Crear nueva conexión entre los nodos clonados
+                            const clonedFromPos = clonedFrom.position;
+                            const clonedToPos = clonedTo.position;
+                            const geometry = new THREE.BufferGeometry().setFromPoints([
+                                clonedFromPos,
+                                clonedToPos
+                            ]);
+
+                            const material = conn.material.clone();
+                            const clonedConn = new THREE.Line(geometry, material);
+                            sharedTopNodesScene.add(clonedConn);
+                        }
+                    }
+                });
+
+                // Calcular bounding box de la sección
+                let minX = Infinity, maxX = -Infinity;
+                let minY = Infinity, maxY = -Infinity;
+                let minZ = Infinity, maxZ = -Infinity;
+
+                clonedNodes.forEach(node => {
+                    const pos = node.position;
+                    minX = Math.min(minX, pos.x);
+                    maxX = Math.max(maxX, pos.x);
+                    minY = Math.min(minY, pos.y);
+                    maxY = Math.max(maxY, pos.y);
+                    minZ = Math.min(minZ, pos.z);
+                    maxZ = Math.max(maxZ, pos.z);
+                });
+
+                const centerX = (minX + maxX) / 2;
+                const centerY = (minY + maxY) / 2;
+                const centerZ = (minZ + maxZ) / 2;
+
+                const sizeX = maxX - minX;
+                const sizeY = maxY - minY;
+                const sizeZ = maxZ - minZ;
+                const maxSize = Math.max(sizeX, sizeY, sizeZ, 0.1);
+
+                // Posicionar cámara para ver toda la sección
+                const distance = maxSize * 2.5;
+                sharedTopNodesCamera.position.set(centerX, centerY, centerZ + distance);
+                sharedTopNodesCamera.lookAt(centerX, centerY, centerZ);
+
+                // Renderizar a una textura temporal
+                const renderTarget = new THREE.WebGLRenderTarget(canvasSize, canvasSize);
+
+                // Guardar estado del renderer
+                const originalSize = sharedTopNodesRenderer.getSize(new THREE.Vector2());
+                const originalClearColor = sharedTopNodesRenderer.getClearColor(new THREE.Color());
+
+                // Renderizar
+                sharedTopNodesRenderer.setRenderTarget(renderTarget);
+                sharedTopNodesRenderer.setClearColor(0x000000, 1);
+                sharedTopNodesRenderer.render(sharedTopNodesScene, sharedTopNodesCamera);
+
+                // Leer la textura y dibujarla en el canvas 2D
+                const ctx2D = canvas.getContext('2d');
+                canvas.width = canvasSize;
+                canvas.height = canvasSize;
+                const pixels = new Uint8Array(canvasSize * canvasSize * 4);
+                sharedTopNodesRenderer.readRenderTargetPixels(renderTarget, 0, 0, canvasSize, canvasSize, pixels);
+
+                const imageData = ctx2D.createImageData(canvasSize, canvasSize);
+                for (let i = 0; i < pixels.length; i += 4) {
+                    imageData.data[i] = pixels[i];
+                    imageData.data[i + 1] = pixels[i + 1];
+                    imageData.data[i + 2] = pixels[i + 2];
+                    imageData.data[i + 3] = pixels[i + 3];
+                }
+                ctx2D.putImageData(imageData, 0, 0);
+
+                // Restaurar estado del renderer
+                sharedTopNodesRenderer.setRenderTarget(null);
+                sharedTopNodesRenderer.setSize(originalSize.x, originalSize.y);
+                sharedTopNodesRenderer.setClearColor(originalClearColor, 1);
+
+                // Limpiar render target
+                renderTarget.dispose();
+
+            } catch (e) {
+                console.warn('Error generating node section image:', e);
             }
         }
 
@@ -6642,6 +7284,9 @@
                             const output = JSON.stringify(result, null, 2);
                             blob = new Blob([output], { type: 'application/json' });
                         }
+                        window.__latestGlbBlob = blob;
+                        window.__latestGlbFilename = "text-body.glb";
+
                         zip.file('text-body.glb', blob);
                         glbReady = true;
                         checkAndDownload();
@@ -6726,7 +7371,8 @@
                     } else {
                         throw new Error('Formato de resultado no reconocido');
                     }
-                    
+                    window.__latestGlbBlob = blob;
+                    window.__latestGlbFilename = filename;
                     // Descargar
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
@@ -6924,8 +7570,7 @@
                 return availableOffsets.pop();
             }
             // Otherwise, calculate new offset based on number of active panels
-            // Cada panel se desplaza unos pocos píxeles hacia arriba y hacia la izquierda
-            return rightPanels.length * 10; // 10px offset por panel (hacia arriba y hacia la izquierda)
+            return rightPanels.length * 20; // 20px offset per panel
         }
         
         // Helper function to create a cloned right panel
@@ -6938,9 +7583,7 @@
             clonedPanel.id = `right-panel-${panelId}`;
             clonedPanel.className = 'right-panel-clone';
             
-            // Set position with offset (paneles apilados hacia arriba y hacia la izquierda desde la esquina inferior derecha)
-            // El offset se suma al bottom para apilar hacia arriba, y se suma al right para apilar hacia la izquierda
-            // Cada panel se acumula unos pocos píxeles verticales y horizontales
+            // Set position with offset
             clonedPanel.style.bottom = (15 + offset) + 'px';
             clonedPanel.style.right = (5 + offset) + 'px';
             
@@ -6999,10 +7642,6 @@
                 console.error('Canvas not found in panel:', panelId);
                 return null;
             }
-            
-            // Add click listener to show fractal when clicking on the node
-            // We'll set this up after the node is assigned to panelData
-            canvas.style.cursor = 'pointer';
             
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x000000);
@@ -7286,19 +7925,6 @@
             };
             
             rightPanels.push(panelData);
-            
-            // Add click listener to canvas to show fractal when clicking on the node
-            const canvas = panelElement.querySelector(`#right-panel-canvas-${panelId}`) || panelElement.querySelector('canvas');
-            if (canvas && !canvas.dataset.fractalListenerAdded) {
-                canvas.dataset.fractalListenerAdded = 'true';
-                canvas.style.cursor = 'pointer';
-                canvas.addEventListener('click', function(e) {
-                    if (node && node.userData && node.userData.wordData) {
-                        const wordIndex = node.userData.index;
-                        showFractalModal(wordIndex, e.clientX, e.clientY);
-                    }
-                });
-            }
             
             // Show enlarged node in panel (must be after panelData is in rightPanels array)
             showRightPanelEnlargedNodeForPanel(panelId, node);
@@ -7716,16 +8342,11 @@
                 modal.style.pointerEvents = 'auto';
             }
             
-            // Position modal below the TOTAL VALUE button
+            // Position modal below the button
             if (totalValueBtn && modalContainer) {
                 const btnRect = totalValueBtn.getBoundingClientRect();
-                // Position just below the button, but ensure it's at least below the fps bar
-                const fpsBarBottom = 25; // FPS bar is at top: 18px with min-height: 7px
-                const buttonBottom = btnRect.bottom;
-                const topPosition = Math.max(buttonBottom + 2, fpsBarBottom); // At least 2px below button, but not above fps bar
-                modalContainer.style.top = topPosition + 'px';
+                modalContainer.style.top = (btnRect.bottom + 5) + 'px'; // 5px gap below button
                 modalContainer.style.left = btnRect.left + 'px';
-                modalContainer.style.right = 'auto'; // Remove right alignment
                 modalContainer.style.margin = '0'; // Remove auto margin
             }
             
@@ -7911,7 +8532,7 @@
                     <div style="${itemStyle} color: ${textColor};"><strong>Temporal Multiplier:</strong> ×${highlightNumber(avgTenseMultiplier.toFixed(2))}</div>
                     <div style="${itemStyle} color: ${textColor};"><strong>Predominant Tense:</strong> ${highlightNumber(tenseLabels[predominantTense])} (Present: ${presentCount}, Past: ${pastCount}, Future: ${futureCount})</div>
                     <div style="${itemStyle} color: ${textColor};"><strong>Narrative Penalty:</strong> ×${highlightNumber(avgNarrativePenalty.toFixed(2))}</div>
-                    <div style="${itemStyle} color: ${textColor};"><strong>Global Reduction (60%):</strong> ×${highlightNumber('0.4335')}</div>
+                    <div style="${itemStyle} color: ${textColor};"><strong>Global Reduction:</strong> ×${highlightNumber('0.20808')}</div>
                 </div>
                 
                 <div style="${boxStyle}">
@@ -8942,25 +9563,9 @@
         
         function hideNodeDetails() {
             // Hide all panels (for backward compatibility)
-            // Crear una copia del array de IDs antes de iterar, ya que hideRightPanel modifica rightPanels
-            const panelIds = rightPanels.map(panel => panel.id);
-            panelIds.forEach(panelId => {
-                hideRightPanel(panelId);
+            rightPanels.forEach(panel => {
+                hideRightPanel(panel.id);
             });
-            
-            // Asegurar que el array esté completamente vacío
-            rightPanels = [];
-            availableOffsets = [];
-            
-            // También ocultar el panel principal si está visible
-            const mainRightPanel = document.getElementById('right-panel');
-            if (mainRightPanel) {
-                mainRightPanel.classList.remove('visible');
-                mainRightPanel.style.display = 'none';
-                mainRightPanel.style.visibility = 'hidden';
-                mainRightPanel.style.opacity = '0';
-            }
-            
             hoveredNode = null;
             selectedNode = null;
         }
@@ -9190,9 +9795,14 @@
         }
         
         function clearTextBox() {
-            // Ocultar todos los paneles de nodos ampliados (tanto el principal como los clonados)
-            // ya que al limpiar el texto, esos nodos ya no forman parte de la configuración
-            hideNodeDetails();
+            // Check if right-panel is visible and if the selected node is part of the text being cleared
+            const rightPanel = document.getElementById('right-panel');
+            if (rightPanel && rightPanel.classList.contains('visible') && selectedNode) {
+                // Check if the selected node is in the nodes array (part of the current visualization)
+                if (nodes.includes(selectedNode)) {
+                    hideNodeDetails(); // Close the right-panel
+                }
+            }
             
             document.getElementById('textInput').value = '';
             // Reset stats
@@ -9244,9 +9854,18 @@
                 }
                 nodeListVisible = false;
             }
-
-            // Disable export button
-            // Export button removed - CLAIM button is now in TOTAL VALUE modal
+            
+            // Si GALLERY está activo, ocultarlo
+            if (galleryVisible) {
+                const container = document.getElementById('node-list-container');
+                if (container) {
+                    container.classList.remove('visible');
+                }
+                if (typeof clearGallery === 'function') {
+                    clearGallery();
+                }
+                galleryVisible = false;
+            }
         }
         
         function showNodeInfo(node, mouseX, mouseY) {
@@ -9715,6 +10334,11 @@
             const container = document.getElementById('node-list-container');
             
             if (nodeListVisible) {
+                // Si GALLERY está visible, ocultarlo
+                if (galleryVisible) {
+                    galleryVisible = false;
+                    clearGallery();
+                }
                 if (nodes.length === 0) {
                     alert('Please generate a visualization first');
                     nodeListVisible = false;
@@ -10114,6 +10738,82 @@
             nodeListItems = [];
         }
 
+        // ==================== GALLERY ====================
+        function toggleGallery() {
+            galleryVisible = !galleryVisible;
+            const container = document.getElementById('node-list-container');
+            
+            if (galleryVisible) {
+                // Si TOP NODES está visible, ocultarlo
+                if (nodeListVisible) {
+                    nodeListVisible = false;
+                    clearNodeList();
+                }
+                container.classList.add('visible');
+                createGalleryItems();
+            } else {
+                container.classList.remove('visible');
+                clearGallery();
+            }
+        }
+
+        function createGalleryItems() {
+            clearGallery();
+            
+            const container = document.getElementById('node-list-container');
+            
+            // Crear 20 elementos de galería
+            for (let i = 0; i < 20; i++) {
+                // Create item container
+                const item = document.createElement('div');
+                item.className = 'node-list-item';
+                item.id = `gallery-item-${i}`;
+                
+                // Create header con número
+                const header = document.createElement('div');
+                header.className = 'node-list-item-header';
+                const headerText = document.createElement('h3');
+                headerText.style.cssText = 'color: #000000; font-size: 11px; margin: 0; font-family: Helvetica, Arial, sans-serif;';
+                headerText.textContent = (i + 1).toString();
+                header.appendChild(headerText);
+                
+                // Create canvas container con recuadro negro
+                const canvasContainer = document.createElement('div');
+                canvasContainer.className = 'node-list-item-canvas-container';
+                const canvas = document.createElement('canvas');
+                canvas.className = 'node-list-item-canvas';
+                canvas.id = `gallery-canvas-${i}`;
+                
+                // Dibujar recuadro negro en el canvas
+                const ctx = canvas.getContext('2d');
+                canvas.width = 200;
+                canvas.height = 120;
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, 0, 200, 120);
+                
+                canvasContainer.appendChild(canvas);
+                
+                // Create info container vacío (solo recuadro negro)
+                const infoContainer = document.createElement('div');
+                infoContainer.className = 'node-list-item-info';
+                infoContainer.style.cssText = 'background: #000000; min-height: 0; padding: 0;';
+                infoContainer.innerHTML = ''; // Sin contenido
+                
+                // Assemble item
+                item.appendChild(header);
+                item.appendChild(canvasContainer);
+                item.appendChild(infoContainer);
+                container.appendChild(item);
+            }
+        }
+
+        function clearGallery() {
+            const container = document.getElementById('node-list-container');
+            // Solo limpiar elementos de galería
+            const galleryItems = container.querySelectorAll('[id^="gallery-item-"]');
+            galleryItems.forEach(item => item.remove());
+        }
+
         // ==================== MAP TEXT ====================
         function mapText() {
             const mappedContainer = document.getElementById('mapped-text-container');
@@ -10496,6 +11196,109 @@
             }
         });
     </script>
+       <script type="module">
+import { connectWallet, mintMoralText } from "./js/main.js";
+import { uploadGlbToIpfs, uploadMetadataToIpfs } from "./js/ipfs.js";
+
+  let connectedAddress = null;
+
+  const startScreen = document.getElementById("start-screen");
+  const startButton = document.getElementById("start-button");
+
+  const walletModal = document.getElementById("wallet-connect-modal");
+  const walletConnectBtn = document.getElementById("wallet-connect-wallet-btn");
+  const walletCloseBtn = document.getElementById("wallet-connect-close-btn");
+
+    const claimPurchaseBtn = document.getElementById("claim-purchase-btn");
+
+    claimPurchaseBtn.addEventListener("click", async () => {
+    try {
+      claimPurchaseBtn.disabled = true;
+      claimPurchaseBtn.textContent = "MINTING...";
+
+      // 1) Make sure we have a GLB from Export Body
+      const glbBlob = window.__latestGlbBlob;
+      const glbFilename = window.__latestGlbFilename || "text-body.glb";
+
+      if (!glbBlob) {
+        alert("No GLB found. Please export your text body first.");
+        return;
+      }
+
+      // 2) Upload GLB to IPFS
+      const glbUp = await uploadGlbToIpfs(glbBlob, glbFilename);
+      // glbUp.ipfsUri is like ipfs://...
+
+      // Build metadata 
+      // Put the GLB in animation_url
+      const metadata = {
+        name: "Moral Text",
+        description: "Minted from the Moral Text app.",
+        animation_url: glbUp.ipfsUri,
+        attributes: [
+          // TODO: replace these with your real values from the app
+          { trait_type: "totalValue", value: window.__totalValue ?? null },
+          { trait_type: "createdAt", value: new Date().toISOString() },
+        ],
+        // Store the raw text 
+      };
+
+      // Upload metadata JSON to IPFS
+      const metaUp = await uploadMetadataToIpfs(metadata);
+
+      // Mint using tokenURI = metadata ipfs uri
+      const receipt = await mintMoralText(metaUp.ipfsUri);
+      console.log("Minted:", receipt);
+
+      console.log("Minted! Check console for tx details.");
+    } catch (e) {
+        console.error("Minting failed:", e);
+        alert("Minting failed: " + (e?.message || e));
+    } finally {
+      claimPurchaseBtn.disabled = false;
+      claimPurchaseBtn.textContent = "PURCHASE";
+    }
+  });
+
+  // Open wallet modal when clicking CONNECT
+  startButton.addEventListener("click", () => {
+    walletModal.style.display = "block";
+  });
+
+  // Close modal
+  walletCloseBtn.addEventListener("click", () => {
+    walletModal.style.display = "none";
+  });
+
+  // Connect MetaMask
+  walletConnectBtn.addEventListener("click", async () => {
+    try {
+      walletConnectBtn.disabled = true;
+      walletConnectBtn.textContent = "CONNECTING...";
+
+      const { address, chainId } = await connectWallet();
+      connectedAddress = address;
+
+     alert("Minted! Check console for tx details.");
+
+
+      // Hide UI overlays
+      walletModal.style.display = "none";
+      startScreen.classList.add("hidden");
+
+      // Unlock buttons
+      document.getElementById("galleryBtn").disabled = false;
+
+    } catch (err) {
+      throw new Error(err?.message || "Wallet connection failed");
+    } finally {
+      walletConnectBtn.disabled = false;
+      walletConnectBtn.textContent = "CONNECT WALLET";
+    }
+  });
+
+  // Make address accessible later
+  window.getConnectedWallet = () => connectedAddress;
+</script>
 </body>
 </html>
-
