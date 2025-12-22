@@ -1048,7 +1048,7 @@
     </div>
 
     <!-- Claim Modal -->
-    <div id="claim-modal" style="display: none; position: fixed; top: 50px; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none;">
+    <div id="claim-modal" style="display: none; position: fixed; top: 33px; left: 0; width: 100%; height: calc(100% - 33px); background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; padding-top: 35px; padding-bottom: 30px; box-sizing: border-box;">
         <style>
             #claim-modal::-webkit-scrollbar {
                 display: none;
@@ -1077,7 +1077,7 @@
                 -ms-overflow-style: none;
             }
         </style>
-        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 730px; margin: 24px auto 8px auto; padding: 10px; background: rgba(255, 255, 255, 0.7); border: 1px solid #000000;">
+        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 730px; margin: 0 auto; padding: 10px; background: rgba(255, 255, 255, 0.7); border: none; box-sizing: border-box;">
             <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 10px;">
                 <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; border-radius: 0; display: flex; align-items: center; gap: 2px; white-space: nowrap;"><span style="font-size: 12px;">×</span><span>CLOSE</span></button>
             </div>
@@ -6887,7 +6887,8 @@
                 return availableOffsets.pop();
             }
             // Otherwise, calculate new offset based on number of active panels
-            return rightPanels.length * 20; // 20px offset per panel
+            // Cada panel se desplaza unos pocos píxeles hacia arriba y hacia la izquierda
+            return rightPanels.length * 10; // 10px offset por panel (hacia arriba y hacia la izquierda)
         }
         
         // Helper function to create a cloned right panel
@@ -6902,6 +6903,7 @@
             
             // Set position with offset (paneles apilados hacia arriba y hacia la izquierda desde la esquina inferior derecha)
             // El offset se suma al bottom para apilar hacia arriba, y se suma al right para apilar hacia la izquierda
+            // Cada panel se acumula unos pocos píxeles verticales y horizontales
             clonedPanel.style.bottom = (15 + offset) + 'px';
             clonedPanel.style.right = (5 + offset) + 'px';
             
