@@ -6,6 +6,8 @@
     <title>3D Text-Based Body Generator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/compromise@latest/builds/compromise.min.js"></script>
@@ -191,7 +193,7 @@
             white-space: nowrap;
             line-height: 7px;
             padding: 0;
-            transition: left 0.3s ease;
+            /* Removed transition to keep fps-bar fixed without animation */
         }
         
         body.left-panel-collapsed #fps-bar {
@@ -973,6 +975,16 @@
             </div>
         </div>
     </div>
+    
+    <!-- Success Modal for Purchase -->
+    <div id="purchase-success-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 40002; pointer-events: auto;">
+        <div id="purchase-success-modal-container" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; padding: 10px; border: none; min-width: 350px; width: 350px; display: flex; flex-direction: column; align-items: center; box-sizing: border-box;">
+            <div style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #ffffff; text-align: center; background: #000000; padding: 5px 8px; border: 1px solid #000000; width: 100%; box-sizing: border-box;">
+                Your purchase has been completed successfully!
+            </div>
+        </div>
+    </div>
+    
     <div id="canvas-container"></div>
     
     <div id="node-info-panel" class="node-info-panel">
@@ -1058,6 +1070,7 @@
             <button class="top-bar-item grey" id="testBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Version</button>
             <div id="testDropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; z-index: 10000; background: #ffffff; padding: 12px; border: 1px solid #333333; min-width: 280px;">
                 <div style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #000000; font-weight: bold; margin-bottom: 12px;" id="versionDisplay"></div>
+                <div style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #000000; margin-bottom: 6px; margin-top: 6px;" id="userDisplay">USER: <span id="userIdDisplay"></span></div>
                 <div style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #000000; margin-bottom: 6px; margin-top: 12px;">OpenAI API Key:</div>
                 <input type="password" id="apiKeyInput" placeholder="sk-..." style="width: 100%; padding: 6px; background: #1a1a1a; color: #ffffff; border: 1px solid #333333; font-size: 10px; font-family: monospace; box-sizing: border-box;">
                 <button id="saveApiKeyBtn" style="margin-top: 8px; padding: 2px 6px; background: #808080; color: #ffffff; border: none; cursor: pointer; font-size: 8px; font-family: Helvetica, Arial, sans-serif;">Save Key</button>
@@ -1160,7 +1173,7 @@
     </div>
 
     <!-- Claim Modal -->
-    <div id="claim-modal" style="display: none; position: fixed; top: 25px; left: 0; width: 100%; height: calc(100% - 25px); background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; padding-top: 1px; padding-bottom: 1px; box-sizing: border-box;">
+    <div id="claim-modal" style="display: none; position: fixed; top: 25px; left: 0; width: 100%; height: calc(100% - 25px); background: rgba(0, 0, 0, 0); z-index: 30000; overflow-y: auto; pointer-events: auto; scrollbar-width: none; -ms-overflow-style: none; padding-top: 1px; padding-bottom: 0.5px; box-sizing: border-box;">
         <style>
             #claim-modal::-webkit-scrollbar {
                 display: none;
@@ -1189,7 +1202,7 @@
                 -ms-overflow-style: none;
             }
         </style>
-        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 730px; margin: 0 auto; padding: 3px 5px 1px 5px; background: rgba(255, 255, 255, 0.7); border: none; box-sizing: border-box;">
+        <div id="claim-modal-container" style="position: relative; width: 100%; max-width: 730px; margin: 0 auto; padding: 3px 5px 1px 8px; background: rgba(255, 255, 255, 0.7); border: none; box-sizing: border-box;">
             <div style="display: flex; justify-content: flex-start; align-items: center; margin-bottom: 5px; position: relative;">
                 <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; border-radius: 0; display: flex; align-items: center; gap: 2px; white-space: nowrap;"><span style="font-size: 12px;">×</span><span>CLOSE</span></button>
                 <button id="claim-purchase-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 2px; font-size: 10px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0; position: absolute; right: 8px;">PURCHASE</button>
@@ -1206,7 +1219,7 @@
                     <button id="claim-scroll-down-btn" style="position: absolute; bottom: 5px; right: 5px; background: rgba(128, 128, 128, 0.7); color: #ffffff; border: none; padding: 2px 4px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; border-radius: 0; z-index: 10;">↓</button>
                 </div>
             </div>
-            <div style="position: relative; margin-top: 2px; min-height: 30px;">
+            <div style="position: relative; margin-top: -13px; min-height: 30px;">
                 <button id="claim-expand-btn" style="position: absolute; left: 0; bottom: 2px; background: #808080; color: #ffffff; border: none; padding: 1px 2px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 10px; border-radius: 0; display: flex; align-items: center; justify-content: center; gap: 3px;">
                     <span>EXPAND</span>
                     <span style="font-size: 7px;">↓</span>
@@ -1292,7 +1305,22 @@
         // Update this version number each time a change is made
         // Format: v0.5.0 -> v0.5.01 -> v0.5.02 -> ... -> v0.5.20 -> v0.6.0 -> v0.6.01, etc.
         // The third number goes from 00 to 20, then increments the second number
-        const PROJECT_VERSION = 'v0.5.07';
+        const PROJECT_VERSION = 'v0.6.1';
+        
+        // Generate unique user ID on first access
+        function generateUserId() {
+            let userId = localStorage.getItem('user_id');
+            if (!userId) {
+                // Generate ID in format: 0x followed by random digits
+                const randomDigits = Array.from({length: 21}, () => Math.floor(Math.random() * 10)).join('');
+                userId = '0x' + randomDigits;
+                localStorage.setItem('user_id', userId);
+            }
+            return userId;
+        }
+        
+        const USER_ID = generateUserId();
+        
         let previousMousePosition = { x: 0, y: 0 };
         let cameraAngleX = 0;
         let cameraAngleY = 0;
@@ -1318,7 +1346,7 @@
         let sharedTopNodesRenderer = null;
         let sharedTopNodesScene = null;
         let sharedTopNodesCamera = null;
-        let ethPriceUSD = null; // Store current Ethereum price in USD
+        let ethPriceUSD = null; // Store Ethereum conversion rate (used to convert points directly to ETH)
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
         let hoveredNode = null;
@@ -1547,6 +1575,12 @@
             if (testBtn && testDropdown && versionDisplay) {
                 // Set initial version
                 versionDisplay.textContent = PROJECT_VERSION;
+                
+                // Set user ID display
+                const userIdDisplay = document.getElementById('userIdDisplay');
+                if (userIdDisplay) {
+                    userIdDisplay.textContent = USER_ID;
+                }
                 
                 // Load saved API key if available
                 if (apiKeyInput) {
@@ -3529,7 +3563,13 @@ CRITICAL RULES:
 3. For contractions like "I'm", "you're", "don't" - treat them as single tokens, DO NOT expand them. Tag the entire contraction as one word
 4. Numbers (pure digits like "1", "123", "11111") are always NAME
 5. Words containing digits (like "h2o", "word123", "r2d2", "aval0vara", "o00000j", "d4giedie", "3fieldware") are always NAME
-6. Words containing special characters like underscore (_), dot (.), or at sign (@) - such as Twitter/Instagram usernames (like "user_name", "user.name", "@username") - are always NAME. These should be treated as compound names even if they appear as a single token (they represent multi-part identities).
+6. SPECIAL CHARACTERS IN WORDS - CRITICAL RULES FOR NAME IDENTIFICATION:
+   - Words containing underscore (_), dot (.), or at sign (@) MUST be treated as SINGLE NAMES, NOT as multiple words separated by spaces
+   - Examples: "na_me", "na.me", "na@me", "user_name", "user.name", "@username" → ALL are SINGLE NAMES
+   - The characters _, ., and @ are PART OF THE NAME, NOT separators
+   - IMPORTANT: Hyphen (-) is DIFFERENT - it IS a separator: "na-me" should be read as TWO WORDS "na me", NOT as a single name
+   - Examples: "na-me" → two words "na" and "me", "na_me" → single name "na_me", "na.me" → single name "na.me"
+   - Words containing _, ., or @ are always NAME and should be treated as compound names even if they appear as a single token
 
 PART-OF-SPEECH CLASSIFICATION (with detailed subcategories):
 
@@ -4605,15 +4645,16 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 return 2.021 * 0.8; // Modales: 2.021 → 1.6168
             }
             
-            // C) Nouns - UPDATED VALUES (20% reduction applied)
+            // C) Nouns - UPDATED VALUES (20% reduction + 50% additional reduction = 60% total reduction)
             // NOTE: Names (NAME/PROPN that are names) are handled separately below and NOT reduced
             if (normalizedType === 'NOUN' || (normalizedType === 'PROPN' && !isName)) {
                 // PROPN that is NOT a name gets reduced (common nouns)
-                if (features.subclass === 'ontological') return 2.425 * 0.8; // Ontológicos: 2.425 → 1.94
-                if (features.subclass === 'abstract') return 2.67 * 0.8; // Abstractos: 2.67 → 2.136
-                if (features.subclass === 'concrete') return 3.13 * 0.8; // Concretos: 3.13 → 2.504
-                if (features.subclass === 'technical') return 1.7 * 0.8; // Técnicos: 1.7 → 1.36
-                return 2.4 * 0.8; // Generales: 2.4 → 1.92
+                // Additional 50% reduction applied: multiply by 0.5 (0.8 * 0.5 = 0.4)
+                if (features.subclass === 'ontological') return 2.425 * 0.4; // Ontológicos: 2.425 → 0.97 (50% additional reduction)
+                if (features.subclass === 'abstract') return 2.67 * 0.4; // Abstractos: 2.67 → 1.068 (50% additional reduction)
+                if (features.subclass === 'concrete') return 3.13 * 0.4; // Concretos: 3.13 → 1.252 (50% additional reduction)
+                if (features.subclass === 'technical') return 1.7 * 0.4; // Técnicos: 1.7 → 0.68 (50% additional reduction)
+                return 2.4 * 0.4; // Generales: 2.4 → 0.96 (50% additional reduction)
             }
             
             // D) Adjectives - UPDATED VALUES (20% reduction applied)
@@ -6086,10 +6127,10 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             });
             
             // 13) GENERAL MINIMUM FLOOR (APPLIED AFTER GLOBAL MULTIPLIER)
-            finalValue = Math.max(finalValue, 1.0); // Minimum 1.0 USD (changed from 0.1 to 1.0)
+            finalValue = Math.max(finalValue, 1.0); // Minimum 1.0 points (changed from 0.1 to 1.0)
             
             // 14) MINIMUM FLOOR FOR PRONOUNS AND CONJUNCTIONS (relativo al contexto)
-            // Pronombres: mínimo de 5 USD (puede valer menos si se cumplen ciertos boosts que lo reduzcan)
+            // Pronombres: mínimo de 5 puntos (puede valer menos si se cumplen ciertos boosts que lo reduzcan)
             if (token.type === 'PRON' || token.type === 'PRONOUN') {
                 const minPronounValue = 5.0;
                 // Verificar si hay reducciones significativas (más del 50% de reducción)
@@ -6100,12 +6141,12 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     multipliers.push({
                         name: 'pronoun_minimum_floor',
                         factor: minPronounValue / valueBeforeMin,
-                        why: 'Pronoun minimum value: 5 USD (relative to context)'
+                        why: 'Pronoun minimum value: 5 points (relative to context)'
                     });
                 }
             }
             
-            // Conjunciones: mínimo de 10 USD (puede valer menos si se cumplen ciertos boosts que lo reduzcan)
+            // Conjunciones: mínimo de 10 puntos (puede valer menos si se cumplen ciertos boosts que lo reduzcan)
             if (token.type === 'CCONJ' || token.type === 'SCONJ') {
                 const minConjunctionValue = 10.0;
                 // Verificar si hay reducciones significativas (más del 50% de reducción)
@@ -6116,7 +6157,7 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     multipliers.push({
                         name: 'conjunction_minimum_floor',
                         factor: minConjunctionValue / valueBeforeMin,
-                        why: 'Conjunction minimum value: 10 USD (relative to context)'
+                        why: 'Conjunction minimum value: 10 points (relative to context)'
                     });
                 }
             }
@@ -9731,6 +9772,66 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 console.log(`[ISOLATED WORD BOOST] Text has ${totalWordsCount} words - not isolated (boost only applies to single words)`);
             }
             
+            // ========== GALLERY WORD REPETITION COST INCREASE (5% for names/compound names, 2% for others) - APPLIED BEFORE GENERAL REDUCTION FOR NAMES ==========
+            // This operates ABOVE the existing value system - adds cost for words that appear in gallery
+            // CRITICAL: Applied BEFORE general reduction for names/compound names to ensure increase is proportional to high value
+            // For other words, applied after general reduction
+            // RADICAL CHANGE: Names/compound names get 5% increase per repetition (instead of 2%)
+            console.log('=== Applying gallery word repetition cost increase ===');
+            const wordRepetitions = getWordRepetitionCounts();
+            let galleryIncreaseTotal = 0;
+            const wordsWithIncrease = new Map();
+            
+            // Identify names and compound name parts in current text
+            const nameIndicesForGallery = new Set();
+            analyzedWords.forEach((wordData, index) => {
+                if (wordData.isName === true || wordData.isPartOfCompoundName === true) {
+                    nameIndicesForGallery.add(index);
+                }
+            });
+            
+            // Apply increase BEFORE general reduction for names/compound names
+            analyzedWords.forEach((wordData, index) => {
+                const wordText = (wordData.text || '').toLowerCase().trim();
+                const repetitionData = wordRepetitions.get(wordText);
+                const repetitions = repetitionData ? repetitionData.count : 0;
+                const isNameOrCompound = nameIndicesForGallery.has(index);
+                
+                // Check if word is marked as name/compound in gallery (from previous purchases)
+                const isNameInGallery = repetitionData && (repetitionData.isName === true || repetitionData.isCompoundName === true);
+                
+                if (repetitions > 0 && isNameOrCompound) {
+                    // For names/compound names: apply BEFORE general reduction
+                    // RADICAL: Use 10% increase for names/compound names (instead of 2%)
+                    const increasePercent = repetitions * 0.10; // 10% per repetition for names/compound names
+                    const increaseFactor = 1 + increasePercent;
+                    
+                    const valueBeforeIncrease = wordData.finalValue || 0;
+                    const increaseAmount = valueBeforeIncrease * increasePercent;
+                    
+                    wordData.finalValue = valueBeforeIncrease * increaseFactor;
+                    wordData.totalScore = wordData.finalValue;
+                    
+                    galleryIncreaseTotal += increaseAmount;
+                    wordsWithIncrease.set(wordText, {
+                        repetitions: repetitions,
+                        increasePercent: increasePercent * 100,
+                        increaseAmount: increaseAmount,
+                        appliedBefore: true,
+                        isName: true
+                    });
+                }
+            });
+            
+            // Recalculate total after name increases
+            if (wordsWithIncrease.size > 0) {
+                totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+                console.log(`[GALLERY REPETITION] Applied 10% cost increase to ${wordsWithIncrease.size} names/compound names BEFORE general reduction. Total increase: ${galleryIncreaseTotal.toFixed(2)}`);
+                wordsWithIncrease.forEach((data, word) => {
+                    console.log(`[GALLERY REPETITION] "${word}": ${data.repetitions} repetitions → +${data.increasePercent.toFixed(1)}% (+${data.increaseAmount.toFixed(2)}) [BEFORE reduction, NAME/COMPOUND]`);
+                });
+            }
+            
             // ========== GENERAL VALUE REDUCTION: 40% REDUCTION (×0.6) - NO EXCEPTIONS ==========
             console.log('=== Applying general 40% reduction to ALL values (no exceptions) ===');
             const valueBeforeGeneralReduction = totalValue;
@@ -9752,10 +9853,180 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 console.log(`[GENERAL REDUCTION] Applied 40% reduction (factor: ${reductionFactor.toFixed(4)}) to ALL ${analyzedWords.length} words`);
             }
             
-            console.log(`Total text value: ${totalValue.toFixed(2)} USD`);
+            // ========== TEXT LENGTH DEVALUATION (excludes Gallery increases) ==========
+            // Apply devaluation to base values (excluding Gallery increases)
+            // Gallery increases for names were already applied, so we need to calculate base values without them
+            console.log('=== Applying text length devaluation (excluding Gallery increases) ===');
+            const textLengthForDevaluation = analyzedWords.length;
+            
+            // Calculate length devaluation multiplier
+            let lengthDevaluationFactor = 1.0;
+            if (textLengthForDevaluation > 80) {
+                lengthDevaluationFactor = 0.4; // -60% devaluation
+                console.log(`[LENGTH DEVAL] Text has ${textLengthForDevaluation} words (>80) - applying 60% devaluation (×0.4)`);
+            } else if (textLengthForDevaluation > 60) {
+                lengthDevaluationFactor = 0.5; // -50% devaluation
+                console.log(`[LENGTH DEVAL] Text has ${textLengthForDevaluation} words (>60) - applying 50% devaluation (×0.5)`);
+            } else if (textLengthForDevaluation > 30) {
+                lengthDevaluationFactor = 0.6; // -40% devaluation
+                console.log(`[LENGTH DEVAL] Text has ${textLengthForDevaluation} words (>30) - applying 40% devaluation (×0.6)`);
+            } else if (textLengthForDevaluation > 10) {
+                lengthDevaluationFactor = 0.8; // -20% devaluation
+                console.log(`[LENGTH DEVAL] Text has ${textLengthForDevaluation} words (>10) - applying 20% devaluation (×0.8)`);
+            } else {
+                console.log(`[LENGTH DEVAL] Text has ${textLengthForDevaluation} words (≤10) - no length devaluation applied`);
+            }
+            
+            // Apply length devaluation to base values (excluding Gallery increases)
+            if (lengthDevaluationFactor !== 1.0) {
+                // Store Gallery increases per word before applying devaluation
+                const galleryIncreasesPerWord = new Map();
+                let totalBaseValueWithoutGallery = 0;
+                
+                analyzedWords.forEach((wordData, index) => {
+                    const wordText = (wordData.text || '').toLowerCase().trim();
+                    const repetitionData = wordRepetitions.get(wordText);
+                    const repetitions = repetitionData ? repetitionData.count : 0;
+                    const isNameOrCompound = nameIndicesForGallery.has(index);
+                    
+                    const currentValue = wordData.finalValue || 0;
+                    
+                    if (repetitions > 0 && isNameOrCompound) {
+                        // This word has Gallery increase applied before general reduction
+                        // Calculate base value without Gallery increase
+                        // Formula: value_with_gallery = (value_without_gallery * (1 + increasePercent)) * 0.6
+                        // So: value_without_gallery = value_with_gallery / (0.6 * (1 + increasePercent))
+                        const increasePercent = repetitions * 0.10;
+                        const valueWithoutGallery = currentValue / (generalReductionFactor * (1 + increasePercent));
+                        const galleryIncreaseAmount = currentValue - (valueWithoutGallery * generalReductionFactor);
+                        galleryIncreasesPerWord.set(index, galleryIncreaseAmount);
+                        totalBaseValueWithoutGallery += valueWithoutGallery * generalReductionFactor;
+                    } else {
+                        // No Gallery increase, current value is the base value
+                        totalBaseValueWithoutGallery += currentValue;
+                    }
+                });
+                
+                // Apply devaluation to base values (without Gallery increases)
+                analyzedWords.forEach((wordData, index) => {
+                    if (wordData.finalValue !== undefined && wordData.finalValue !== null) {
+                        const galleryIncrease = galleryIncreasesPerWord.get(index) || 0;
+                        const currentValue = wordData.finalValue || 0;
+                        
+                        let valueWithoutGallery;
+                        if (galleryIncrease > 0) {
+                            // Calculate base value without Gallery increase
+                            const wordText = (wordData.text || '').toLowerCase().trim();
+                            const repetitionData = wordRepetitions.get(wordText);
+                            const repetitions = repetitionData ? repetitionData.count : 0;
+                            const increasePercent = repetitions * 0.10;
+                            valueWithoutGallery = currentValue / (generalReductionFactor * (1 + increasePercent));
+                        } else {
+                            // No Gallery increase, current value is the base value
+                            valueWithoutGallery = currentValue;
+                        }
+                        
+                        // Apply devaluation to base value
+                        const devaluedBase = valueWithoutGallery * lengthDevaluationFactor;
+                        
+                        // Add back Gallery increase (if any)
+                        wordData.finalValue = devaluedBase + galleryIncrease;
+                        wordData.totalScore = wordData.finalValue;
+                    }
+                });
+                
+                // Recalculate total value
+                totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+                
+                const devaluedBaseTotal = totalBaseValueWithoutGallery * lengthDevaluationFactor;
+                const totalWithGallery = devaluedBaseTotal + (galleryIncreaseTotal * generalReductionFactor);
+                
+                console.log(`[LENGTH DEVAL] Applied ${((1 - lengthDevaluationFactor) * 100).toFixed(0)}% devaluation to base values (excluding Gallery increases). Base before: ${totalBaseValueWithoutGallery.toFixed(2)}, after: ${devaluedBaseTotal.toFixed(2)}, total with Gallery: ${totalValue.toFixed(2)}`);
+            }
+            
+            // ========== GALLERY WORD REPETITION COST INCREASE FOR NON-NAMES (2% per repetition) - APPLIED AFTER GENERAL REDUCTION ==========
+            // Apply increase AFTER general reduction for non-names
+            const nonNameWordsWithIncrease = new Map();
+            let nonNameGalleryIncreaseTotal = 0;
+            
+            analyzedWords.forEach((wordData, index) => {
+                const wordText = (wordData.text || '').toLowerCase().trim();
+                const repetitionData = wordRepetitions.get(wordText);
+                const repetitions = repetitionData ? repetitionData.count : 0;
+                const isNameOrCompound = nameIndicesForGallery.has(index);
+                
+                if (repetitions > 0 && !isNameOrCompound) {
+                    // For non-names: apply AFTER general reduction
+                    const increasePercent = repetitions * 0.02; // 2% per repetition
+                    const increaseFactor = 1 + increasePercent;
+                    
+                    const valueBeforeIncrease = wordData.finalValue || 0;
+                    const increaseAmount = valueBeforeIncrease * increasePercent;
+                    
+                    wordData.finalValue = valueBeforeIncrease * increaseFactor;
+                    wordData.totalScore = wordData.finalValue;
+                    
+                    nonNameGalleryIncreaseTotal += increaseAmount;
+                    nonNameWordsWithIncrease.set(wordText, {
+                        repetitions: repetitions,
+                        increasePercent: increasePercent * 100,
+                        increaseAmount: increaseAmount,
+                        appliedBefore: false
+                    });
+                }
+            });
+            
+            if (nonNameWordsWithIncrease.size > 0) {
+                totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+                console.log(`[GALLERY REPETITION] Applied cost increase to ${nonNameWordsWithIncrease.size} non-name words AFTER general reduction. Total increase: ${nonNameGalleryIncreaseTotal.toFixed(2)}`);
+                nonNameWordsWithIncrease.forEach((data, word) => {
+                    console.log(`[GALLERY REPETITION] "${word}": ${data.repetitions} repetitions → +${data.increasePercent.toFixed(1)}% (+${data.increaseAmount.toFixed(2)}) [AFTER reduction]`);
+                });
+            }
+            
+            // ========== TOP WORDS GALLERY INCREASE (Top 6-20 add 1.3% each) - APPLIED AFTER ALL OTHER CALCULATIONS ==========
+            // Get top 20 words by final value
+            const top20Words = [...analyzedWords]
+                .filter(w => w && w.text)
+                .sort((a, b) => (b.finalValue || b.totalScore || 0) - (a.finalValue || a.totalScore || 0))
+                .slice(0, 20);
+            
+            let topWordsIncreaseTotal = 0;
+            const topWordsWithIncrease = new Map();
+            
+            // Top 5 words keep their existing Gallery increase (already applied above)
+            // Top 6-20 words add 1.3% each to the total value
+            top20Words.forEach((wordData, rank) => {
+                if (rank >= 5) { // Top 6-20 (0-indexed, so rank 5-19)
+                    const wordText = (wordData.text || '').toLowerCase().trim();
+                    const increasePercent = 0.013; // 1.3% per word
+                    const increaseAmount = totalValue * increasePercent;
+                    
+                    topWordsIncreaseTotal += increaseAmount;
+                    topWordsWithIncrease.set(wordText, {
+                        rank: rank + 1,
+                        increasePercent: increasePercent * 100,
+                        increaseAmount: increaseAmount
+                    });
+                }
+            });
+            
+            // Apply the increase to total value
+            if (topWordsWithIncrease.size > 0) {
+                totalValue += topWordsIncreaseTotal;
+                console.log(`[TOP WORDS GALLERY] Applied 1.3% increase to top 6-20 words. Total increase: ${topWordsIncreaseTotal.toFixed(2)}`);
+                topWordsWithIncrease.forEach((data, word) => {
+                    console.log(`[TOP WORDS GALLERY] Rank ${data.rank} "${word}": +${data.increasePercent.toFixed(1)}% (+${data.increaseAmount.toFixed(2)})`);
+                });
+            }
+            
+            if (wordsWithIncrease.size === 0 && nonNameWordsWithIncrease.size === 0 && topWordsWithIncrease.size === 0) {
+                console.log(`[GALLERY REPETITION] No words found in gallery - no cost increase applied`);
+            }
+            
+            console.log(`Total text value: ${totalValue.toFixed(2)} points`);
             
             // Store total value for display update
-            window.__totalValueUSD = totalValue;
             window.totalTextScore = totalValue;
             
             // Calculate normalized scores for visualization (0 to 1)
@@ -9770,12 +10041,12 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             
             console.log(`Calculated scores for ${analyzedWords.length} words. Max value: ${maxValue.toFixed(2)}, Total: ${totalValue.toFixed(2)}`);
             
-            // Update total value display (convert to ETH)
+            // Update total value display (convert points directly to ETH)
             if (typeof convertToEthereum === 'function') {
                 convertToEthereum(totalValue);
             } else {
                 // Fallback: just log the value
-                console.log(`Total value: ${totalValue.toFixed(2)} USD (ETH conversion function not available)`);
+                console.log(`Total value: ${totalValue.toFixed(2)} points (ETH conversion function not available)`);
             }
         }
         
@@ -10235,7 +10506,7 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                             });
                             const namesText = names.join(' + ');
                             const totalETH = ethPriceUSD ? (total / ethPriceUSD).toFixed(6) : total.toFixed(6);
-                            console.log(`Compound ${groupIdx} (${nameGroup.indices.length} names) "${namesText}": ${total.toFixed(6)} USD = ${totalETH} ETH`);
+                            console.log(`Compound ${groupIdx} (${nameGroup.indices.length} names) "${namesText}": ${total.toFixed(6)} points = ${totalETH} ETH`);
                             verificationResults.push({ count: nameGroup.indices.length, total: total, names: namesText });
                         }
                     });
@@ -14285,6 +14556,22 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             }
         }
         
+        // Show purchase success message
+        function showPurchaseSuccessMessage() {
+            const modal = document.getElementById('purchase-success-modal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        }
+        
+        // Hide purchase success message
+        function hidePurchaseSuccessMessage() {
+            const modal = document.getElementById('purchase-success-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
         function startLoadingDotsAnimation() {
             const dotsElement = document.getElementById('loading-dots');
             if (!dotsElement) return;
@@ -14943,15 +15230,15 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             if (!analyzedWords || analyzedWords.length === 0) return;
             
             const totalWords = analyzedWords.length;
-            const totalValueUSD = window.totalTextScore || analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+            const totalValuePoints = window.totalTextScore || analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
             const avgBaseValue = analyzedWords.reduce((sum, w) => sum + (w.baseValue || 0), 0) / totalWords;
-            const avgFinalValueUSD = totalValueUSD / totalWords;
+            const avgFinalValuePoints = totalValuePoints / totalWords;
             
             let totalValueETH = 0;
             let avgFinalValueETH = 0;
             if (ethPriceUSD) {
-                totalValueETH = totalValueUSD / ethPriceUSD;
-                avgFinalValueETH = avgFinalValueUSD / ethPriceUSD;
+                totalValueETH = totalValuePoints / ethPriceUSD;
+                avgFinalValueETH = avgFinalValuePoints / ethPriceUSD;
             }
             
             const totalValueETHDisplay = totalValueETH >= 0.01 ? 
@@ -15019,14 +15306,13 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             };
             
             // Contar por POS
-            const posCounts = {}, posValues = {}, posValuesETH = {};
+            const posCounts = {}, posValuesETH = {};
             analyzedWords.forEach(w => {
                 const pos = w.pos || 'other';
                 posCounts[pos] = (posCounts[pos] || 0) + 1;
-                const valueUSD = w.finalValue || 0;
-                posValues[pos] = (posValues[pos] || 0) + valueUSD;
+                const valuePoints = w.finalValue || 0;
                 if (ethPriceUSD) {
-                    posValuesETH[pos] = (posValuesETH[pos] || 0) + (valueUSD / ethPriceUSD);
+                    posValuesETH[pos] = (posValuesETH[pos] || 0) + (valuePoints / ethPriceUSD);
                 }
             });
             
@@ -15113,8 +15399,8 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             `;
             
             topWords.forEach((w, idx) => {
-                const wordValueUSD = w.finalValue || 0;
-                const wordValueETH = ethPriceUSD ? wordValueUSD / ethPriceUSD : 0;
+                const wordValuePoints = w.finalValue || 0;
+                const wordValueETH = ethPriceUSD ? wordValuePoints / ethPriceUSD : 0;
                 const wordValueETHDisplay = wordValueETH >= 0.01 ? `${wordValueETH.toFixed(6)} ETH` : `${wordValueETH.toFixed(10)} ETH`;
                 html += `
                     <div style="${itemStyle} color: ${textColor}; padding: 2px 0; border-top: 1px solid ${dividerColor};">
@@ -15482,11 +15768,11 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             const purchaseBtn = document.getElementById('claim-purchase-btn');
             if (!purchaseBtn) return;
 
-            // Calcular valor total en ETH
-            const totalValueUSD = window.totalTextScore || (analyzedWords ? analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0) : 0);
+            // Calcular valor total en ETH (convert points directly to ETH)
+            const totalValuePoints = window.totalTextScore || (analyzedWords ? analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0) : 0);
             let totalValueETH = 0;
-            if (ethPriceUSD && totalValueUSD > 0) {
-                totalValueETH = totalValueUSD / ethPriceUSD;
+            if (ethPriceUSD && totalValuePoints > 0) {
+                totalValueETH = totalValuePoints / ethPriceUSD;
             }
 
             const totalValueETHDisplay = totalValueETH >= 0.01 ?
@@ -15951,6 +16237,36 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                             link.click();
                             document.body.removeChild(link);
                             setTimeout(() => URL.revokeObjectURL(link.href), 100);
+                            
+                            // Save purchase to gallery
+                            savePurchaseToGalleryAfterDownload();
+                            
+                            // Close claim modal and other open windows
+                            hideClaimModal();
+                            hideNodeDetails();
+                            
+                            // Close right panel if visible
+                            const rightPanel = document.getElementById('right-panel');
+                            if (rightPanel && rightPanel.classList.contains('visible')) {
+                                rightPanel.classList.remove('visible');
+                                rightPanel.style.display = 'none';
+                            }
+                            
+                            // Close node info panel if visible
+                            const nodeInfoPanel = document.getElementById('node-info-panel');
+                            if (nodeInfoPanel && nodeInfoPanel.classList.contains('visible')) {
+                                nodeInfoPanel.classList.remove('visible');
+                                nodeInfoPanel.style.display = 'none';
+                            }
+                            
+                            // Show success message
+                            showPurchaseSuccessMessage();
+                            
+                            // After 2 seconds, hide success message and clear everything
+                            setTimeout(() => {
+                                hidePurchaseSuccessMessage();
+                                clearTextBox();
+                            }, 2000);
                         });
                     }
                 }
@@ -16136,6 +16452,13 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                         }
                         window.__latestGlbBlob = blob;
                         window.__latestGlbFilename = "text-body.glb";
+                        
+                        // Convert blob to base64 for gallery storage
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            window.__latestGlbBase64 = reader.result;
+                        };
+                        reader.readAsDataURL(blob);
 
                         zip.file('text-body.glb', blob);
                         glbReady = true;
@@ -16157,6 +16480,524 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             } catch (e) {
                 console.error('Error creating purchase pack:', e);
                 alert('Error al crear el pack. Por favor, intenta de nuevo.');
+            }
+        }
+        
+        // ==================== GALLERY STORAGE SYSTEM ====================
+        // Store gallery purchases in localStorage
+        function savePurchaseToGallery(purchaseData) {
+            try {
+                let gallery = JSON.parse(localStorage.getItem('gallery_purchases') || '[]');
+                gallery.push(purchaseData);
+                // Sort by total value (descending)
+                gallery.sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0));
+                
+                // Check size before saving (localStorage limit is typically 5-10MB)
+                const jsonString = JSON.stringify(gallery);
+                const sizeInMB = new Blob([jsonString]).size / (1024 * 1024);
+                
+                if (sizeInMB > 8) {
+                    console.warn(`Gallery data size (${sizeInMB.toFixed(2)}MB) approaching localStorage limit. Attempting to save anyway...`);
+                }
+                
+                try {
+                    localStorage.setItem('gallery_purchases', jsonString);
+                    
+                    // Verify the image was saved correctly
+                    const savedData = JSON.parse(localStorage.getItem('gallery_purchases') || '[]');
+                    const lastPurchase = savedData[savedData.length - 1];
+                    if (lastPurchase && lastPurchase.id === purchaseData.id) {
+                        if (lastPurchase.nodeBodyImage) {
+                            const savedImgSizeKB = (lastPurchase.nodeBodyImage.length * 3) / 4 / 1024;
+                            console.log(`✓ Purchase saved to gallery successfully. Gallery size: ${sizeInMB.toFixed(2)}MB, ${gallery.length} items`);
+                            console.log(`✓ Image verified in saved data: ${savedImgSizeKB.toFixed(2)}KB`);
+                            console.log(`✓ Saved image preview: ${lastPurchase.nodeBodyImage.substring(0, 50)}...`);
+                            console.log(`✓ Saved image starts with: ${lastPurchase.nodeBodyImage.substring(0, 30)}...`);
+                            
+                            // Verify the saved image is still a valid data URL
+                            if (!lastPurchase.nodeBodyImage.startsWith('data:image/')) {
+                                console.error(`❌ CRITICAL ERROR: Saved image is NOT a valid data URL!`);
+                                console.error(`Saved image preview: ${lastPurchase.nodeBodyImage.substring(0, 100)}...`);
+                            } else {
+                                console.log(`✓ Saved image format is valid`);
+                            }
+                        } else {
+                            console.error(`❌ ERROR: Image was NOT saved! Purchase ID: ${purchaseData.id}`);
+                            console.error(`Original had image: ${!!purchaseData.nodeBodyImage}`);
+                            console.error(`Original image length: ${purchaseData.nodeBodyImage ? purchaseData.nodeBodyImage.length : 0}`);
+                        }
+                    }
+                    
+                    return true;
+                } catch (storageError) {
+                    // If storage fails due to size, try multiple strategies
+                    if (storageError.name === 'QuotaExceededError' || storageError.code === 22) {
+                        console.warn('localStorage quota exceeded. Attempting recovery strategies...');
+                        
+                        // Strategy 1: Remove oldest 50% of items (more aggressive)
+                        let itemsToRemove = Math.max(1, Math.floor(gallery.length * 0.5));
+                        gallery = gallery.slice(0, gallery.length - itemsToRemove);
+                        
+                        // Remove large data from remaining items to free up space (but keep smaller images)
+                        gallery.forEach(item => {
+                            if (item.nodeBodyImage && item.nodeBodyImage.length > 200000) {
+                                // Only remove images larger than ~150KB (keep smaller compressed images)
+                                console.log(`Removing large image from old purchase (${(item.nodeBodyImage.length * 3 / 4 / 1024).toFixed(2)}KB)`);
+                                item.nodeBodyImage = null;
+                            }
+                            if (item.glbBase64 && item.glbBase64.length > 500000) {
+                                // Remove GLB larger than ~375KB
+                                item.glbBase64 = null;
+                            }
+                        });
+                        
+                        try {
+                            const reducedJsonString = JSON.stringify(gallery);
+                            const reducedSizeMB = new Blob([reducedJsonString]).size / (1024 * 1024);
+                            console.log(`Removed ${itemsToRemove} oldest items and large data. Gallery size now: ${reducedSizeMB.toFixed(2)}MB`);
+                            
+                            localStorage.setItem('gallery_purchases', reducedJsonString);
+                            
+                            // CRITICAL: Try to save WITH image first (prioritize keeping the image)
+                            const purchaseDataWithImage = {
+                                ...purchaseData,
+                                glbBase64: null // Remove GLB but keep image
+                            };
+                            gallery.push(purchaseDataWithImage);
+                            gallery.sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0));
+                            
+                            const testJsonString = JSON.stringify(gallery);
+                            const testSizeMB = new Blob([testJsonString]).size / (1024 * 1024);
+                            
+                            if (testSizeMB < 8) {
+                                localStorage.setItem('gallery_purchases', testJsonString);
+                                console.log(`✓ Purchase saved to gallery WITH image (${testSizeMB.toFixed(2)}MB)`);
+                                return true;
+                            } else {
+                                // Still too large even with compressed image, try without image as last resort
+                                console.warn(`Still too large with image (${testSizeMB.toFixed(2)}MB), trying without image...`);
+                                gallery.pop();
+                                const purchaseDataWithoutImage = {
+                                    ...purchaseData,
+                                    nodeBodyImage: null,
+                                    glbBase64: null
+                                };
+                                gallery.push(purchaseDataWithoutImage);
+                                gallery.sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0));
+                                
+                                const finalJsonString = JSON.stringify(gallery);
+                                const finalSizeMB = new Blob([finalJsonString]).size / (1024 * 1024);
+                                
+                                localStorage.setItem('gallery_purchases', finalJsonString);
+                                console.warn(`⚠ Saved purchase WITHOUT image due to storage limits (${finalSizeMB.toFixed(2)}MB)`);
+                                return true;
+                            }
+                        } catch (retryError) {
+                            console.error('Failed to save even after aggressive cleanup:', retryError);
+                            // Ultimate fallback: clear gallery and save only this purchase
+                            try {
+                                // Try with image first
+                                const purchaseDataWithImage = {
+                                    ...purchaseData,
+                                    glbBase64: null
+                                };
+                                const testGallery = [purchaseDataWithImage];
+                                const testSize = new Blob([JSON.stringify(testGallery)]).size / (1024 * 1024);
+                                
+                                if (testSize < 8) {
+                                    localStorage.setItem('gallery_purchases', JSON.stringify(testGallery));
+                                    console.warn('Cleared gallery and saved purchase WITH image');
+                                    return true;
+                                } else {
+                                    // Last resort: without image
+                                    const purchaseDataMinimal = {
+                                        ...purchaseData,
+                                        nodeBodyImage: null,
+                                        glbBase64: null
+                                    };
+                                    const minimalGallery = [purchaseDataMinimal];
+                                    localStorage.setItem('gallery_purchases', JSON.stringify(minimalGallery));
+                                    console.warn('Cleared gallery and saved purchase WITHOUT image (storage too limited)');
+                                    return true;
+                                }
+                            } catch (finalError) {
+                                console.error('Failed to save even with minimal data:', finalError);
+                                return false;
+                            }
+                        }
+                    } else {
+                        throw storageError; // Re-throw if it's not a quota error
+                    }
+                }
+            } catch (e) {
+                console.error('Error saving purchase to gallery:', e);
+                console.error('Purchase data:', {
+                    id: purchaseData.id,
+                    wordCount: purchaseData.wordCount,
+                    totalValue: purchaseData.totalValue,
+                    hasImage: !!purchaseData.nodeBodyImage,
+                    hasGLB: !!purchaseData.glbBase64,
+                    textLength: purchaseData.originalText ? purchaseData.originalText.length : 0
+                });
+                return false;
+            }
+        }
+        
+        function getGalleryPurchases() {
+            try {
+                const purchases = JSON.parse(localStorage.getItem('gallery_purchases') || '[]');
+                // Log image status for debugging
+                console.log(`Loading ${purchases.length} purchases from gallery...`);
+                purchases.forEach((purchase, idx) => {
+                    if (purchase.nodeBodyImage) {
+                        const imgSizeKB = (purchase.nodeBodyImage.length * 3) / 4 / 1024;
+                        const isValid = purchase.nodeBodyImage.startsWith('data:image/');
+                        console.log(`  Purchase ${idx + 1} (ID: ${purchase.id}): Image found (${imgSizeKB.toFixed(2)}KB, valid: ${isValid}), preview: ${purchase.nodeBodyImage.substring(0, 50)}...`);
+                    } else {
+                        console.warn(`  Purchase ${idx + 1} (ID: ${purchase.id}): NO IMAGE`);
+                    }
+                });
+                return purchases;
+            } catch (e) {
+                console.error('Error loading gallery purchases:', e);
+                return [];
+            }
+        }
+        
+        // Get word repetition counts from gallery (for cost increase)
+        // Returns a Map with word -> { count: number, isName: boolean, isCompoundName: boolean }
+        function getWordRepetitionCounts() {
+            const gallery = getGalleryPurchases();
+            const wordData = new Map();
+            
+            gallery.forEach(purchase => {
+                if (purchase.topWords && Array.isArray(purchase.topWords)) {
+                    purchase.topWords.forEach(wordInfo => {
+                        // Handle both old format (string) and new format (object)
+                        let wordText, isName, isCompoundName;
+                        if (typeof wordInfo === 'string') {
+                            wordText = wordInfo.toLowerCase().trim();
+                            isName = false;
+                            isCompoundName = false;
+                        } else {
+                            wordText = (wordInfo.text || '').toLowerCase().trim();
+                            isName = wordInfo.isName === true || false;
+                            isCompoundName = wordInfo.isPartOfCompoundName === true || false;
+                        }
+                        
+                        if (wordText) {
+                            const existing = wordData.get(wordText) || { count: 0, isName: false, isCompoundName: false };
+                            existing.count += 1;
+                            // If ANY purchase marks it as name/compound, mark it as such
+                            if (isName || isCompoundName) {
+                                existing.isName = true;
+                            }
+                            if (isCompoundName) {
+                                existing.isCompoundName = true;
+                            }
+                            wordData.set(wordText, existing);
+                        }
+                    });
+                }
+            });
+            
+            return wordData;
+        }
+        
+        // Get TOP 20 words from analyzedWords with name information
+        function getTop20Words() {
+            if (!analyzedWords || analyzedWords.length === 0) return [];
+            
+            // Sort by finalValue descending and take top 20
+            const sorted = [...analyzedWords]
+                .filter(w => w && w.text)
+                .sort((a, b) => (b.finalValue || b.totalScore || 0) - (a.finalValue || a.totalScore || 0))
+                .slice(0, 20)
+                .map(w => ({
+                    text: w.text,
+                    isName: w.isName === true || false,
+                    isPartOfCompoundName: w.isPartOfCompoundName === true || false
+                }));
+            
+            return sorted;
+        }
+        
+        // Keep getTop5Words for backward compatibility (returns first 5 of top 20)
+        function getTop5Words() {
+            return getTop20Words().slice(0, 5);
+        }
+        
+        // Save purchase to gallery after download
+        async function savePurchaseToGalleryAfterDownload() {
+            try {
+                const totalValue = window.totalTextScore || analyzedWords.reduce((sum, w) => sum + (w.finalValue || w.totalScore || 0), 0);
+                const wordCount = analyzedWords.length;
+                const topWords = getTop20Words();
+                const timestamp = new Date().toISOString();
+                const purchaseTime = new Date().toLocaleString();
+                
+                // Get original text input for context comparison
+                const textInput = document.getElementById('textInput');
+                const originalText = textInput ? textInput.value.trim() : '';
+                
+                // Capture 3D node body image from claim-3d-container
+                // The container has a canvas 2D element with the rendered image - capture that directly!
+                let nodeBodyImageData = null;
+                const claim3DContainer = document.getElementById('claim-3d-container');
+                
+                // Verify container exists
+                if (!claim3DContainer) {
+                    console.error('claim-3d-container not found! Cannot capture image.');
+                } else {
+                    try {
+                        // Wait to ensure the 3D scene is fully rendered
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        // Find the canvas 2D element inside the container
+                        const canvas2D = claim3DContainer.querySelector('canvas');
+                        
+                        if (!canvas2D) {
+                            console.error('Canvas not found inside claim-3d-container!');
+                        } else {
+                            console.log(`Found canvas: ${canvas2D.width}x${canvas2D.height}`);
+                            
+                            // Capture directly from the canvas using toDataURL
+                            // This is much more reliable than html2canvas for canvas elements
+                            try {
+                                // Get the image data directly from the canvas
+                                nodeBodyImageData = canvas2D.toDataURL('image/jpeg', 0.70);
+                                console.log(`✓ Captured image directly from canvas: ${nodeBodyImageData.length} chars`);
+                                
+                                if (!nodeBodyImageData || nodeBodyImageData.length < 100) {
+                                    console.warn('Captured image seems too small or invalid');
+                                    nodeBodyImageData = null;
+                                } else {
+                                    console.log(`✓ Image captured successfully: ${nodeBodyImageData.substring(0, 50)}...`);
+                                }
+                            } catch (canvasError) {
+                                console.error('Error capturing from canvas:', canvasError);
+                                // Fallback to html2canvas if direct capture fails
+                                console.log('Falling back to html2canvas...');
+                                const canvas = await html2canvas(canvas2D, {
+                                    backgroundColor: '#000000',
+                                    scale: 1,
+                                    useCORS: true,
+                                    allowTaint: true,
+                                    logging: false
+                                });
+                                nodeBodyImageData = canvas.toDataURL('image/jpeg', 0.70);
+                                console.log(`✓ Captured using html2canvas fallback: ${nodeBodyImageData.length} chars`);
+                            }
+                        }
+                        
+                        // Process the captured image: resize and compress if needed (synchronously)
+                        if (nodeBodyImageData && nodeBodyImageData.length > 100) {
+                            // Wait for image processing to complete
+                            await new Promise((resolve, reject) => {
+                                const maxWidth = 350;
+                                const maxHeight = 500;
+                                
+                                const tempImg = new Image();
+                                tempImg.onload = () => {
+                                    try {
+                                        const needsResize = tempImg.width > maxWidth || tempImg.height > maxHeight;
+                                        
+                                        if (needsResize) {
+                                            const scale = Math.min(maxWidth / tempImg.width, maxHeight / tempImg.height);
+                                            const finalCanvas = document.createElement('canvas');
+                                            finalCanvas.width = tempImg.width * scale;
+                                            finalCanvas.height = tempImg.height * scale;
+                                            const ctx = finalCanvas.getContext('2d');
+                                            ctx.drawImage(tempImg, 0, 0, finalCanvas.width, finalCanvas.height);
+                                            
+                                            // Compress with JPEG
+                                            nodeBodyImageData = finalCanvas.toDataURL('image/jpeg', 0.70);
+                                            
+                                            const imageSizeKB = (nodeBodyImageData.length * 3) / 4 / 1024;
+                                            console.log(`✓ Resized and compressed image: ${imageSizeKB.toFixed(2)}KB`);
+                                            
+                                            // Further compress if still too large
+                                            if (imageSizeKB > 500) {
+                                                console.warn(`Image too large (${imageSizeKB.toFixed(2)}KB), reducing quality...`);
+                                                nodeBodyImageData = finalCanvas.toDataURL('image/jpeg', 0.50);
+                                                const newSizeKB = (nodeBodyImageData.length * 3) / 4 / 1024;
+                                                console.log(`Reduced to ${newSizeKB.toFixed(2)}KB`);
+                                                
+                                                if (newSizeKB > 500) {
+                                                    nodeBodyImageData = finalCanvas.toDataURL('image/jpeg', 0.40);
+                                                    const finalSizeKB = (nodeBodyImageData.length * 3) / 4 / 1024;
+                                                    console.log(`Final compressed: ${finalSizeKB.toFixed(2)}KB`);
+                                                }
+                                            }
+                                        } else {
+                                            // Just compress without resizing
+                                            const finalCanvas = document.createElement('canvas');
+                                            finalCanvas.width = tempImg.width;
+                                            finalCanvas.height = tempImg.height;
+                                            const ctx = finalCanvas.getContext('2d');
+                                            ctx.drawImage(tempImg, 0, 0);
+                                            
+                                            nodeBodyImageData = finalCanvas.toDataURL('image/jpeg', 0.70);
+                                            const imageSizeKB = (nodeBodyImageData.length * 3) / 4 / 1024;
+                                            console.log(`✓ Compressed image: ${imageSizeKB.toFixed(2)}KB`);
+                                            
+                                            if (imageSizeKB > 500) {
+                                                nodeBodyImageData = finalCanvas.toDataURL('image/jpeg', 0.50);
+                                            }
+                                        }
+                                        resolve();
+                                    } catch (e) {
+                                        console.error('Error processing image:', e);
+                                        reject(e);
+                                    }
+                                };
+                                tempImg.onerror = () => {
+                                    console.error('Failed to load captured image for processing');
+                                    nodeBodyImageData = null;
+                                    resolve(); // Resolve anyway to continue
+                                };
+                                tempImg.src = nodeBodyImageData;
+                            });
+                        } else if (nodeBodyImageData) {
+                            console.warn('Captured image too small, discarding');
+                            nodeBodyImageData = null;
+                        }
+                    } catch (e) {
+                        console.error('Could not capture 3D node body image:', e);
+                        console.error('Error details:', {
+                            message: e.message,
+                            stack: e.stack,
+                            containerExists: !!claim3DContainer,
+                            canvasFound: claim3DContainer ? !!claim3DContainer.querySelector('canvas') : false
+                        });
+                    }
+                }
+                
+                // Calculate weight (approximate - could be based on file size or node count)
+                const weight = nodes.length; // Using node count as weight
+                
+                // Calculate price (using total value in ETH)
+                let priceETH = 0;
+                if (ethPriceUSD && totalValue) {
+                    priceETH = totalValue / ethPriceUSD;
+                }
+                
+                // Get GLB base64 data if available
+                // CRITICAL: GLB files can be very large, so we'll only store them if they're reasonably sized
+                let glbBase64 = window.__latestGlbBase64 || null;
+                if (glbBase64) {
+                    const glbSizeKB = (glbBase64.length * 3) / 4 / 1024;
+                    console.log(`GLB data size: ${glbSizeKB.toFixed(2)}KB`);
+                    
+                    // If GLB is too large (>1MB), don't store it to save space
+                    if (glbSizeKB > 1024) {
+                        console.warn(`GLB too large (${glbSizeKB.toFixed(2)}KB), not storing to save localStorage space`);
+                        glbBase64 = null;
+                    }
+                }
+                
+                // Store repetition counts at purchase time for accurate CURRENT VALUE calculation
+                const purchaseTimeRepetitions = new Map();
+                const wordRepetitionsAtPurchase = getWordRepetitionCounts();
+                topWords.forEach(wordInfo => {
+                    const wordText = typeof wordInfo === 'string' ? wordInfo : (wordInfo.text || '');
+                    const wordLower = wordText.toLowerCase().trim();
+                    const repetitionData = wordRepetitionsAtPurchase.get(wordLower);
+                    if (repetitionData) {
+                        purchaseTimeRepetitions.set(wordLower, {
+                            count: repetitionData.count,
+                            isName: repetitionData.isName || false,
+                            isCompoundName: repetitionData.isCompoundName || false
+                        });
+                    }
+                });
+                
+                // Log image status before creating purchaseData
+                if (nodeBodyImageData) {
+                    const imgSizeKB = (nodeBodyImageData.length * 3) / 4 / 1024;
+                    console.log(`✓ Ready to save purchase with image (${imgSizeKB.toFixed(2)}KB)`);
+                    console.log(`✓ Image data preview: ${nodeBodyImageData.substring(0, 80)}...`);
+                    // Verify it's a valid data URL
+                    if (!nodeBodyImageData.startsWith('data:image/')) {
+                        console.error('❌ ERROR: Image data is not a valid data URL!');
+                        console.error('First 100 chars:', nodeBodyImageData.substring(0, 100));
+                        // Don't save invalid image data
+                        nodeBodyImageData = null;
+                    } else {
+                        console.log(`✓ Image data URL format verified: ${nodeBodyImageData.substring(0, 30)}...`);
+                        // Test if the image can be loaded
+                        const testImg = new Image();
+                        testImg.onload = () => {
+                            console.log(`✓ Image validation test passed: ${testImg.width}x${testImg.height}`);
+                        };
+                        testImg.onerror = () => {
+                            console.error('❌ Image validation test FAILED - image data is corrupted!');
+                        };
+                        testImg.src = nodeBodyImageData;
+                    }
+                } else {
+                    console.warn('⚠ No image captured for this purchase');
+                }
+                
+                const purchaseData = {
+                    id: Date.now().toString(),
+                    userId: USER_ID,
+                    timestamp: timestamp,
+                    purchaseTime: purchaseTime,
+                    totalValue: totalValue,
+                    priceETH: priceETH,
+                    weight: weight,
+                    wordCount: wordCount,
+                    topWords: topWords,
+                    nodeBodyImage: nodeBodyImageData, // CRITICAL: Always include image if captured
+                    glbBase64: glbBase64, // Store GLB as base64 for 3D visualization
+                    originalText: originalText, // Store original text for context comparison
+                    currentValue: totalValue, // Will be updated when words are reused
+                    purchaseTimeRepetitions: Array.from(purchaseTimeRepetitions.entries()).map(([word, data]) => ({
+                        word: word,
+                        count: data.count,
+                        isName: data.isName,
+                        isCompoundName: data.isCompoundName
+                    })) // Store repetition counts at purchase time
+                };
+                
+                // Verify image is in purchaseData before saving
+                if (purchaseData.nodeBodyImage) {
+                    console.log(`✓ Purchase data contains image (${purchaseData.nodeBodyImage.length} chars)`);
+                    console.log(`✓ Image starts with: ${purchaseData.nodeBodyImage.substring(0, 30)}...`);
+                } else {
+                    console.error('❌ ERROR: Purchase data does NOT contain image!');
+                }
+                
+                const saved = savePurchaseToGallery(purchaseData);
+                if (saved) {
+                    console.log('Purchase saved to gallery successfully:', {
+                        id: purchaseData.id,
+                        wordCount: purchaseData.wordCount,
+                        totalValue: purchaseData.totalValue,
+                        hasImage: !!purchaseData.nodeBodyImage,
+                        hasGLB: !!purchaseData.glbBase64
+                    });
+                    
+                    // Refresh gallery if visible
+                    if (galleryVisible) {
+                        createGalleryItems();
+                    }
+                } else {
+                    console.error('Failed to save purchase to gallery. Check console for details.');
+                    // Show user-friendly error message
+                    alert('Warning: Could not save purchase to gallery. The purchase may have been too large. Check console for details.');
+                }
+            } catch (e) {
+                console.error('Error in savePurchaseToGalleryAfterDownload:', e);
+                console.error('Error details:', {
+                    message: e.message,
+                    stack: e.stack,
+                    wordCount: analyzedWords ? analyzedWords.length : 0,
+                    hasTextInput: !!document.getElementById('textInput')
+                });
+                // Show user-friendly error message
+                alert('Error saving purchase to gallery. Please check the console for details.');
             }
         }
 
@@ -16223,6 +17064,14 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     }
                     window.__latestGlbBlob = blob;
                     window.__latestGlbFilename = filename;
+                    
+                    // Convert blob to base64 for gallery storage
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        window.__latestGlbBase64 = reader.result;
+                    };
+                    reader.readAsDataURL(blob);
+                    
                     // Descargar
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
@@ -16804,9 +17653,9 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 detailsContent.innerHTML = `
                     <div><strong>Word:</strong> ${wordData.text}</div>
                     <div><strong>Is Name:</strong> ${nameStatus}</div>
-                    <div><strong>Individual Value:</strong> $${individualValue.toFixed(2)} USD (${individualValueETHDisplay})</div>
+                    <div><strong>Individual Value:</strong> ${individualValueETHDisplay}</div>
                     <div><strong>Position in Text:</strong> ${index + 1} / ${analyzedWords.length}</div>
-                    <div><strong>Value / Total:</strong> ${relativeValue} ($${totalValue.toFixed(2)} total / ${totalValueETHDisplay})</div>
+                    <div><strong>Value / Total:</strong> ${relativeValue} (${totalValueETHDisplay} total)</div>
                     <div><strong>Part of Speech:</strong> ${wordData.pos}</div>
                     <div><strong>Connections:</strong> ${node.userData.connectionCount || 0}</div>
                     <div><strong>Size (KB):</strong> ${nodeSizeKB} KB</div>
@@ -17262,16 +18111,16 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             
             // Calculate statistics
             const totalWords = analyzedWords.length;
-            const totalValueUSD = window.totalTextScore || analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+            const totalValuePoints = window.totalTextScore || analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
             const avgBaseValue = analyzedWords.reduce((sum, w) => sum + (w.baseValue || 0), 0) / totalWords;
-            const avgFinalValueUSD = totalValueUSD / totalWords;
+            const avgFinalValuePoints = totalValuePoints / totalWords;
             
-            // Convert to ETH
+            // Convert points directly to ETH
             let totalValueETH = 0;
             let avgFinalValueETH = 0;
             if (ethPriceUSD) {
-                totalValueETH = totalValueUSD / ethPriceUSD;
-                avgFinalValueETH = avgFinalValueUSD / ethPriceUSD;
+                totalValueETH = totalValuePoints / ethPriceUSD;
+                avgFinalValueETH = avgFinalValuePoints / ethPriceUSD;
             }
             
             const totalValueETHDisplay = totalValueETH >= 0.01 ? 
@@ -17475,8 +18324,8 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             `;
             
             topWords.forEach((w, idx) => {
-                const wordValueUSD = w.finalValue || 0;
-                const wordValueETH = ethPriceUSD ? wordValueUSD / ethPriceUSD : 0;
+                const wordValuePoints = w.finalValue || 0;
+                const wordValueETH = ethPriceUSD ? wordValuePoints / ethPriceUSD : 0;
                 const wordValueETHDisplay = wordValueETH >= 0.01 ? 
                     `${wordValueETH.toFixed(6)} ETH` : 
                     `${wordValueETH.toFixed(10)} ETH`;
@@ -18622,9 +19471,9 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             // Update all fields
             document.getElementById('max-value-word').textContent = wordData.text;
             document.getElementById('max-value-is-name').textContent = nameStatus;
-            document.getElementById('max-value-individual-value').textContent = '$' + individualValue.toFixed(2) + ' USD (' + individualValueETHDisplay + ')';
+            document.getElementById('max-value-individual-value').textContent = individualValueETHDisplay;
             document.getElementById('max-value-position').textContent = (index + 1) + ' / ' + analyzedWords.length;
-            document.getElementById('max-value-relative-value').textContent = relativeValue + ' ($' + totalValue.toFixed(2) + ' total / ' + totalValueETHDisplay + ')';
+            document.getElementById('max-value-relative-value').textContent = relativeValue + ' (' + totalValueETHDisplay + ' total)';
             document.getElementById('max-value-pos').textContent = wordData.pos;
             document.getElementById('max-value-connections').textContent = maxValueNode.userData.connectionCount || 0;
             document.getElementById('max-value-size').textContent = nodeSizeKB + ' KB';
@@ -19234,8 +20083,8 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 return sum + (wordData.finalValue || wordData.totalScore || 0);
             }, 0);
             
-            // Convert to Ethereum and display (only ETH, no USD)
-            // Note: The totalValue is now in the linguistic scoring units, not USD
+            // Convert points directly to ETH and display
+            // Note: The totalValue is in points, converted directly to ETH
             convertToEthereum(totalValue);
             
             // Update real-time info panel
@@ -19259,14 +20108,14 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             const nameCount = analyzedWords.filter(wordData => wordData.isName).length;
             document.getElementById('realtime-names').textContent = nameCount;
             
-            // Total Value (using new linguistic scoring system)
-            const totalValueUSD = window.totalTextScore || analyzedWords.reduce((sum, wordData) => {
+            // Total Value (using new linguistic scoring system) - convert points directly to ETH
+            const totalValuePoints = window.totalTextScore || analyzedWords.reduce((sum, wordData) => {
                 return sum + (wordData.finalValue || wordData.totalScore || 0);
             }, 0);
             
             let totalValueETH = 0;
             if (ethPriceUSD) {
-                totalValueETH = totalValueUSD / ethPriceUSD;
+                totalValueETH = totalValuePoints / ethPriceUSD;
             }
             const totalValueETHDisplay = totalValueETH >= 0.01 ? 
                 `${totalValueETH.toFixed(6)} ETH` : 
@@ -19312,25 +20161,26 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
         }
         
         // Fetch Ethereum price and convert USD value to ETH
-        async function convertToEthereum(usdValue) {
+        // Convert points directly to ETH (no USD conversion)
+        async function convertToEthereum(pointsValue) {
             try {
-                // Fetch current Ethereum price from CoinGecko API
+                // Fetch current Ethereum price from CoinGecko API (used as conversion rate)
                 if (!ethPriceUSD) {
                     const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
                     const data = await response.json();
                     ethPriceUSD = data.ethereum.usd;
                 }
                 
-                // Convert USD to ETH
-                const ethValue = usdValue / ethPriceUSD;
+                // Convert points directly to ETH (points are treated as USD-equivalent, then converted to ETH)
+                const ethValue = pointsValue / ethPriceUSD;
                 
-                // Display ETH value only (no USD)
+                // Display ETH value only
                 const ethDisplay = ethValue >= 0.01 ? 
                     `${ethValue.toFixed(6)} ETH` : 
                     `${ethValue.toFixed(10)} ETH`;
                 
                 document.getElementById('valueScore').textContent = ethDisplay;
-                document.getElementById('valueETH').textContent = ''; // Clear USD display
+                document.getElementById('valueETH').textContent = ''; // Keep empty
             } catch (error) {
                 console.error('Error fetching Ethereum price:', error);
                 document.getElementById('valueScore').textContent = 'ETH price unavailable';
@@ -19341,12 +20191,12 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     const response = await fetch('https://api.coincap.io/v2/assets/ethereum');
                     const data = await response.json();
                     ethPriceUSD = parseFloat(data.data.priceUsd);
-                    const ethValue = usdValue / ethPriceUSD;
+                    const ethValue = pointsValue / ethPriceUSD;
                     const ethDisplay = ethValue >= 0.01 ? 
                         `${ethValue.toFixed(6)} ETH` : 
                         `${ethValue.toFixed(10)} ETH`;
                     document.getElementById('valueScore').textContent = ethDisplay;
-                    document.getElementById('valueETH').textContent = ''; // Clear USD display
+                    document.getElementById('valueETH').textContent = '';
                 } catch (fallbackError) {
                     console.error('Fallback API also failed:', fallbackError);
                 }
@@ -19355,6 +20205,10 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
         
         // Fetch Ethereum price on page load
         window.addEventListener('load', () => {
+            // Reset gallery data on page reload
+            localStorage.removeItem('gallery_purchases');
+            console.log('[GALLERY] Gallery data reset on page load');
+            
             fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd')
                 .then(response => response.json())
                 .then(data => {
@@ -19410,8 +20264,8 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 return scoreB - scoreA; // Descending order
             });
             
-            // Return top 12
-            return sortedNodes.slice(0, 12);
+            // Return top 48
+            return sortedNodes.slice(0, 48);
         }
 
         function createNodeListItems() {
@@ -19493,9 +20347,9 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 // Add info fields
                 infoContainer.innerHTML = `
                     <div><strong>Word:</strong> ${wordData.text}</div>
-                    <div><strong>Individual Value:</strong> $${individualValue.toFixed(2)} USD (${individualValueETHDisplay})</div>
+                    <div><strong>Individual Value:</strong> ${individualValueETHDisplay}</div>
                     <div><strong>Position in Text:</strong> ${nodeIndex + 1} / ${analyzedWords.length}</div>
-                    <div><strong>Value / Total:</strong> ${relativeValue} ($${totalValue.toFixed(2)} total / ${totalValueETHDisplay})</div>
+                    <div><strong>Value / Total:</strong> ${relativeValue} (${totalValueETHDisplay} total)</div>
                     <div><strong>Part of Speech:</strong> ${wordData.pos}</div>
                     <div><strong>Connections:</strong> ${node.userData.connectionCount || 0}</div>
                     <div><strong>Size (KB):</strong> ${nodeSizeKB} KB</div>
@@ -19762,50 +20616,255 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             clearGallery();
             
             const container = document.getElementById('node-list-container');
+            const purchases = getGalleryPurchases();
             
-            // Crear 20 elementos de galería
-            for (let i = 0; i < 20; i++) {
+            // Note: CURRENT VALUE calculation removed per user request
+            // All purchases will use totalValue as their display value
+            
+            // Sort by total value (descending) - already sorted in storage, but re-sort to be sure
+            purchases.sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0));
+            
+            // Create gallery items for each purchase
+            purchases.forEach((purchase, index) => {
                 // Create item container
                 const item = document.createElement('div');
                 item.className = 'node-list-item';
-                item.id = `gallery-item-${i}`;
+                item.id = `gallery-item-${index}`;
                 
-                // Create header con número
+                // Create header con número (ranking)
                 const header = document.createElement('div');
                 header.className = 'node-list-item-header';
                 const headerText = document.createElement('h3');
                 headerText.style.cssText = 'color: #000000; font-size: 11px; margin: 0; font-family: Helvetica, Arial, sans-serif;';
-                headerText.textContent = (i + 1).toString();
+                headerText.textContent = (index + 1).toString();
                 header.appendChild(headerText);
                 
-                // Create canvas container con recuadro negro
+                // Create canvas container con imagen del cuerpo de nodos
                 const canvasContainer = document.createElement('div');
                 canvasContainer.className = 'node-list-item-canvas-container';
                 const canvas = document.createElement('canvas');
                 canvas.className = 'node-list-item-canvas';
-                canvas.id = `gallery-canvas-${i}`;
+                canvas.id = `gallery-canvas-${index}`;
                 
-                // Dibujar recuadro negro en el canvas
-                const ctx = canvas.getContext('2d');
+                // Set canvas dimensions explicitly BEFORE adding to DOM
                 canvas.width = 200;
                 canvas.height = 120;
-                ctx.fillStyle = '#000000';
-                ctx.fillRect(0, 0, 200, 120);
+                canvas.style.width = '200px';
+                canvas.style.height = '120px';
+                canvas.style.display = 'block';
+                canvas.style.backgroundColor = '#000000';
                 
+                // Add canvas to container FIRST
                 canvasContainer.appendChild(canvas);
                 
-                // Create info container vacío (solo recuadro negro)
+                // Function to draw image on canvas (called after canvas is in DOM)
+                const drawImageOnCanvas = (imageData, targetCanvas) => {
+                    console.log(`drawImageOnCanvas called for purchase ${purchase.id}`);
+                    console.log(`Image data type: ${typeof imageData}, length: ${imageData ? imageData.length : 0}`);
+                    
+                    if (!imageData || imageData.length < 100) {
+                        console.error(`❌ No valid image data for purchase ${purchase.id} - length: ${imageData ? imageData.length : 0}`);
+                        // Draw black background
+                        try {
+                            const ctx = targetCanvas.getContext('2d');
+                            ctx.fillStyle = '#000000';
+                            ctx.fillRect(0, 0, 200, 120);
+                        } catch (e) {
+                            console.error('Error drawing black background:', e);
+                        }
+                        return;
+                    }
+                    
+                    // Check if it's a valid data URL
+                    if (!imageData.startsWith('data:image/')) {
+                        console.error(`❌ Invalid image data URL format for purchase ${purchase.id}`);
+                        console.error('Image data preview:', imageData.substring(0, 100));
+                        // Draw black background
+                        try {
+                            const ctx = targetCanvas.getContext('2d');
+                            ctx.fillStyle = '#000000';
+                            ctx.fillRect(0, 0, 200, 120);
+                        } catch (e) {
+                            console.error('Error drawing black background:', e);
+                        }
+                        return;
+                    }
+                    
+                    console.log(`✓ Valid image data URL detected, creating Image object...`);
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    
+                    img.onload = function() {
+                        console.log(`✓ Image loaded successfully for purchase ${purchase.id}: ${img.width}x${img.height}`);
+                        try {
+                            // Get fresh context AFTER canvas is in DOM
+                            const drawCtx = targetCanvas.getContext('2d');
+                            if (!drawCtx) {
+                                console.error('❌ Could not get canvas context for purchase:', purchase.id);
+                                return;
+                            }
+                            
+                            // Verify image loaded correctly
+                            if (img.width === 0 || img.height === 0 || !isFinite(img.width) || !isFinite(img.height)) {
+                                console.error(`❌ Image has invalid dimensions for purchase ${purchase.id}: ${img.width}x${img.height}`);
+                                // Draw black background
+                                drawCtx.fillStyle = '#000000';
+                                drawCtx.fillRect(0, 0, 200, 120);
+                                return;
+                            }
+                            
+                            // Calculate aspect ratio and drawing dimensions
+                            const imgAspect = img.width / img.height;
+                            const canvasAspect = 200 / 120;
+                            let drawWidth, drawHeight, drawX, drawY;
+                            
+                            if (imgAspect > canvasAspect) {
+                                // Image is wider - fit to width
+                                drawWidth = 200;
+                                drawHeight = 200 / imgAspect;
+                                drawX = 0;
+                                drawY = (120 - drawHeight) / 2;
+                            } else {
+                                // Image is taller - fit to height
+                                drawHeight = 120;
+                                drawWidth = 120 * imgAspect;
+                                drawX = (200 - drawWidth) / 2;
+                                drawY = 0;
+                            }
+                            
+                            // Ensure dimensions are valid
+                            if (!isFinite(drawWidth) || !isFinite(drawHeight) || drawWidth <= 0 || drawHeight <= 0) {
+                                console.error(`❌ Invalid draw dimensions for purchase ${purchase.id}: ${drawWidth}x${drawHeight}`);
+                                // Draw black background
+                                drawCtx.fillStyle = '#000000';
+                                drawCtx.fillRect(0, 0, 200, 120);
+                                return;
+                            }
+                            
+                            // Clear canvas and redraw background
+                            drawCtx.fillStyle = '#000000';
+                            drawCtx.fillRect(0, 0, 200, 120);
+                            
+                            // Draw image
+                            drawCtx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+                            
+                            console.log(`✅ SUCCESS: Gallery image drawn for purchase ${purchase.id} (${img.width}x${img.height} → ${drawWidth.toFixed(0)}x${drawHeight.toFixed(0)})`);
+                        } catch (e) {
+                            console.error('❌ Error drawing gallery image:', e);
+                            console.error('Image dimensions:', img.width, 'x', img.height);
+                            console.error('Canvas dimensions:', targetCanvas.width, 'x', targetCanvas.height);
+                            console.error('Error stack:', e.stack);
+                            // Draw black background on error
+                            try {
+                                const errorCtx = targetCanvas.getContext('2d');
+                                errorCtx.fillStyle = '#000000';
+                                errorCtx.fillRect(0, 0, 200, 120);
+                            } catch (err) {
+                                console.error('Could not draw error background:', err);
+                            }
+                        }
+                    };
+                    
+                    img.onerror = function(error) {
+                        console.error('❌ Failed to load gallery image for purchase:', purchase.id);
+                        console.error('Image data length:', imageData ? imageData.length : 0);
+                        console.error('Image data preview:', imageData ? imageData.substring(0, 100) : 'null');
+                        console.error('Image data starts with:', imageData ? imageData.substring(0, 20) : 'null');
+                        console.error('Error details:', error);
+                        // Draw black background on error
+                        try {
+                            const errorCtx = targetCanvas.getContext('2d');
+                            errorCtx.fillStyle = '#000000';
+                            errorCtx.fillRect(0, 0, 200, 120);
+                        } catch (err) {
+                            console.error('Could not draw error background:', err);
+                        }
+                    };
+                    
+                    // Set image source (this triggers onload/onerror)
+                    console.log(`Setting img.src for purchase ${purchase.id}...`);
+                    img.src = imageData;
+                };
+                
+                // Initialize canvas with black background
+                const initCtx = canvas.getContext('2d');
+                initCtx.fillStyle = '#000000';
+                initCtx.fillRect(0, 0, 200, 120);
+                
+                // Draw image if available (after canvas is in DOM)
+                console.log(`Processing purchase ${index + 1} (ID: ${purchase.id}):`);
+                console.log(`  - Has nodeBodyImage: ${!!purchase.nodeBodyImage}`);
+                console.log(`  - Image length: ${purchase.nodeBodyImage ? purchase.nodeBodyImage.length : 0}`);
+                console.log(`  - Image preview: ${purchase.nodeBodyImage ? purchase.nodeBodyImage.substring(0, 50) : 'null'}...`);
+                
+                // Add canvas to DOM first, then draw image
+                item.appendChild(header);
+                item.appendChild(canvasContainer);
+                
+                // Draw image if available (after canvas is in DOM)
+                if (purchase.nodeBodyImage && purchase.nodeBodyImage.length > 100) {
+                    // Verify it's a valid data URL
+                    if (!purchase.nodeBodyImage.startsWith('data:image/')) {
+                        console.error(`⚠ Invalid image format for purchase ${purchase.id}: ${purchase.nodeBodyImage.substring(0, 50)}...`);
+                    } else {
+                        console.log(`✓ Valid image data URL found, drawing to canvas...`);
+                        // Use longer timeout to ensure canvas is fully in DOM and rendered
+                        setTimeout(() => {
+                            console.log(`Attempting to draw image for purchase ${purchase.id}...`);
+                            drawImageOnCanvas(purchase.nodeBodyImage, canvas);
+                        }, 100);
+                    }
+                } else {
+                    // No image or image too small
+                    if (!purchase.nodeBodyImage) {
+                        console.warn(`⚠ No nodeBodyImage for purchase: ${purchase.id}`);
+                    } else {
+                        console.warn(`⚠ nodeBodyImage too small for purchase: ${purchase.id}, length: ${purchase.nodeBodyImage.length}`);
+                    }
+                }
+                
+                // Create info container con información simplificada
                 const infoContainer = document.createElement('div');
                 infoContainer.className = 'node-list-item-info';
-                infoContainer.style.cssText = 'background: #000000; min-height: 0; padding: 0;';
-                infoContainer.innerHTML = ''; // Sin contenido
+                infoContainer.style.cssText = 'background: #000000; color: #ffffff; padding: 6px; font-family: Helvetica, Arial, sans-serif; font-size: 10px; line-height: 1.4;';
+                
+                // Format price
+                const priceDisplay = purchase.priceETH >= 0.01 ? 
+                    `${purchase.priceETH.toFixed(6)} ETH` : 
+                    `${purchase.priceETH.toFixed(10)} ETH`;
+                
+                // Convert total value to ETH
+                let totalValueETH = 0;
+                if (ethPriceUSD && purchase.totalValue) {
+                    totalValueETH = purchase.totalValue / ethPriceUSD;
+                }
+                const totalValueDisplay = totalValueETH >= 0.01 ? 
+                    `${totalValueETH.toFixed(6)} ETH` : 
+                    `${totalValueETH.toFixed(10)} ETH`;
+                
+                // Format time
+                const timeDisplay = purchase.purchaseTime || new Date(purchase.timestamp).toLocaleString();
+                
+                // Format top words (handle both old format strings and new format objects)
+                const topWordsDisplay = purchase.topWords && purchase.topWords.length > 0 ? 
+                    purchase.topWords.map(w => typeof w === 'string' ? w : (w.text || '')).join(', ') : 'N/A';
+                
+                infoContainer.innerHTML = `
+                    <div style="margin-bottom: 3px;"><strong>USER:</strong> ${purchase.userId || 'N/A'}</div>
+                    <div style="margin-bottom: 3px;"><strong>PRICE:</strong> ${priceDisplay}</div>
+                    <div style="margin-bottom: 3px;"><strong>WEIGHT:</strong> ${purchase.weight || 0}</div>
+                    <div style="margin-bottom: 3px;"><strong>WORDS:</strong> ${purchase.wordCount || 0}</div>
+                    <div style="margin-bottom: 3px;"><strong>TIME:</strong> ${timeDisplay}</div>
+                    <div style="margin-bottom: 3px; color: #ffff00;"><strong>TOTAL VALUE:</strong> ${totalValueDisplay}</div>
+                    <div style="margin-top: 4px; padding-top: 3px; border-top: 1px solid #333333;"><strong>TOP WORDS:</strong> ${topWordsDisplay}</div>
+                `;
                 
                 // Assemble item
                 item.appendChild(header);
                 item.appendChild(canvasContainer);
                 item.appendChild(infoContainer);
                 container.appendChild(item);
-            }
+            });
         }
 
         function clearGallery() {
