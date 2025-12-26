@@ -1305,7 +1305,7 @@
         // Update this version number each time a change is made
         // Format: v0.5.0 -> v0.5.01 -> v0.5.02 -> ... -> v0.5.20 -> v0.6.0 -> v0.6.01, etc.
         // The third number goes from 00 to 20, then increments the second number
-        const PROJECT_VERSION = 'v0.6.1';
+        const PROJECT_VERSION = 'v0.6.3';
         
         // Generate unique user ID on first access
         function generateUserId() {
@@ -10024,6 +10024,56 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 console.log(`[GALLERY REPETITION] No words found in gallery - no cost increase applied`);
             }
             
+            // ========== SHORT TEXT BOOST (x10 for <10 words, x5 for <20 words) - APPLIED AFTER ALL GALLERY CALCULATIONS ==========
+            // This boost applies ONLY to non-name words and does NOT interfere with Gallery increases
+            const totalWordCount = analyzedWords.length;
+            let shortTextBoostFactor = 1.0;
+            
+            if (totalWordCount < 10) {
+                shortTextBoostFactor = 10.0; // x10 boost for less than 10 words
+            } else if (totalWordCount < 20) {
+                shortTextBoostFactor = 5.0; // x5 boost for less than 20 words
+            }
+            
+            if (shortTextBoostFactor > 1.0) {
+                console.log(`=== Applying short text boost (${shortTextBoostFactor}x) for ${totalWordCount} words ===`);
+                
+                // Calculate total value of non-name words (excluding names and compound names)
+                let nonNameWordsTotalValue = 0;
+                const nameIndices = new Set();
+                
+                // Identify names and compound names
+                analyzedWords.forEach((wordData, index) => {
+                    if (wordData.isName === true || wordData.isPartOfCompoundName === true) {
+                        nameIndices.add(index);
+                    }
+                });
+                
+                // Sum values of non-name words
+                analyzedWords.forEach((wordData, index) => {
+                    if (!nameIndices.has(index)) {
+                        nonNameWordsTotalValue += wordData.finalValue || 0;
+                    }
+                });
+                
+                // Calculate boost amount (only applies to non-name words)
+                const boostAmount = nonNameWordsTotalValue * (shortTextBoostFactor - 1.0);
+                
+                // Apply boost to non-name words only
+                analyzedWords.forEach((wordData, index) => {
+                    if (!nameIndices.has(index)) {
+                        const valueBeforeBoost = wordData.finalValue || 0;
+                        wordData.finalValue = valueBeforeBoost * shortTextBoostFactor;
+                        wordData.totalScore = wordData.finalValue;
+                    }
+                });
+                
+                // Update total value
+                totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+                
+                console.log(`[SHORT TEXT BOOST] Applied ${shortTextBoostFactor}x boost to ${analyzedWords.length - nameIndices.size} non-name words. Boost amount: ${boostAmount.toFixed(2)}, Total value after boost: ${totalValue.toFixed(2)}`);
+            }
+            
             console.log(`Total text value: ${totalValue.toFixed(2)} points`);
             
             // Store total value for display update
@@ -16225,10 +16275,11 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 
                 const zip = new JSZip();
                 let imageReady = false;
+                let nodeBodyImageReady = false;
                 let glbReady = false;
 
                 function checkAndDownload() {
-                    if (imageReady && glbReady) {
+                    if (imageReady && nodeBodyImageReady && glbReady) {
                         zip.generateAsync({ type: 'blob' }).then((content) => {
                             const link = document.createElement('a');
                             link.href = URL.createObjectURL(content);
@@ -16422,7 +16473,48 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     checkAndDownload();
                 }
 
-                // 2. Exportar GLB
+                // 2. Capturar imagen del cuerpo de nodos (claim-3d-container)
+                const claim3DContainer = document.getElementById('claim-3d-container');
+                if (claim3DContainer) {
+                    // Find the canvas 2D element inside the container
+                    const canvas2D = claim3DContainer.querySelector('canvas');
+                    
+                    if (canvas2D) {
+                        try {
+                            // Capture directly from the canvas using toDataURL
+                            const imageData = canvas2D.toDataURL('image/jpeg', 0.90);
+                            
+                            // Convert data URL to blob
+                            fetch(imageData)
+                                .then(res => res.blob())
+                                .then(blob => {
+                                    zip.file('node-body-image.jpg', blob);
+                                    nodeBodyImageReady = true;
+                                    console.log('✓ Node body image captured and added to ZIP');
+                                    checkAndDownload();
+                                })
+                                .catch(error => {
+                                    console.error('Error converting node body image to blob:', error);
+                                    nodeBodyImageReady = true;
+                                    checkAndDownload();
+                                });
+                        } catch (error) {
+                            console.error('Error capturing node body image:', error);
+                            nodeBodyImageReady = true;
+                            checkAndDownload();
+                        }
+                    } else {
+                        console.warn('Canvas not found inside claim-3d-container');
+                        nodeBodyImageReady = true;
+                        checkAndDownload();
+                    }
+                } else {
+                    console.warn('claim-3d-container not found');
+                    nodeBodyImageReady = true;
+                    checkAndDownload();
+                }
+
+                // 3. Exportar GLB
                 if (typeof THREE.GLTFExporter === 'undefined') {
                     alert('Error: GLTFExporter no está disponible.');
                     glbReady = true;
