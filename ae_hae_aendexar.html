@@ -1289,8 +1289,10 @@
         let isDragging = false;
         
         // Project version
-        // Update this version number each time a change is made: v0.1.0 -> v0.1.1 -> v0.1.2, etc.
-        const PROJECT_VERSION = 'v0.4.8';
+        // Update this version number each time a change is made
+        // Format: v0.5.0 -> v0.5.01 -> v0.5.02 -> ... -> v0.5.20 -> v0.6.0 -> v0.6.01, etc.
+        // The third number goes from 00 to 20, then increments the second number
+        const PROJECT_VERSION = 'v0.5.07';
         let previousMousePosition = { x: 0, y: 0 };
         let cameraAngleX = 0;
         let cameraAngleY = 0;
@@ -3602,7 +3604,10 @@ ADVERBS:
 PRONOUNS:
    - PRONOUN: Pronouns (I, you, he, she, it, we, they, this, that)
      * Person: "1st_singular" (I), "1st_plural" (we), "2nd" (you), "3rd" (he, she, it, they), or null
-     * Possessive: true for possessive pronouns (my, your, his, her, its, our, their), false otherwise
+     * Possessive: true for possessive pronouns (my, your, yours, mine, his, her, hers, its, our, ours, their, theirs), false otherwise
+     * CRITICAL: Must accurately identify possessive pronouns - they receive ×5 multiplier
+     * Examples of possessive pronouns: my, your, yours, mine, his, her, hers, its, our, ours, their, theirs
+     * Spanish examples: mi, tu, su, sus, mío, mía, míos, mías, tuyo, tuya, tuyos, tuyas, suyo, suya, suyos, suyas, nuestro, nuestra, nuestros, nuestras
 
 OTHER PARTS OF SPEECH:
    - DETERMINER: Determiners (the, a, an, this, that, these, those)
@@ -3625,6 +3630,13 @@ SYNTACTIC CONTEXT (CRITICAL - provide for each word):
      * "connector" - connects clauses/phrases
      * "isolated" - word stands alone (single word text) (CRITICAL: triggers isolation multipliers)
      * null - if role cannot be determined
+   
+   - isQuestion: true if the sentence containing this word is a question, false otherwise (CRITICAL: questions trigger 30% devaluation)
+     * Questions are identified by: question marks (?), interrogative words (what, who, where, why, how, which, when), inverted word order (verb before subject), or question intonation patterns
+     * Examples: "What is this?" → all words have isQuestion: true
+     * Examples: "Who are you?" → all words have isQuestion: true
+     * Examples: "Is this good?" → all words have isQuestion: true
+     * Examples: "This is good." → all words have isQuestion: false
 
    - isNucleus: true if the word is part of the semantic nucleus (subject + predicate + complement), false otherwise
      * The nucleus contains the core meaning: who/what (subject) + does/is what (predicate) + to/for what (complement)
@@ -3675,11 +3687,18 @@ COMPOUND NAMES (CRITICAL - SIMPLIFIED LOGIC):
    - CRITICAL: Must accurately identify all parts of compound names and mark them with isCompoundName: true
    - CRITICAL: All parts of a compound name should have the same value (distributed equally)
 
-VERB TENSES:
+VERB TENSES (CRITICAL - provide for each verb and determine overall text tense):
    - PRESENT: am, is, are, walk, walks, running - REMEMBER: "is" is PRESENT tense, third person singular of "to be"
    - PAST: was, were, walked, ran
    - FUTURE: will go, shall be
    - null: if tense cannot be determined
+   
+   - textTense: The overall tense of the entire text (CRITICAL: affects value calculation for texts >100 words)
+     * "PRESENT" - if the text is primarily in present tense
+     * "PAST" - if the text is primarily in past tense
+     * "FUTURE" - if the text is primarily in future tense
+     * Determine based on the majority of verbs in the text
+     * This field should be provided for ALL words in the analysis (same value for all words in the same text)
 
 CRITICAL: "is" recognition:
    - The word "is" is ALWAYS VERB_AUXILIARY with tense: PRESENT, subclass: "to_be"
@@ -3706,7 +3725,10 @@ Return format (JSON array only, no other text):
   {"word": "she's", "pos": "VERB_AUXILIARY", "subclass": "to_be", "tense": "PRESENT", "isName": false, "syntacticRole": "predicate", "isNucleus": true, "semanticRole": "identity", "isOntological": true, "isComparison": false, "closureLevel": "HIGH"},
   {"word": "good", "pos": "ADJECTIVE", "semanticType": "evaluative", "isName": false, "syntacticRole": "predicate_complement", "isNucleus": true, "semanticRole": "quality", "isOntological": true, "isComparison": false, "closureLevel": "HIGH"},
   {"word": "not", "pos": "PART", "subclass": "negation", "isName": false, "syntacticRole": "modifier", "isNucleus": false, "semanticRole": "negation", "isOntological": false, "isComparison": false, "closureLevel": null},
-  {"word": "more", "pos": "ADVERB", "semanticType": "degree", "isName": false, "syntacticRole": "modifier", "isNucleus": false, "semanticRole": "comparison", "isOntological": false, "isComparison": true, "closureLevel": null}
+  {"word": "more", "pos": "ADVERB", "semanticType": "degree", "isName": false, "syntacticRole": "modifier", "isNucleus": false, "semanticRole": "comparison", "isOntological": false, "isComparison": true, "closureLevel": null, "isQuestion": false, "textTense": "PRESENT"},
+  {"word": "What", "pos": "PRONOUN", "isName": false, "syntacticRole": "subject", "isNucleus": true, "semanticRole": "question", "isOntological": false, "isComparison": false, "closureLevel": null, "isQuestion": true, "textTense": "PRESENT"},
+  {"word": "is", "pos": "VERB_AUXILIARY", "subclass": "to_be", "tense": "PRESENT", "isName": false, "syntacticRole": "predicate", "isNucleus": true, "semanticRole": "identity", "isOntological": false, "isComparison": false, "closureLevel": "MEDIUM", "isQuestion": true, "textTense": "PRESENT"},
+  {"word": "this", "pos": "PRONOUN", "isName": false, "syntacticRole": "object", "isNucleus": true, "semanticRole": "identity", "isOntological": false, "isComparison": false, "closureLevel": null, "isQuestion": true, "textTense": "PRESENT"}
 ]
 
 CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
@@ -4948,6 +4970,68 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                             why: `To be verb frequency adjustment (${toBeCount} to be verbs in text, +0.33× per extra after 2nd, reduced 70%)`
                         });
                     }
+                    
+                    // NEW: Boost ×4 if "to be" is followed by pronoun/name/compound name/noun
+                    // CRITICAL: Also handle separated contractions ('m, 's, 're) as "to be"
+                    const currentText = (token.surface || '').toLowerCase().trim();
+                    const isSeparatedContractionPart = (currentText === 'm' || currentText === 's' || currentText === 're') && 
+                                                       prevToken && isToBeVerb(currentText, prevToken);
+                    
+                    // If this is a separated contraction part ('m, 's, 're), check the next token
+                    // If this is a regular "to be" verb, check the next token normally
+                    const nextTokenForToBe = index < tokens.length - 1 ? tokens[index + 1] : null;
+                    const nextAnalyzedForToBe = nextTokenForToBe && analyzedWords && analyzedWords[index + 1] ? analyzedWords[index + 1] : null;
+                    
+                    if (nextTokenForToBe && nextAnalyzedForToBe) {
+                        // Check if next word is pronoun, name, compound name part, or noun
+                        const isNextPronoun = nextTokenForToBe.type === 'PRON' || nextTokenForToBe.type === 'PRONOUN' || 
+                                             (nextAnalyzedForToBe && (nextAnalyzedForToBe.pos === 'pronoun' || nextAnalyzedForToBe.uposType === 'PRON'));
+                        const isNextName = nextAnalyzedForToBe && (nextAnalyzedForToBe.isName === true || nextAnalyzedForToBe.isPartOfCompoundName === true);
+                        const isNextNoun = nextTokenForToBe.type === 'NOUN' || 
+                                          (nextAnalyzedForToBe && (nextAnalyzedForToBe.pos === 'noun' || nextAnalyzedForToBe.uposType === 'NOUN') && !nextAnalyzedForToBe.isName);
+                        
+                        if (isNextPronoun || isNextName || isNextNoun) {
+                            multipliers.push({
+                                name: 'to_be_before_pronoun_name_noun_boost',
+                                factor: 4.0, // ×4 boost
+                                why: `To be verb before ${isNextPronoun ? 'pronoun' : isNextName ? 'name/compound name' : 'noun'} - ×4 multiplier`
+                            });
+                            console.log(`[TO_BE_BOOST] Applied ×4 boost to "to be" verb "${token.surface}" at index ${index} (followed by ${isNextPronoun ? 'pronoun' : isNextName ? 'name/compound name' : 'noun'})`);
+                        }
+                    }
+                    
+                    // NEW: Boost ×2 if "to be" comes after pronoun/name/compound name/noun
+                    // CRITICAL: Handle both regular "to be" verbs and separated contractions ('m, 's, 're)
+                    if (index > 0) {
+                        const prevTokenForToBe = tokens[index - 1];
+                        const prevAnalyzedForToBe = analyzedWords && analyzedWords[index - 1] ? analyzedWords[index - 1] : null;
+                        
+                        // Check if current token is a separated contraction part ('m, 's, 're) that forms "to be" with previous token
+                        const isContractionPartToBe = (currentText === 'm' || currentText === 's' || currentText === 're') && 
+                                                       prevTokenForToBe && isToBeVerb(currentText, prevTokenForToBe);
+                        
+                        // For regular "to be" verbs, check if previous word qualifies
+                        // For separated contractions, the previous word IS the pronoun/noun that triggers the boost
+                        if (prevTokenForToBe && prevAnalyzedForToBe) {
+                            // Check if previous word is pronoun, name, compound name part, or noun
+                            const isPrevPronoun = prevTokenForToBe.type === 'PRON' || prevTokenForToBe.type === 'PRONOUN' || 
+                                                 (prevAnalyzedForToBe && (prevAnalyzedForToBe.pos === 'pronoun' || prevAnalyzedForToBe.uposType === 'PRON'));
+                            const isPrevName = prevAnalyzedForToBe && (prevAnalyzedForToBe.isName === true || prevAnalyzedForToBe.isPartOfCompoundName === true);
+                            const isPrevNoun = prevTokenForToBe.type === 'NOUN' || 
+                                              (prevAnalyzedForToBe && (prevAnalyzedForToBe.pos === 'noun' || prevAnalyzedForToBe.uposType === 'NOUN') && !prevAnalyzedForToBe.isName);
+                            
+                            // Apply boost if: (1) regular "to be" after pronoun/noun/name, OR (2) separated contraction part ('m/'s/'re) after pronoun
+                            if ((isToBe && (isPrevPronoun || isPrevName || isPrevNoun)) || 
+                                (isContractionPartToBe && isPrevPronoun)) {
+                                multipliers.push({
+                                    name: 'to_be_after_pronoun_name_noun_boost',
+                                    factor: 2.0, // ×2 boost
+                                    why: `To be verb after ${isPrevPronoun ? 'pronoun' : isPrevName ? 'name/compound name' : 'noun'} - ×2 multiplier`
+                                });
+                                console.log(`[TO_BE_BOOST] Applied ×2 boost to "to be" verb "${token.surface}" at index ${index} (after ${isPrevPronoun ? 'pronoun' : isPrevName ? 'name/compound name' : 'noun'})`);
+                            }
+                        }
+                    }
                 }
                 
                 // Check if verb is isolated (only word, or only with "to") - ×5*0.3=×1.5
@@ -5543,6 +5627,27 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                             why: 'To be verb before adjective - 10% more value (50% reduced)'
                         });
                     }
+                }
+            }
+            
+            // 8h) POSSESSIVE PRONOUN BOOST: ×5 MULTIPLIER
+            // Possessive pronouns (my, your, yours, mine, his, her, hers, its, our, ours, their, theirs) get ×5 boost
+            if (token.type === 'PRON' || token.type === 'PRONOUN') {
+                const wordText = (token.surface || '').toLowerCase().trim();
+                const possessivePronouns = ['my', 'your', 'yours', 'mine', 'his', 'her', 'hers', 'its', 'our', 'ours', 'their', 'theirs',
+                                          'mi', 'tu', 'su', 'sus', 'mío', 'mía', 'míos', 'mías', 'tuyo', 'tuya', 'tuyos', 'tuyas',
+                                          'suyo', 'suya', 'suyos', 'suyas', 'nuestro', 'nuestra', 'nuestros', 'nuestras'];
+                const isPossessive = possessivePronouns.includes(wordText) || 
+                                    (features.possessive === true) ||
+                                    (analyzedWord && analyzedWord.analysis && analyzedWord.analysis.possessive === true);
+                
+                if (isPossessive) {
+                    multipliers.push({
+                        name: 'possessive_pronoun_boost',
+                        factor: 5.0, // ×5 boost for possessive pronouns
+                        why: `Possessive pronoun "${wordText}" - ×5 multiplier`
+                    });
+                    console.log(`[POSSESSIVE BOOST] Applied ×5 boost to possessive pronoun "${wordText}"`);
                 }
             }
             
@@ -6912,7 +7017,12 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 // Check if "to be" verb - CRITICAL: "is" is always "to be" (third person singular)
                 // Also check for contractions with 's (it's, he's, she's, etc.) where 's = "is"
                 const cleanSurface = surface.toLowerCase().trim();
-                const isSerEstarWord = isToBeVerb(surface) || 
+                
+                // Get previous token to check for separated contractions ('m, 's, 're)
+                const prevToken = idx > 0 ? tokenAnalysis[idx - 1] : null;
+                const prevTokenSurface = prevToken && tokens[prevToken.tokenIndex] ? tokens[prevToken.tokenIndex].surface : null;
+                
+                const isSerEstarWord = isToBeVerb(surface, prevTokenSurface ? { surface: prevTokenSurface } : null) || 
                                       (item.analysis && item.analysis.pos === 'VERB_AUXILIARY' && 
                                        (cleanSurface === 'am' || cleanSurface === 'is' || 
                                         cleanSurface === 'are' || cleanSurface === 'was' || 
@@ -6921,7 +7031,11 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                                       // Check for contractions: it's, he's, she's, that's, what's, who's (where 's = "is")
                                       (cleanSurface.endsWith("'s") && ['it', 'he', 'she', 'that', 'this', 'what', 'who'].includes(cleanSurface.split("'")[0])) ||
                                       (cleanSurface.endsWith("'re") && ['we', 'you', 'they'].includes(cleanSurface.split("'")[0])) ||
-                                      (cleanSurface.endsWith("'m") && cleanSurface.split("'")[0] === 'i');
+                                      (cleanSurface.endsWith("'m") && cleanSurface.split("'")[0] === 'i') ||
+                                      // Check for separated contractions: "m" after "I", "s" after "it"/"he"/"she", "re" after "we"/"you"/"they"
+                                      (cleanSurface === 'm' && prevTokenSurface && prevTokenSurface.toLowerCase().trim() === 'i') ||
+                                      (cleanSurface === 's' && prevTokenSurface && ['it', 'he', 'she', 'that', 'this', 'what', 'who'].includes(prevTokenSurface.toLowerCase().trim())) ||
+                                      (cleanSurface === 're' && prevTokenSurface && ['we', 'you', 'they'].includes(prevTokenSurface.toLowerCase().trim()));
                 
                 // Mark as part of compound name if applicable
                 const isPartOfCompoundName = item.nameGroup && item.nameGroup.indices.length > 1;
@@ -6943,7 +7057,9 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     } : null,
                     compoundNameGroup: item.nameGroup || null,
                     isPartOfCompoundName: isPartOfCompoundName,
-                    tense: item.tense || null
+                    tense: item.tense || null,
+                    // Store full OpenAI analysis for question and tense detection
+                    analysis: item.analysis || null
                 };
             });
             
@@ -8086,8 +8202,10 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             });
             
             // STEP 1b: Calculate repetition multipliers for individual words (excluding compound name parts)
+            // CRITICAL: All instances of the same word must receive the SAME devaluation multiplier
+            // based on the total number of repetitions, regardless of order
             analyzedWords.forEach((wordData, index) => {
-                // Skip if this word is part of a compound name (it will use the compound's multiplier)
+                // Skip if this word is part of a compound name (compound names have their own repetition logic)
                 if (compoundNamePartIndices.has(index)) {
                     return;
                 }
@@ -8099,7 +8217,8 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     return;
                 }
                 
-                // Count occurrences of this word (case-insensitive, excluding extra names and compound name parts)
+                // Count ALL occurrences of this word (case-insensitive, excluding extra names and compound name parts)
+                // This count determines the devaluation for ALL instances of the word
                 let count = 0;
                 analyzedWords.forEach((w, idx) => {
                     if (w && w.isExtraName) return;
@@ -8110,7 +8229,8 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     }
                 });
                 
-                // Calculate repetition multiplier based on count
+                // Calculate repetition multiplier based on total count
+                // CRITICAL: This same multiplier will be applied to ALL instances of the word
                 let repetitionMult = 1.0;
                 if (count === 1) {
                     repetitionMult = 1.5; // Unique word bonus
@@ -8130,8 +8250,9 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                     repetitionMult = Math.max(0.1, 0.3 - ((count - 10) * 0.02));
                 }
                 
-                // Store multiplier for this word (all occurrences will use the same multiplier)
+                // Store multiplier for this word (ALL occurrences will use the SAME multiplier)
                 repetitionMultipliers.set(wordText, repetitionMult);
+                console.log(`[REPETITION] Word "${wordData.text}" appears ${count} times → multiplier: ×${repetitionMult.toFixed(2)} (applied to ALL ${count} instances)`);
             });
             
             console.log(`Calculated repetition multipliers for ${repetitionMultipliers.size} unique words`);
@@ -8927,6 +9048,139 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             
             console.log('=== "To be" verb value transfer complete ===');
             
+            // ========== POSSESSIVE SENTENCE BOOST: ×4 FOR NOUNS AND PRONOUNS IN SENTENCES WITH POSSESSIVES ==========
+            console.log('=== Checking for possessive sentence boost ===');
+            
+            // Get original text to detect sentence boundaries
+            const originalTextForPossessive = document.getElementById('textInput')?.value || '';
+            
+            // Detect sentence boundaries (split by punctuation: ., !, ?, 。, ！, ？)
+            const sentenceBoundaries = [];
+            if (originalTextForPossessive) {
+                // Find all sentence-ending punctuation
+                const sentenceEnders = /[.!?。！？]/g;
+                let match;
+                let lastIndex = 0;
+                while ((match = sentenceEnders.exec(originalTextForPossessive)) !== null) {
+                    sentenceBoundaries.push(match.index);
+                }
+                // Add end of text as final boundary
+                sentenceBoundaries.push(originalTextForPossessive.length);
+            } else {
+                // If no original text, treat entire text as one sentence
+                sentenceBoundaries.push(analyzedWords.length);
+            }
+            
+            // List of possessive pronouns
+            const possessivePronouns = new Set(['my', 'your', 'yours', 'mine', 'his', 'her', 'hers', 'its', 'our', 'ours', 'their', 'theirs',
+                                              'mi', 'tu', 'su', 'sus', 'mío', 'mía', 'míos', 'mías', 'tuyo', 'tuya', 'tuyos', 'tuyas',
+                                              'suyo', 'suya', 'suyos', 'suyas', 'nuestro', 'nuestra', 'nuestros', 'nuestras']);
+            
+            // Map words to sentences and detect which sentences have possessives
+            const sentenceIndices = new Map(); // sentenceIndex -> array of word indices
+            const sentencesWithPossessives = new Set();
+            
+            // Better sentence detection: use token positions to map words to sentences
+            // Split text into sentences based on punctuation
+            let currentSentenceIndex = 0;
+            let currentCharPosition = 0;
+            
+            // Create a map of character positions to sentence indices
+            const charToSentenceMap = new Map();
+            if (originalTextForPossessive) {
+                const sentences = originalTextForPossessive.split(/[.!?。！？]+/).filter(s => s.trim().length > 0);
+                let charPos = 0;
+                sentences.forEach((sentence, idx) => {
+                    const sentenceLength = sentence.length;
+                    for (let i = 0; i <= sentenceLength; i++) {
+                        charToSentenceMap.set(charPos + i, idx);
+                    }
+                    charPos += sentenceLength + 1; // +1 for punctuation
+                });
+            }
+            
+            // Map each word to its sentence based on token position
+            analyzedWords.forEach((wordData, wordIndex) => {
+                const wordText = (wordData.text || '').toLowerCase().trim();
+                
+                // Check if this word is a possessive
+                const isPossessive = possessivePronouns.has(wordText) ||
+                                   (wordData.analysis && wordData.analysis.possessive === true) ||
+                                   (wordData.uposType === 'PRON' && wordData.pos === 'pronoun' && 
+                                    (wordData.analysis && wordData.analysis.possessive === true));
+                
+                // Determine sentence index for this word
+                // Use approximate position based on word index (words are roughly in order)
+                let sentenceIndex = currentSentenceIndex;
+                
+                // Check if word ends with sentence-ending punctuation
+                const wordSurface = wordData.text || '';
+                const endsWithPunct = /[.!?。！？]$/.test(wordSurface.trim());
+                
+                if (endsWithPunct && wordIndex > 0) {
+                    // This word ends a sentence, next word starts new sentence
+                    sentenceIndex = currentSentenceIndex;
+                    currentSentenceIndex++;
+                } else if (wordIndex > 0) {
+                    // Check if previous word ended with punctuation
+                    const prevWord = analyzedWords[wordIndex - 1];
+                    const prevSurface = (prevWord.text || '').trim();
+                    const prevEndsWithPunct = /[.!?。！？]$/.test(prevSurface);
+                    if (prevEndsWithPunct) {
+                        sentenceIndex = currentSentenceIndex;
+                    }
+                }
+                
+                // Initialize sentence array if needed
+                if (!sentenceIndices.has(sentenceIndex)) {
+                    sentenceIndices.set(sentenceIndex, []);
+                }
+                sentenceIndices.get(sentenceIndex).push(wordIndex);
+                
+                // Mark sentence as having possessive if this word is possessive
+                if (isPossessive) {
+                    sentencesWithPossessives.add(sentenceIndex);
+                    console.log(`[POSSESSIVE SENTENCE] Found possessive "${wordText}" in sentence ${sentenceIndex}`);
+                }
+            });
+            
+            // Apply ×4 boost to nouns and pronouns in sentences with possessives
+            let possessiveBoostCount = 0;
+            sentencesWithPossessives.forEach(sentenceIndex => {
+                const sentenceWordIndices = sentenceIndices.get(sentenceIndex) || [];
+                
+                sentenceWordIndices.forEach(wordIndex => {
+                    const wordData = analyzedWords[wordIndex];
+                    if (!wordData) return;
+                    
+                    // Check if word is a noun (excluding names) or pronoun (excluding possessives themselves)
+                    const uposType = wordData.uposType || '';
+                    const pos = wordData.pos || '';
+                    const wordText = (wordData.text || '').toLowerCase().trim();
+                    const isPossessive = possessivePronouns.has(wordText);
+                    
+                    const isNoun = (uposType === 'NOUN' || pos === 'noun') && !wordData.isName;
+                    const isPronoun = (uposType === 'PRON' || pos === 'pronoun') && !isPossessive;
+                    
+                    if (isNoun || isPronoun) {
+                        const valueBeforeBoost = wordData.finalValue || 0;
+                        const possessiveSentenceBoost = 4.0; // ×4 boost
+                        
+                        wordData.finalValue = valueBeforeBoost * possessiveSentenceBoost;
+                        wordData.totalScore = wordData.finalValue;
+                        possessiveBoostCount++;
+                        
+                        console.log(`[POSSESSIVE SENTENCE BOOST] Applied ×4 boost to ${isNoun ? 'noun' : 'pronoun'} "${wordData.text}" in sentence ${sentenceIndex} (sentence has possessive)`);
+                    }
+                });
+            });
+            
+            if (possessiveBoostCount > 0) {
+                console.log(`[POSSESSIVE SENTENCE BOOST] Applied ×4 boost to ${possessiveBoostCount} nouns/pronouns in ${sentencesWithPossessives.size} sentence(s) with possessives`);
+            } else {
+                console.log(`[POSSESSIVE SENTENCE BOOST] No sentences with possessives found - no boost applied`);
+            }
+            
             // Calculate total value (sum of all final values) - AFTER ontological equalization and value transfer
             // NO LIMITS - values can be as high as they need to be
             let totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
@@ -9273,6 +9527,231 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 console.log(`[SENTENCE DEVALUATION] No devaluation applied (${sentenceCount} sentences, threshold is >2 for -20%, or >5 sentences AND >100 words for -40%)`);
             }
             
+            // ========== QUESTION DEVALUATION ==========
+            console.log('=== Checking for question devaluation ===');
+            
+            // Check if any words are marked as questions (from OpenAI analysis)
+            let questionWordCount = 0;
+            const questionWordIndices = new Set();
+            
+            analyzedWords.forEach((wordData, index) => {
+                // Check if word is in a question sentence
+                const isQuestion = wordData.analysis && wordData.analysis.isQuestion === true;
+                if (isQuestion) {
+                    questionWordIndices.add(index);
+                    questionWordCount++;
+                }
+            });
+            
+            // Also check text for question marks as fallback
+            if (questionWordCount === 0 && originalText) {
+                const hasQuestionMark = /[?¿]/.test(originalText);
+                if (hasQuestionMark) {
+                    // If text has question mark but OpenAI didn't mark words, mark all words as questions
+                    analyzedWords.forEach((wordData, index) => {
+                        questionWordIndices.add(index);
+                        questionWordCount++;
+                    });
+                    console.log(`[QUESTION DETECTION] Text has question mark but OpenAI didn't mark words - treating all words as questions`);
+                }
+            }
+            
+            console.log(`[QUESTION DETECTION] Found ${questionWordCount} words in question sentences`);
+            
+            // Apply 30% devaluation to question words
+            if (questionWordCount > 0) {
+                const questionDevaluationFactor = 0.70; // -30% devaluation
+                const valueBeforeQuestionDevaluation = totalValue;
+                
+                // Calculate total value of question words
+                let questionWordsTotalValue = 0;
+                questionWordIndices.forEach(index => {
+                    if (analyzedWords[index] && analyzedWords[index].finalValue) {
+                        questionWordsTotalValue += analyzedWords[index].finalValue;
+                    }
+                });
+                
+                // Apply devaluation only to question words
+                questionWordIndices.forEach(index => {
+                    if (analyzedWords[index] && analyzedWords[index].finalValue !== undefined && analyzedWords[index].finalValue !== null) {
+                        const oldValue = analyzedWords[index].finalValue;
+                        analyzedWords[index].finalValue = oldValue * questionDevaluationFactor;
+                        analyzedWords[index].totalScore = analyzedWords[index].finalValue;
+                    }
+                });
+                
+                // Recalculate total value
+                totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+                
+                console.log(`[QUESTION DEVALUATION] Applied -30% devaluation to ${questionWordCount} question words. Total value before: ${valueBeforeQuestionDevaluation.toFixed(2)}, after: ${totalValue.toFixed(2)}`);
+            } else {
+                console.log(`[QUESTION DEVALUATION] No questions detected - no devaluation applied`);
+            }
+            
+            // ========== TENSE-BASED DEVALUATION/MULTIPLICATION (for texts >100 words) ==========
+            console.log('=== Checking for tense-based devaluation/multiplication ===');
+            
+            // Detect overall text tense from OpenAI analysis
+            let detectedTextTense = null;
+            const tenseCounts = { PRESENT: 0, PAST: 0, FUTURE: 0 };
+            
+            analyzedWords.forEach((wordData) => {
+                // Check if word has textTense field from OpenAI
+                if (wordData.analysis && wordData.analysis.textTense) {
+                    const tense = wordData.analysis.textTense.toUpperCase();
+                    if (tense === 'PRESENT' || tense === 'PAST' || tense === 'FUTURE') {
+                        tenseCounts[tense] = (tenseCounts[tense] || 0) + 1;
+                    }
+                }
+                
+                // Also check individual verb tenses as fallback
+                if (wordData.analysis && wordData.analysis.tense) {
+                    const tense = wordData.analysis.tense.toUpperCase();
+                    if (tense === 'PRESENT') tenseCounts.PRESENT++;
+                    else if (tense === 'PAST') tenseCounts.PAST++;
+                    else if (tense === 'FUTURE') tenseCounts.FUTURE++;
+                }
+            });
+            
+            // Determine overall tense (majority rule)
+            const totalTenseCount = tenseCounts.PRESENT + tenseCounts.PAST + tenseCounts.FUTURE;
+            if (totalTenseCount > 0) {
+                if (tenseCounts.PAST > tenseCounts.PRESENT && tenseCounts.PAST > tenseCounts.FUTURE) {
+                    detectedTextTense = 'PAST';
+                } else if (tenseCounts.FUTURE > tenseCounts.PRESENT && tenseCounts.FUTURE > tenseCounts.PAST) {
+                    detectedTextTense = 'FUTURE';
+                } else {
+                    detectedTextTense = 'PRESENT'; // Default to present
+                }
+            } else {
+                // Fallback: check text for tense indicators
+                if (originalText) {
+                    const pastIndicators = /\b(was|were|had|did|went|said|told|thought|felt|saw|knew|got|made|took|gave|came|became)\b/i;
+                    const futureIndicators = /\b(will|shall|going to|gonna|would|might|may)\b/i;
+                    
+                    if (pastIndicators.test(originalText) && !futureIndicators.test(originalText)) {
+                        detectedTextTense = 'PAST';
+                    } else if (futureIndicators.test(originalText)) {
+                        detectedTextTense = 'FUTURE';
+                    } else {
+                        detectedTextTense = 'PRESENT';
+                    }
+                } else {
+                    detectedTextTense = 'PRESENT'; // Default
+                }
+            }
+            
+            console.log(`[TENSE DETECTION] Detected text tense: ${detectedTextTense} (PRESENT: ${tenseCounts.PRESENT}, PAST: ${tenseCounts.PAST}, FUTURE: ${tenseCounts.FUTURE})`);
+            
+            // Apply tense-based devaluation/multiplication only if text >100 words
+            if (totalWordsCount > 100) {
+                let tenseMultiplier = 1.0;
+                
+                if (detectedTextTense === 'FUTURE') {
+                    tenseMultiplier = 0.90; // -10% devaluation for future tense
+                    console.log(`[TENSE DEVALUATION] Text is in FUTURE tense and has ${totalWordsCount} words (>100) - applying -10% devaluation`);
+                } else if (detectedTextTense === 'PAST') {
+                    tenseMultiplier = 1.5; // ×1.5 multiplication for past tense
+                    console.log(`[TENSE MULTIPLICATION] Text is in PAST tense and has ${totalWordsCount} words (>100) - applying ×1.5 multiplication`);
+                } else {
+                    // PRESENT tense - no change
+                    console.log(`[TENSE] Text is in PRESENT tense - no devaluation/multiplication applied`);
+                }
+                
+                if (tenseMultiplier !== 1.0) {
+                    const valueBeforeTenseAdjustment = totalValue;
+                    totalValue = totalValue * tenseMultiplier;
+                    
+                    console.log(`[TENSE ADJUSTMENT] Total value before: ${valueBeforeTenseAdjustment.toFixed(2)}, after: ${totalValue.toFixed(2)} (multiplier: ${tenseMultiplier})`);
+                    
+                    // Distribute adjustment proportionally to all words EXCEPT names
+                    if (valueBeforeTenseAdjustment > 0) {
+                        const tenseAdjustmentFactor = totalValue / valueBeforeTenseAdjustment;
+                        analyzedWords.forEach((wordData, index) => {
+                            if (wordData.finalValue !== undefined && wordData.finalValue !== null) {
+                                // Skip adjustment if this is a name (including names in context)
+                                if (!nameIndices.has(index)) {
+                                    // Apply tense adjustment proportionally
+                                    wordData.finalValue = wordData.finalValue * tenseAdjustmentFactor;
+                                    wordData.totalScore = wordData.finalValue;
+                                }
+                            }
+                        });
+                        console.log(`[TENSE ADJUSTMENT] Applied adjustment factor ${tenseAdjustmentFactor.toFixed(4)} to all words except ${nameIndices.size} names`);
+                    }
+                }
+            } else {
+                console.log(`[TENSE] Text has ${totalWordsCount} words (≤100) - tense-based adjustment only applies to texts >100 words`);
+            }
+            
+            // ========== ISOLATED WORD BOOST: ×10 FOR SINGLE WORDS (EXCEPT NAMES) ==========
+            console.log('=== Checking for isolated word boost ===');
+            
+            // Check if text has only one word (isolated word)
+            if (totalWordsCount === 1 && analyzedWords.length === 1) {
+                const isolatedWord = analyzedWords[0];
+                if (isolatedWord) {
+                    // Check if it's a name or part of compound name (exclude from boost)
+                    const isName = isolatedWord.isName === true || isolatedWord.isPartOfCompoundName === true;
+                    
+                    if (!isName) {
+                        const valueBeforeIsolatedBoost = isolatedWord.finalValue || 0;
+                        let isolatedBoostFactor = 10.0; // ×10 base boost for isolated words
+                        
+                        // Check word type for additional boosts
+                        const uposType = isolatedWord.uposType || '';
+                        const pos = isolatedWord.pos || '';
+                        const isNoun = (uposType === 'NOUN' || pos === 'noun') && !isName;
+                        const isAdjective = uposType === 'ADJ' || uposType === 'ADJECTIVE' || pos === 'adjective';
+                        
+                        // Apply additional boosts based on word type
+                        if (isNoun) {
+                            // Noun: ×10 additional boost (total ×100: ×10 base × ×10 noun = ×100)
+                            isolatedBoostFactor *= 10.0;
+                            console.log(`[ISOLATED WORD BOOST] Isolated noun detected - applying ×10 additional boost (total ×100)`);
+                        } else if (isAdjective) {
+                            // Adjective: ×5 additional boost (total ×50: ×10 base × ×5 adjective = ×50)
+                            isolatedBoostFactor *= 5.0;
+                            console.log(`[ISOLATED WORD BOOST] Isolated adjective detected - applying ×5 additional boost (total ×50)`);
+                        }
+                        
+                        // Apply boost to isolated word
+                        isolatedWord.finalValue = valueBeforeIsolatedBoost * isolatedBoostFactor;
+                        isolatedWord.totalScore = isolatedWord.finalValue;
+                        
+                        // Recalculate total value
+                        totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+                        
+                        console.log(`[ISOLATED WORD BOOST] Applied ×${isolatedBoostFactor.toFixed(1)} boost to isolated word "${isolatedWord.text}" (${isNoun ? 'noun' : isAdjective ? 'adjective' : 'other'}). Value before: ${valueBeforeIsolatedBoost.toFixed(2)}, after: ${isolatedWord.finalValue.toFixed(2)}`);
+                    } else {
+                        console.log(`[ISOLATED WORD BOOST] Skipped isolated word "${isolatedWord.text}" - it's a name/compound name (already has high value when isolated)`);
+                    }
+                }
+            } else {
+                console.log(`[ISOLATED WORD BOOST] Text has ${totalWordsCount} words - not isolated (boost only applies to single words)`);
+            }
+            
+            // ========== GENERAL VALUE REDUCTION: 40% REDUCTION (×0.6) - NO EXCEPTIONS ==========
+            console.log('=== Applying general 40% reduction to ALL values (no exceptions) ===');
+            const valueBeforeGeneralReduction = totalValue;
+            const generalReductionFactor = 0.6; // -40% reduction (×0.6)
+            totalValue = totalValue * generalReductionFactor;
+            
+            console.log(`[GENERAL REDUCTION] Total value before: ${valueBeforeGeneralReduction.toFixed(2)}, after: ${totalValue.toFixed(2)} (40% reduction)`);
+            
+            // Apply reduction proportionally to ALL words (no exceptions)
+            if (valueBeforeGeneralReduction > 0) {
+                const reductionFactor = totalValue / valueBeforeGeneralReduction;
+                analyzedWords.forEach((wordData, index) => {
+                    if (wordData.finalValue !== undefined && wordData.finalValue !== null) {
+                        // Apply reduction to ALL words (no exceptions)
+                        wordData.finalValue = wordData.finalValue * reductionFactor;
+                        wordData.totalScore = wordData.finalValue;
+                    }
+                });
+                console.log(`[GENERAL REDUCTION] Applied 40% reduction (factor: ${reductionFactor.toFixed(4)}) to ALL ${analyzedWords.length} words`);
+            }
+            
             console.log(`Total text value: ${totalValue.toFixed(2)} USD`);
             
             // Store total value for display update
@@ -9434,7 +9913,13 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                         let ontologicalMultiplier = isOntologicalAssertion(index, analyzedWords) ? 1.8 : 1.0;
                         let nameWithToBeMultiplier = getNameWithToBeMultiplier(index, analyzedWords);
                         let semanticMultiplier = getSemanticClosureMultiplier(index, analyzedWords, totalWords);
-                        let repetitionMultiplier = getRepetitionMultiplier(index, analyzedWords, wordData.text, totalWords);
+                        // Use the pre-calculated repetition multiplier from the Map (ensures all instances get same multiplier)
+                        const wordTextForRep = (wordData.text || '').toLowerCase().replace(/[^\w]/g, '');
+                        let repetitionMultiplier = repetitionMultipliers ? (repetitionMultipliers.get(wordTextForRep) || 1.0) : 1.0;
+                        // Fallback to function if Map not available (shouldn't happen in new code)
+                        if (!repetitionMultipliers || repetitionMultiplier === 1.0) {
+                            repetitionMultiplier = getRepetitionMultiplier(index, analyzedWords, wordData.text, totalWords);
+                        }
                         let tenseMultiplier = getTenseMultiplier(index, analyzedWords, totalWords);
                         let narrativePenalty = getNarrativePenalty(index, analyzedWords, totalWords);
                         
@@ -16009,6 +16494,9 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 if (actualNode && actualNode.userData && actualNode.userData.wordData) {
                     hoveredNode = actualNode;
                     showNodeDetails(actualNode);
+                    
+                    // Move camera to focus on the clicked node (same logic as Map Text)
+                    focusCameraOnNode(actualNode);
                 } else {
                     console.warn('Could not find node with wordData for click event');
                 }
@@ -16272,6 +16760,7 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             const headerId = panelElement.dataset.headerId || `right-panel-header-${panelId}`;
             const detailsId = panelElement.dataset.detailsId || `node-details-content-${panelId}`;
             
+            const header = panelElement.querySelector(`#${headerId}`);
             const detailsContent = panelElement.querySelector(`#${detailsId}`);
             
             // Update header word - position it in top right corner
@@ -18521,6 +19010,7 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
         }
         
         // Function to focus camera on a specific node
+        // "Teleports" camera instantly to the closest possible position to the node
         function focusCameraOnNode(node) {
             if (!node || !camera) return;
             
@@ -18534,11 +19024,48 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
                 nodePosition = node.position.clone();
             }
             
-            // Calculate camera position to look at the node from a good viewing angle
-            // Position camera much closer to the node for better focus
-            const distance = 3; // Much closer distance (reduced from 8 to 3)
+            // Calculate actual node size by finding bounding box
+            let maxNodeSize = 0.5; // Default minimum size
             
-            // Calculate direction from origin to node
+            // Try to get bounding box of the node and all its children
+            if (node.children && node.children.length > 0) {
+                node.children.forEach(child => {
+                    if (child.geometry) {
+                        child.geometry.computeBoundingBox();
+                        const childBox = child.geometry.boundingBox;
+                        if (childBox) {
+                            // Transform box to world coordinates
+                            const worldBox = childBox.clone();
+                            worldBox.applyMatrix4(child.matrixWorld);
+                            
+                            // Get size of this child
+                            const childSize = worldBox.getSize(new THREE.Vector3());
+                            const maxChildDimension = Math.max(childSize.x, childSize.y, childSize.z);
+                            maxNodeSize = Math.max(maxNodeSize, maxChildDimension);
+                        }
+                    }
+                });
+            }
+            
+            // Also check if node has geometry directly
+            if (node.geometry) {
+                node.geometry.computeBoundingBox();
+                const nodeBox = node.geometry.boundingBox;
+                if (nodeBox) {
+                    const nodeSize = nodeBox.getSize(new THREE.Vector3());
+                    const maxNodeDimension = Math.max(nodeSize.x, nodeSize.y, nodeSize.z);
+                    maxNodeSize = Math.max(maxNodeSize, maxNodeDimension);
+                }
+            }
+            
+            // Position camera as close as possible: node size + minimal offset for visibility
+            // Use a very small offset (0.1) to get as close as possible while keeping node visible
+            const minDistance = (maxNodeSize / 2) + 0.1; // Half size (radius) + tiny offset
+            
+            // Ensure minimum distance is reasonable (at least 0.3 for very small nodes)
+            const finalDistance = Math.max(minDistance, 0.3);
+            
+            // Calculate direction from origin to node (normalized)
             const direction = nodePosition.clone().normalize();
             
             // Calculate angles based on node position
@@ -18554,11 +19081,96 @@ CRITICAL REMINDERS FOR VALUE CALCULATION SYSTEM:
             // Set camera target to node position
             cameraTarget.copy(nodePosition);
             
-            // Set camera radius to maintain good viewing distance
-            cameraRadius = distance;
+            // Set camera radius to be as close as possible
+            cameraRadius = finalDistance;
             
-            // Update camera position
+            // Update camera position immediately (instant teleport)
             updateCameraPosition();
+            
+            console.log(`[CAMERA TELEPORT] Moved camera instantly to node "${node.userData?.wordData?.text || 'unknown'}" at distance ${finalDistance.toFixed(3)} (node size: ${maxNodeSize.toFixed(3)})`);
+        }
+        
+        // Function to move camera as close as possible to a node (called on node click)
+        // "Teleports" camera instantly to the closest possible position to the node
+        function moveCameraToNode(node) {
+            if (!node || !camera) return;
+            
+            // Get node position (handle groups and regular nodes)
+            let nodePosition;
+            if (node.isGroup) {
+                // For groups, use the group's position
+                nodePosition = node.position.clone();
+            } else {
+                // For regular nodes, use the node's position
+                nodePosition = node.position.clone();
+            }
+            
+            // Calculate actual node size by finding bounding box
+            let maxNodeSize = 0.5; // Default minimum size
+            const box = new THREE.Box3();
+            
+            // Try to get bounding box of the node and all its children
+            if (node.children && node.children.length > 0) {
+                node.children.forEach(child => {
+                    if (child.geometry) {
+                        child.geometry.computeBoundingBox();
+                        const childBox = child.geometry.boundingBox;
+                        if (childBox) {
+                            // Transform box to world coordinates
+                            const worldBox = childBox.clone();
+                            worldBox.applyMatrix4(child.matrixWorld);
+                            
+                            // Get size of this child
+                            const childSize = worldBox.getSize(new THREE.Vector3());
+                            const maxChildDimension = Math.max(childSize.x, childSize.y, childSize.z);
+                            maxNodeSize = Math.max(maxNodeSize, maxChildDimension);
+                        }
+                    }
+                });
+            }
+            
+            // Also check if node has geometry directly
+            if (node.geometry) {
+                node.geometry.computeBoundingBox();
+                const nodeBox = node.geometry.boundingBox;
+                if (nodeBox) {
+                    const nodeSize = nodeBox.getSize(new THREE.Vector3());
+                    const maxNodeDimension = Math.max(nodeSize.x, nodeSize.y, nodeSize.z);
+                    maxNodeSize = Math.max(maxNodeSize, maxNodeDimension);
+                }
+            }
+            
+            // Calculate distance from origin to node
+            const distanceToOrigin = nodePosition.length();
+            
+            // Position camera as close as possible: node size + minimal offset for visibility
+            // Use a very small offset (0.1) to get as close as possible while keeping node visible
+            const minDistance = (maxNodeSize / 2) + 0.1; // Half size (radius) + tiny offset
+            
+            // Ensure minimum distance is reasonable (at least 0.3 for very small nodes)
+            const finalDistance = Math.max(minDistance, 0.3);
+            
+            // Calculate direction from origin to node (normalized)
+            const direction = nodePosition.clone().normalize();
+            
+            // Calculate camera position: node position minus direction * finalDistance
+            // This places camera slightly away from node in the direction from origin
+            const cameraPosition = nodePosition.clone().sub(direction.clone().multiplyScalar(finalDistance));
+            
+            // Calculate angles based on camera position relative to origin
+            const angleY = Math.atan2(cameraPosition.x, cameraPosition.z);
+            const angleX = Math.asin(Math.max(-0.8, Math.min(0.8, cameraPosition.y / cameraPosition.length())));
+            
+            // Set camera angles and target INSTANTLY (teleport, no animation)
+            cameraAngleY = angleY;
+            cameraAngleX = angleX;
+            cameraTarget.copy(nodePosition);
+            cameraRadius = cameraPosition.length();
+            
+            // Update camera position immediately (instant teleport)
+            updateCameraPosition();
+            
+            console.log(`[CAMERA TELEPORT] Moved camera instantly to node "${node.userData?.wordData?.text || 'unknown'}" at distance ${finalDistance.toFixed(3)} (node size: ${maxNodeSize.toFixed(3)})`);
         }
         
         function toggleFullscreen() {
