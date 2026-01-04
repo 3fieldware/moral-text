@@ -1061,6 +1061,7 @@
         </div>
         <button class="top-bar-item grey" id="galleryBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">GALLERY</button>
         <button class="top-bar-item grey" id="nodeListBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">TOP NODES</button>
+        <button class="top-bar-item grey" id="convergenceZoneBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">CONVERGENCE ZONES</button>
         <button class="top-bar-item grey" id="toggleNametagsBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">SHOW NAMETAGS</button>
         <button class="top-bar-item grey" id="resetCameraBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Reset View</button>
         <button class="top-bar-item grey" id="fullscreenBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Fullscreen</button>
@@ -1323,6 +1324,7 @@
         let nodes = [];
         let connections = [];
         let analyzedWords = [];
+        let convergenceZones = [];
         let isDragging = false;
         
         // Project version
@@ -1583,12 +1585,16 @@
             document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
             document.getElementById('toggleNametagsBtn').addEventListener('click', toggleNametags);
             document.getElementById('nodeListBtn').addEventListener('click', toggleNodeList);
+            document.getElementById('convergenceZoneBtn').addEventListener('click', showConvergenceZonesModal);
             document.getElementById('galleryBtn').addEventListener('click', toggleGallery);
             document.getElementById('mapTextBtn').addEventListener('click', mapText);
             document.getElementById('backgroundColorBtn').addEventListener('click', changeBackgroundColor);
             
             // Disable Map Text and related buttons initially
             disableMapTextButtons();
+            
+            // Initialize convergence zone button (disabled initially)
+            updateConvergenceZoneButton();
             
             // Version button dropdown
             const testBtn = document.getElementById('testBtn');
@@ -11354,16 +11360,33 @@ Return format (JSON array only, no other text):
                 }
             }
             
-            let sphereSizeMultiplier = 1.5; // Default to minimum (50% larger)
+            let sphereSizeMultiplier = 2.25; // Default to minimum (50% larger than 1.5x = 2.25x, increased overall)
             
             if (cachedValueRange && cachedValueRange.max > cachedValueRange.min && wordValue > 0) {
                 // Normalize value between 0 and 1
                 const normalizedValue = (wordValue - cachedValueRange.min) / (cachedValueRange.max - cachedValueRange.min);
-                // Interpolate between 1.5 and 2.0
-                sphereSizeMultiplier = 1.5 + (normalizedValue * 0.5); // 1.5 to 2.0
+                
+                // Use progressive interpolation for scaling (increased sizes for more convergence zones):
+                // - Value 0 (min): 2.25x (50% larger than 1.5x)
+                // - Value 0.5 (medium): ~3.0x (50% larger than 2.0x)
+                // - Value 1.0 (max): 10.5x (50% larger than 7.0x)
+                // Using a combination of linear and exponential for smooth progression
+                // For low-medium values: more linear, for high values: more exponential
+                if (normalizedValue <= 0.5) {
+                    // Linear interpolation for lower half: 2.25x to 3.0x
+                    sphereSizeMultiplier = 2.25 + (normalizedValue * 0.75); // 0->2.25, 0.5->3.0
+                } else {
+                    // Exponential interpolation for upper half: 3.0x to 10.5x
+                    const upperNormalized = (normalizedValue - 0.5) / 0.5; // 0 to 1 for upper half
+                    const exponentialValue = Math.pow(upperNormalized, 1.5); // Power curve
+                    sphereSizeMultiplier = 3.0 + (exponentialValue * 7.5); // 3.0 to 10.5
+                }
+                
+                // Ensure it doesn't exceed 10.5x
+                sphereSizeMultiplier = Math.min(sphereSizeMultiplier, 10.5);
             } else if (wordValue > 0 && cachedValueRange && cachedValueRange.max > 0) {
-                // All values are the same, use maximum size
-                sphereSizeMultiplier = 2.0;
+                // All values are the same, use medium size (around 3.0x, 50% larger than 2.0x)
+                sphereSizeMultiplier = 3.0;
             }
             
             const sphereSize = baseSize * sphereSizeMultiplier;
@@ -11373,7 +11396,7 @@ Return format (JSON array only, no other text):
             const sphereMaterial = new THREE.MeshStandardMaterial({
                 color: 0x808080, // Gray color
                 transparent: true,
-                opacity: 0.3, // Semi-transparent (30% opacity)
+                opacity: 0.21, // 30% más transparente (era 0.3, ahora 0.21)
                 metalness: 0.1,
                 roughness: 0.8,
                 side: THREE.DoubleSide
@@ -11381,6 +11404,10 @@ Return format (JSON array only, no other text):
             const sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
             sphereMesh.castShadow = false; // Don't cast shadow from the sphere
             sphereMesh.receiveShadow = false; // Don't receive shadow on the sphere
+            
+            // Make sphere not detectable by raycaster (so it doesn't intercept hover/click events)
+            // This allows access to nodes (including violet convergence nodes) inside the sphere
+            sphereMesh.raycast = function() { return []; }; // Return empty array = not detectable
             
             // Add sphere to the group (it will be positioned at the same place as the node)
             geometryGroup.add(sphereMesh);
@@ -11395,7 +11422,9 @@ Return format (JSON array only, no other text):
                 index: index,
                 connectionCount: 0,
                 isGroup: true,
-                wordType: wordType
+                wordType: wordType,
+                sphereSize: sphereSize, // Store sphere size for convergence detection
+                sphereMesh: sphereMesh // Store reference to sphere mesh
             };
             
             scene.add(geometryGroup);
@@ -11994,6 +12023,613 @@ Return format (JSON array only, no other text):
                     createConnection(nodes[0], nodes[1]);
                 }
             }
+        }
+        
+        async function detectAndCreateConvergenceZones() {
+            // Clear existing convergence zones
+            convergenceZones.forEach(zone => {
+                if (zone.group) {
+                    zone.group.traverse((child) => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) child.material.dispose();
+                    });
+                    scene.remove(zone.group);
+                }
+            });
+            convergenceZones = [];
+            
+            // Remove convergence nodes from nodes array
+            nodes = nodes.filter(n => !n.userData || !n.userData.isConvergenceNode);
+            
+            // Update button state initially (will be disabled if no zones)
+            updateConvergenceZoneButton();
+            
+            if (nodes.length < 2) {
+                console.log('Not enough nodes to detect convergences');
+                return;
+            }
+            
+            console.log('Detecting sphere convergences...');
+            const convergencePairs = [];
+            
+            // Check all pairs of nodes for sphere convergence
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const node1 = nodes[i];
+                    const node2 = nodes[j];
+                    
+                    if (!node1 || !node2 || !node1.userData || !node2.userData) continue;
+                    if (!node1.userData.sphereSize || !node2.userData.sphereSize) continue;
+                    
+                    const pos1 = node1.position;
+                    const pos2 = node2.position;
+                    
+                    // Calculate distance between node centers
+                    const distance = pos1.distanceTo(pos2);
+                    
+                    // Get sphere sizes
+                    const sphereSize1 = node1.userData.sphereSize;
+                    const sphereSize2 = node2.userData.sphereSize;
+                    
+                    // Check if spheres overlap or are very close (within 10% of combined radius)
+                    const combinedRadius = sphereSize1 + sphereSize2;
+                    const convergenceThreshold = combinedRadius * 0.9; // 90% of combined radius
+                    
+                    if (distance < convergenceThreshold) {
+                        // Calculate convergence point (midpoint between nodes)
+                        const convergencePoint = new THREE.Vector3()
+                            .addVectors(pos1, pos2)
+                            .multiplyScalar(0.5);
+                        
+                        // Calculate convergence strength (0 to 1, where 1 is full overlap)
+                        const convergenceStrength = 1 - (distance / combinedRadius);
+                        
+                        convergencePairs.push({
+                            node1: node1,
+                            node2: node2,
+                            point: convergencePoint,
+                            strength: convergenceStrength,
+                            distance: distance
+                        });
+                    }
+                }
+            }
+            
+            console.log(`Found ${convergencePairs.length} convergence zones`);
+            
+            // Create convergence zones asynchronously
+            const zonePromises = convergencePairs.map((pair, index) => 
+                createConvergenceZone(pair, index)
+            );
+            
+            await Promise.all(zonePromises);
+            console.log(`Created ${convergencePairs.length} convergence zones`);
+            
+            // Update convergence zone button state
+            updateConvergenceZoneButton();
+        }
+        
+        // Function to update convergence zone button state
+        function updateConvergenceZoneButton() {
+            const btn = document.getElementById('convergenceZoneBtn');
+            if (!btn) return;
+            
+            // Disable if no text has been analyzed or no convergence zones exist
+            if (!analyzedWords || analyzedWords.length === 0 || convergenceZones.length === 0) {
+                btn.disabled = true;
+                btn.style.opacity = '0.4';
+                btn.style.cursor = 'not-allowed';
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            }
+        }
+        
+        // Function to show convergence zones modal
+        function showConvergenceZonesModal() {
+            if (!convergenceZones || convergenceZones.length === 0) {
+                alert('No convergence zones found');
+                return;
+            }
+            
+            // Create modal if it doesn't exist
+            let modal = document.getElementById('convergence-zones-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'convergence-zones-modal';
+                modal.style.cssText = 'display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0); z-index: 10001; overflow-y: auto; pointer-events: none; scrollbar-width: none; -ms-overflow-style: none;';
+                document.body.appendChild(modal);
+                
+                // Hide scrollbar for webkit browsers
+                const style = document.createElement('style');
+                style.textContent = '#convergence-zones-modal::-webkit-scrollbar { display: none; }';
+                document.head.appendChild(style);
+                
+                const container = document.createElement('div');
+                container.id = 'convergence-zones-modal-container';
+                container.style.cssText = 'position: absolute; max-width: 550px; background: rgba(220, 220, 220, 0.76); padding: 4px 12px 12px 12px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; pointer-events: auto;';
+                modal.appendChild(container);
+                
+                const header = document.createElement('div');
+                header.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; margin-top: 0;';
+                
+                const closeBtn = document.createElement('button');
+                closeBtn.id = 'close-convergence-zones-modal';
+                closeBtn.innerHTML = '<span style="font-size: 12px;">×</span><span>CLOSE</span>';
+                closeBtn.style.cssText = 'background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; display: flex; align-items: center; gap: 2px; white-space: nowrap; border-radius: 0; margin: 0; min-height: 16px; height: 16px;';
+                closeBtn.onclick = hideConvergenceZonesModal;
+                header.appendChild(closeBtn);
+                
+                container.appendChild(header);
+                
+                const content = document.createElement('div');
+                content.id = 'convergence-zones-content';
+                content.style.cssText = 'font-size: 11px; line-height: 1.1; color: #000000; margin-top: 5px;';
+                container.appendChild(content);
+                
+                // Close modal when clicking outside (similar to TOTAL VALUE)
+                const modalContainer = document.getElementById('convergence-zones-modal-container');
+                if (modalContainer) {
+                    document.addEventListener('click', (e) => {
+                        const modal = document.getElementById('convergence-zones-modal');
+                        if (modal && modal.style.display === 'block' && !modalContainer.contains(e.target) && e.target.id !== 'convergenceZoneBtn' && !e.target.closest('#convergenceZoneBtn')) {
+                            hideConvergenceZonesModal();
+                        }
+                    });
+                }
+            }
+            
+            // Position modal below the button
+            const convergenceZoneBtn = document.getElementById('convergenceZoneBtn');
+            const modalContainer = document.getElementById('convergence-zones-modal-container');
+            if (convergenceZoneBtn && modalContainer) {
+                const btnRect = convergenceZoneBtn.getBoundingClientRect();
+                modalContainer.style.top = (btnRect.bottom + 5) + 'px'; // 5px gap below button
+                modalContainer.style.left = btnRect.left + 'px';
+                modalContainer.style.margin = '0'; // Remove auto margin
+            }
+            
+            // Populate content
+            const content = document.getElementById('convergence-zones-content');
+            content.innerHTML = '';
+            
+            convergenceZones.forEach((zone, index) => {
+                const zoneDiv = document.createElement('div');
+                zoneDiv.style.cssText = 'margin-bottom: 8px; padding: 6px; background: #000000; color: #ffffff; border: 1px solid #333333;';
+                
+                // Header with ZONE in uppercase
+                const zoneHeader = document.createElement('div');
+                zoneHeader.style.cssText = 'font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ffffff;';
+                const word1 = (zone.node1 && zone.node1.userData && zone.node1.userData.wordData && zone.node1.userData.wordData.text) || 'Unknown';
+                const word2 = (zone.node2 && zone.node2.userData && zone.node2.userData.wordData && zone.node2.userData.wordData.text) || 'Unknown';
+                zoneHeader.textContent = `ZONE ${index + 1}: "${word1}" + "${word2}"`;
+                zoneDiv.appendChild(zoneHeader);
+                
+                // Summary information
+                const summaryDiv = document.createElement('div');
+                summaryDiv.style.cssText = 'font-size: 9px; line-height: 1.2; color: #ffffff; margin-bottom: 4px; padding: 4px; background: rgba(255, 255, 255, 0.05);';
+                
+                // Get zone data
+                const position = zone.point || { x: 0, y: 0, z: 0 };
+                const strength = zone.strength || 0;
+                
+                // Get node values
+                const node1Value = (zone.node1 && zone.node1.userData && zone.node1.userData.wordData && (zone.node1.userData.wordData.finalValue || zone.node1.userData.wordData.totalScore || 0)) || 0;
+                const node2Value = (zone.node2 && zone.node2.userData && zone.node2.userData.wordData && (zone.node2.userData.wordData.finalValue || zone.node2.userData.totalScore || 0)) || 0;
+                const totalNodeValue = node1Value + node2Value;
+                
+                // Count convergence nodes (violet nodes) - count children of the group
+                let convergenceNodeCount = 0;
+                if (zone.group && zone.group.children) {
+                    zone.group.children.forEach((child) => {
+                        if (child.userData && child.userData.isConvergenceNode) {
+                            convergenceNodeCount++;
+                        }
+                    });
+                }
+                
+                // Calculate zone size (distance between nodes)
+                let zoneSize = 0;
+                if (zone.node1 && zone.node2) {
+                    const pos1 = zone.node1.position;
+                    const pos2 = zone.node2.position;
+                    zoneSize = pos1.distanceTo(pos2);
+                }
+                
+                // Get sphere sizes
+                const sphereSize1 = (zone.node1 && zone.node1.userData && zone.node1.userData.sphereSize) || 0;
+                const sphereSize2 = (zone.node2 && zone.node2.userData && zone.node2.userData.sphereSize) || 0;
+                const avgSphereSize = (sphereSize1 + sphereSize2) / 2;
+                
+                // Convert values to ETH if available
+                let totalNodeValueETH = 0;
+                if (typeof ethPriceUSD !== 'undefined' && ethPriceUSD && ethPriceUSD > 0) {
+                    totalNodeValueETH = totalNodeValue / ethPriceUSD;
+                }
+                
+                summaryDiv.innerHTML = `
+                    <div><strong>Location:</strong> (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)})</div>
+                    <div><strong>Nodes:</strong> ${convergenceNodeCount}</div>
+                    <div><strong>Size:</strong> ${zoneSize.toFixed(3)}</div>
+                    <div><strong>Weight:</strong> ${avgSphereSize.toFixed(4)}</div>
+                    <div><strong>Value:</strong> 0</div>
+                    <div><strong>Node Values:</strong> ${totalNodeValueETH > 0 ? totalNodeValueETH.toFixed(6) + ' ETH' : totalNodeValue.toFixed(2)}</div>
+                    <div><strong>Strength:</strong> ${(strength * 100).toFixed(1)}%</div>
+                `;
+                zoneDiv.appendChild(summaryDiv);
+                
+                // Generated text (white text on black background)
+                const textDiv = document.createElement('div');
+                textDiv.style.cssText = 'font-size: 10px; line-height: 1.3; color: #ffffff; padding: 4px; background: #000000; border: none; margin-top: 2px;';
+                textDiv.textContent = zone.text || 'No text generated';
+                zoneDiv.appendChild(textDiv);
+                
+                content.appendChild(zoneDiv);
+            });
+            
+            // Show modal
+            modal.style.display = 'block';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+        }
+        
+        function hideConvergenceZonesModal() {
+            const modal = document.getElementById('convergence-zones-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Function to generate semantically related text for convergence zones
+        async function generateConvergenceText(word1, word2) {
+            const apiKey = localStorage.getItem('openai_api_key');
+            if (!apiKey) {
+                console.warn('OpenAI API key not found. Using fallback text.');
+                return `${word1} ${word2}`;
+            }
+            
+            const prompt = `Generate a short phrase, sentence, or few words (maximum 8 words) that semantically relates to these two words: "${word1}" and "${word2}". The generated text should create a meaningful connection between these words, exploring their semantic relationship. Return ONLY the generated text, no explanations or additional text.`;
+            
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o',
+                        temperature: 0.7,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are a creative linguistic assistant. Generate concise, semantically rich text that connects concepts.'
+                            },
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ],
+                        max_tokens: 50
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('OpenAI API error for convergence text:', response.status, errorText);
+                    return `${word1} ${word2}`;
+                }
+                
+                const data = await response.json();
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    console.error('Invalid OpenAI response structure for convergence text:', data);
+                    return `${word1} ${word2}`;
+                }
+                
+                const generatedText = data.choices[0].message.content.trim();
+                // Remove quotes if present
+                return generatedText.replace(/^["']|["']$/g, '');
+            } catch (error) {
+                console.error('Error generating convergence text:', error);
+                return `${word1} ${word2}`;
+            }
+        }
+        
+        // Function to analyze convergence text and get word types
+        async function analyzeConvergenceText(text) {
+            const apiKey = localStorage.getItem('openai_api_key');
+            if (!apiKey) {
+                console.warn('OpenAI API key not found. Using fallback analysis.');
+                // Return simple fallback analysis
+                const words = text.split(/\s+/).filter(w => w.length > 0);
+                return words.map(word => ({
+                    word: word,
+                    pos: 'MISC',
+                    uposType: 'MISC',
+                    isName: false
+                }));
+            }
+            
+            // Use the same analysis function as the main text
+            // Extract words from text
+            const words = text.split(/\s+/).filter(w => w.length > 0);
+            if (words.length === 0) return [];
+            
+            const wordList = words.map((w, i) => `${i + 1}. "${w}"`).join('\n');
+            
+            const prompt = `You are a linguistic analysis expert. Analyze the following text and classify each word according to its grammatical function in context.
+
+Complete text to analyze:
+"${text}"
+
+Words to classify (in order, extracted from text):
+${wordList}
+
+Return a JSON array with ONE entry per word listed above, in order. Use the EXACT word as it appears in the text.
+
+Return format (JSON array only, no other text):
+[
+  {"word": "exact_word_as_in_text", "pos": "VERB", "uposType": "VERB", "isName": false},
+  {"word": "exact_word_as_in_text", "pos": "NOUN", "uposType": "NOUN", "isName": false},
+  {"word": "Mike", "pos": "NAME", "uposType": "NAME", "isName": true}
+]`;
+            
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o',
+                        temperature: 0.0,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You are a linguistic analysis expert. Return ONLY valid JSON arrays for POS tagging, no explanations or additional text.'
+                            },
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ],
+                        max_tokens: 500
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('OpenAI API error for convergence analysis:', response.status, errorText);
+                    // Return fallback
+                    return words.map(word => ({
+                        word: word,
+                        pos: 'MISC',
+                        uposType: 'MISC',
+                        isName: false
+                    }));
+                }
+                
+                const data = await response.json();
+                if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+                    console.error('Invalid OpenAI response structure for convergence analysis:', data);
+                    return words.map(word => ({
+                        word: word,
+                        pos: 'MISC',
+                        uposType: 'MISC',
+                        isName: false
+                    }));
+                }
+                
+                const content = data.choices[0].message.content.trim();
+                let jsonText = content;
+                if (content.startsWith('```json')) {
+                    jsonText = content.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
+                } else if (content.startsWith('```')) {
+                    jsonText = content.replace(/```\n?/g, '').replace(/```$/g, '');
+                }
+                
+                const analysis = JSON.parse(jsonText);
+                if (!Array.isArray(analysis)) {
+                    console.error('OpenAI response is not an array for convergence analysis:', typeof analysis);
+                    return words.map(word => ({
+                        word: word,
+                        pos: 'MISC',
+                        uposType: 'MISC',
+                        isName: false
+                    }));
+                }
+                
+                return analysis;
+            } catch (error) {
+                console.error('Error analyzing convergence text:', error);
+                return words.map(word => ({
+                    word: word,
+                    pos: 'MISC',
+                    uposType: 'MISC',
+                    isName: false
+                }));
+            }
+        }
+        
+        async function createConvergenceZone(pair, index) {
+            const { node1, node2, point, strength } = pair;
+            
+            // Get words from both nodes
+            const word1 = node1.userData.wordData?.text || '';
+            const word2 = node2.userData.wordData?.text || '';
+            
+            // Generate semantically related text using OpenAI
+            const convergenceText = await generateConvergenceText(word1, word2);
+            
+            // Analyze the generated text to get word types
+            const wordAnalysis = await analyzeConvergenceText(convergenceText);
+            
+            // Create a group for this convergence zone
+            const convergenceGroup = new THREE.Group();
+            convergenceGroup.position.copy(point);
+            
+            // Tokenize the convergence text into words
+            const convergenceWords = convergenceText.split(/\s+/).filter(w => w.length > 0);
+            
+            if (convergenceWords.length === 0 || wordAnalysis.length === 0) return;
+            
+            // Calculate convergence zone radius (smaller of the two sphere sizes)
+            const sphereSize1 = node1.userData.sphereSize || 0.06;
+            const sphereSize2 = node2.userData.sphereSize || 0.06;
+            const convergenceRadius = Math.min(sphereSize1, sphereSize2) * 0.3; // Use 30% of smaller sphere
+            
+            // Create small violet nodes for each word in the convergence text
+            const convergenceNodes = [];
+            const smallNodeSize = 0.008; // Very small nodes
+            const violetColor = 0x8B00FF; // Violet color
+            
+            // Match words with their analysis
+            convergenceWords.forEach((word, wordIndex) => {
+                // Find matching analysis entry (by word text)
+                const analysis = wordAnalysis.find(a => 
+                    a.word.toLowerCase() === word.toLowerCase() || 
+                    a.word === word
+                ) || wordAnalysis[wordIndex] || {
+                    word: word,
+                    pos: 'MISC',
+                    uposType: 'MISC',
+                    isName: false
+                };
+                
+                // Create word data object for getWordTypeForShape
+                const wordData = {
+                    text: word,
+                    pos: analysis.pos || 'MISC',
+                    uposType: analysis.uposType || analysis.pos || 'MISC',
+                    upos: analysis.uposType || analysis.pos || 'MISC',
+                    isName: analysis.isName || false
+                };
+                
+                // Get word type for shape
+                const wordType = getWordTypeForShape(wordData, wordIndex);
+                
+                // Create geometry based on word type
+                const nodeGeometry = createWordTypeGeometry(wordType, smallNodeSize, violetColor, 0.9);
+                
+                // Create a group for this node
+                const nodeGroup = new THREE.Group();
+                
+                // Add the geometry to the group
+                nodeGroup.add(nodeGeometry);
+                
+                // Store userData for the convergence node (to make it interactive)
+                nodeGroup.userData = {
+                    wordData: {
+                        text: word,
+                        pos: analysis.pos || 'MISC',
+                        uposType: analysis.uposType || analysis.pos || 'MISC',
+                        upos: analysis.uposType || analysis.pos || 'MISC',
+                        isName: analysis.isName || false,
+                        finalValue: 0, // Los nodos violetas tienen valor 0
+                        totalScore: 0, // Los nodos violetas tienen valor 0
+                        isConvergenceNode: true
+                    },
+                    index: -1, // Índice especial para nodos de convergencia
+                    connectionCount: 0,
+                    isGroup: true,
+                    wordType: wordType,
+                    isConvergenceNode: true // Marca para identificar nodos de convergencia
+                };
+                
+                // Distribute nodes organically within the convergence zone
+                // Use spherical distribution for more organic placement
+                const angle = (wordIndex / convergenceWords.length) * Math.PI * 2;
+                const radius = convergenceRadius * (0.3 + Math.random() * 0.4); // Random radius within zone
+                const height = (Math.random() - 0.5) * convergenceRadius * 0.5; // Random height variation
+                
+                nodeGroup.position.x = Math.cos(angle) * radius;
+                nodeGroup.position.y = height;
+                nodeGroup.position.z = Math.sin(angle) * radius;
+                
+                // Disable shadows for convergence nodes
+                nodeGroup.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = false;
+                        child.receiveShadow = false;
+                    }
+                });
+                
+                convergenceGroup.add(nodeGroup);
+                convergenceNodes.push(nodeGroup);
+            });
+            
+            // Create violet lines connecting the convergence nodes
+            // Connect each node to its nearest neighbors for organic structure
+            for (let i = 0; i < convergenceNodes.length; i++) {
+                const nodeA = convergenceNodes[i];
+                
+                // Find nearest neighbors (connect to 2-3 nearest nodes)
+                const neighbors = [];
+                for (let j = 0; j < convergenceNodes.length; j++) {
+                    if (i === j) continue;
+                    const nodeB = convergenceNodes[j];
+                    const distance = nodeA.position.distanceTo(nodeB.position);
+                    neighbors.push({ node: nodeB, distance: distance });
+                }
+                
+                // Sort by distance and take 2-3 nearest neighbors
+                neighbors.sort((a, b) => a.distance - b.distance);
+                const numConnections = Math.min(neighbors.length, convergenceWords.length <= 3 ? 2 : 3);
+                
+                for (let k = 0; k < numConnections; k++) {
+                    const nodeB = neighbors[k].node;
+                    
+                    // Check if connection already exists (avoid duplicates)
+                    const connectionExists = convergenceGroup.children.some(child => {
+                        if (child.type === 'Line' && child.userData) {
+                            return (child.userData.fromNode === nodeA && child.userData.toNode === nodeB) ||
+                                   (child.userData.fromNode === nodeB && child.userData.toNode === nodeA);
+                        }
+                        return false;
+                    });
+                    
+                    if (!connectionExists) {
+                        const lineGeometry = new THREE.BufferGeometry().setFromPoints([
+                            nodeA.position.clone(),
+                            nodeB.position.clone()
+                        ]);
+                        
+                        const lineMaterial = new THREE.LineBasicMaterial({
+                            color: 0x8B00FF, // Violet color
+                            transparent: true,
+                            opacity: 0.7,
+                            linewidth: 1
+                        });
+                        
+                        const line = new THREE.Line(lineGeometry, lineMaterial);
+                        line.userData = { fromNode: nodeA, toNode: nodeB };
+                        convergenceGroup.add(line);
+                    }
+                }
+            }
+            
+            // Store convergence zone data
+            const zoneData = {
+                group: convergenceGroup,
+                node1: node1,
+                node2: node2,
+                point: point,
+                strength: strength,
+                text: convergenceText
+            };
+            
+            convergenceZones.push(zoneData);
+            scene.add(convergenceGroup);
+            
+            // Agregar los nodos violetas al array nodes para que sean detectables por el raycaster
+            convergenceNodes.forEach(violetNode => {
+                nodes.push(violetNode);
+            });
+            
+            console.log(`Created convergence zone ${index + 1}: "${convergenceText}" at (${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.z.toFixed(2)})`);
         }
         
         function createSemanticConnections(cores, coreWords) {
@@ -13060,12 +13696,26 @@ Return format (JSON array only, no other text):
         function clearScene() {
             nodes.forEach(node => scene.remove(node));
             connections.forEach(conn => scene.remove(conn));
+            // Clear convergence zones
+            convergenceZones.forEach(zone => {
+                if (zone.group) {
+                    zone.group.traverse((child) => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) child.material.dispose();
+                    });
+                    scene.remove(zone.group);
+                }
+            });
+            convergenceZones = [];
             nodes = [];
             connections = [];
             removeNametags();
             nametagsVisible = false;
             const toggleBtn = document.getElementById('toggleNametagsBtn');
             if (toggleBtn) toggleBtn.textContent = 'SHOW NAMETAGS';
+            
+            // Update convergence zone button state
+            updateConvergenceZoneButton();
             
             // Clear max-value-panel
             maxValueNode = null;
@@ -13509,6 +14159,9 @@ Return format (JSON array only, no other text):
                 
                 // Crear conexiones
                 createConnections();
+                
+                // Detectar convergencias entre esferas y crear zonas de convergencia
+                await detectAndCreateConvergenceZones();
                 
                 // Actualizar estadísticas
                 updateStats();
@@ -16183,10 +16836,16 @@ Return format (JSON array only, no other text):
             const wordData = node.userData.wordData;
             const enlargedSize = 0.35;
             
-            // Get color using the same function as nodes (getValueBasedColor)
-            // This ensures colors match between nodes and Map Text
-            const nodeIndex = node.userData.index !== undefined ? node.userData.index : 0;
-            const color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+            // Get color - use violet for convergence nodes, otherwise use value-based color
+            let color;
+            if (node.userData && node.userData.isConvergenceNode) {
+                color = 0x8B00FF; // Violet color for convergence nodes
+            } else {
+                // Get color using the same function as nodes (getValueBasedColor)
+                // This ensures colors match between nodes and Map Text
+                const nodeIndex = node.userData.index !== undefined ? node.userData.index : 0;
+                color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+            }
             
             // Get word type to determine correct shape
             const wordType = getWordTypeForShape(wordData, node.userData.index || 0);
@@ -18614,10 +19273,16 @@ Return format (JSON array only, no other text):
             const baseSize = 0.06;
             const enlargedSize = 0.3; // 5x larger
             
-            // Get color using the same function as nodes (getValueBasedColor)
-            // This ensures colors match between nodes and hover panel
-            const nodeIndex = node.userData.index !== undefined ? node.userData.index : 0;
-            const color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+            // Get color - use violet for convergence nodes, otherwise use value-based color
+            let color;
+            if (node.userData && node.userData.isConvergenceNode) {
+                color = 0x8B00FF; // Violet color for convergence nodes
+            } else {
+                // Get color using the same function as nodes (getValueBasedColor)
+                // This ensures colors match between nodes and hover panel
+                const nodeIndex = node.userData.index !== undefined ? node.userData.index : 0;
+                color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+            }
             
             // Get word type to determine correct shape
             const wordType = getWordTypeForShape(wordData, node.userData.index || 0);
@@ -19141,15 +19806,20 @@ Return format (JSON array only, no other text):
         function findTop12Nodes() {
             if (nodes.length === 0) return [];
             
-            // Sort nodes by their totalScore
-            const sortedNodes = [...nodes].sort((a, b) => {
+            // Separar nodos normales de nodos de convergencia
+            const normalNodes = nodes.filter(n => !n.userData || !n.userData.isConvergenceNode);
+            const convergenceNodes = nodes.filter(n => n.userData && n.userData.isConvergenceNode);
+            
+            // Sort normal nodes by their totalScore
+            const sortedNormalNodes = [...normalNodes].sort((a, b) => {
                 const scoreA = a.userData.wordData ? (a.userData.wordData.totalScore || 0) : 0;
                 const scoreB = b.userData.wordData ? (b.userData.wordData.totalScore || 0) : 0;
                 return scoreB - scoreA; // Descending order
             });
             
-            // Return top 48
-            return sortedNodes.slice(0, 48);
+            // Return top 48 normal nodes, then add all convergence nodes at the end
+            const topNormalNodes = sortedNormalNodes.slice(0, 48);
+            return [...topNormalNodes, ...convergenceNodes];
         }
 
         function createNodeListItems() {
@@ -19349,10 +20019,16 @@ Return format (JSON array only, no other text):
             const wordData = node.userData.wordData;
             const enlargedSize = 0.35;
             
-            // Get color using the same function as nodes (getValueBasedColor)
-            // This ensures colors match between nodes and TOP NODES list
-            const nodeIndex = node.userData.index !== undefined ? node.userData.index : 0;
-            const color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+            // Get color - use violet for convergence nodes, otherwise use value-based color
+            let color;
+            if (node.userData && node.userData.isConvergenceNode) {
+                color = 0x8B00FF; // Violet color for convergence nodes
+            } else {
+                // Get color using the same function as nodes (getValueBasedColor)
+                // This ensures colors match between nodes and TOP NODES list
+                const nodeIndex = node.userData.index !== undefined ? node.userData.index : 0;
+                color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+            }
             
             // Get word type to determine correct shape
             const wordType = getWordTypeForShape(wordData, node.userData.index || 0);
