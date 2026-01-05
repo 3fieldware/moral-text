@@ -1420,6 +1420,7 @@
             ArrowRight: false
         };
         let valueLogicColorMode = false; // false = black boxes, true = white boxes
+        let convergenceZonesColorMode = false; // false = black boxes, true = white boxes
         let infoColorMode = false; // false = black boxes, true = white boxes
         let valueLogicOverviewScene = null;
         let valueLogicOverviewRenderer = null;
@@ -8181,34 +8182,59 @@ Return format (JSON array only, no other text):
                     const isName = isolatedWord.isName === true || isolatedWord.isPartOfCompoundName === true;
                     
                     if (!isName) {
-                        const valueBeforeIsolatedBoost = isolatedWord.finalValue || 0;
-                        let isolatedBoostFactor = 10.0; // ×10 base boost for isolated words
-                        
-                        // Check word type for additional boosts
+                        // Check word type
                         const uposType = isolatedWord.uposType || '';
                         const pos = isolatedWord.pos || '';
                         const isNoun = (uposType === 'NOUN' || pos === 'noun') && !isName;
                         const isAdjective = uposType === 'ADJ' || uposType === 'ADJECTIVE' || pos === 'adjective';
+                        const isAdverb = uposType === 'ADV' || uposType === 'ADVERB' || pos === 'adverb';
+                        const isVerb = uposType === 'VERB' || pos === 'verb' || isolatedWord.isSerEstar;
                         
-                        // Apply additional boosts based on word type
-                        if (isNoun) {
-                            // Noun: ×10 additional boost (total ×100: ×10 base × ×10 noun = ×100)
-                            isolatedBoostFactor *= 10.0;
-                            console.log(`[ISOLATED WORD BOOST] Isolated noun detected - applying ×10 additional boost (total ×100)`);
-                        } else if (isAdjective) {
-                            // Adjective: ×5 additional boost (total ×50: ×10 base × ×5 adjective = ×50)
-                            isolatedBoostFactor *= 5.0;
-                            console.log(`[ISOLATED WORD BOOST] Isolated adjective detected - applying ×5 additional boost (total ×50)`);
+                        // If word is NOT a name, noun, adjective, adverb, or verb (classified as "other")
+                        if (!isNoun && !isAdjective && !isAdverb && !isVerb) {
+                            // Apply 70% reduction (value becomes 30% of normal value)
+                            const valueBeforeReduction = isolatedWord.finalValue || 0;
+                            const reducedValue = valueBeforeReduction * 0.3; // 70% reduction = 30% of original
+                            isolatedWord.finalValue = reducedValue;
+                            isolatedWord.totalScore = reducedValue;
+                            
+                            // Recalculate total value
+                            totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+                            
+                            console.log(`[ISOLATED WORD] Isolated word "${isolatedWord.text}" is classified as "other" - applying 70% reduction. Value before: ${valueBeforeReduction.toFixed(2)}, after: ${reducedValue.toFixed(2)}`);
+                        } else {
+                            // Apply boost for valid word types (noun, adjective, adverb, verb)
+                            const valueBeforeIsolatedBoost = isolatedWord.finalValue || 0;
+                            let isolatedBoostFactor = 10.0; // ×10 base boost for isolated words
+                            
+                            // Apply additional boosts based on word type
+                            if (isNoun) {
+                                // Noun: ×10 additional boost (total ×100: ×10 base × ×10 noun = ×100)
+                                isolatedBoostFactor *= 10.0;
+                                console.log(`[ISOLATED WORD BOOST] Isolated noun detected - applying ×10 additional boost (total ×100)`);
+                            } else if (isAdjective) {
+                                // Adjective: ×5 additional boost (total ×50: ×10 base × ×5 adjective = ×50)
+                                isolatedBoostFactor *= 5.0;
+                                console.log(`[ISOLATED WORD BOOST] Isolated adjective detected - applying ×5 additional boost (total ×50)`);
+                            } else if (isAdverb) {
+                                // Adverb: ×3 additional boost (total ×30: ×10 base × ×3 adverb = ×30)
+                                isolatedBoostFactor *= 3.0;
+                                console.log(`[ISOLATED WORD BOOST] Isolated adverb detected - applying ×3 additional boost (total ×30)`);
+                            } else if (isVerb) {
+                                // Verb: ×5 additional boost (total ×50: ×10 base × ×5 verb = ×50)
+                                isolatedBoostFactor *= 5.0;
+                                console.log(`[ISOLATED WORD BOOST] Isolated verb detected - applying ×5 additional boost (total ×50)`);
+                            }
+                            
+                            // Apply boost to isolated word
+                            isolatedWord.finalValue = valueBeforeIsolatedBoost * isolatedBoostFactor;
+                            isolatedWord.totalScore = isolatedWord.finalValue;
+                            
+                            // Recalculate total value
+                            totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+                            
+                            console.log(`[ISOLATED WORD BOOST] Applied ×${isolatedBoostFactor.toFixed(1)} boost to isolated word "${isolatedWord.text}" (${isNoun ? 'noun' : isAdjective ? 'adjective' : isAdverb ? 'adverb' : isVerb ? 'verb' : 'other'}). Value before: ${valueBeforeIsolatedBoost.toFixed(2)}, after: ${isolatedWord.finalValue.toFixed(2)}`);
                         }
-                        
-                        // Apply boost to isolated word
-                        isolatedWord.finalValue = valueBeforeIsolatedBoost * isolatedBoostFactor;
-                        isolatedWord.totalScore = isolatedWord.finalValue;
-                        
-                        // Recalculate total value
-                        totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
-                        
-                        console.log(`[ISOLATED WORD BOOST] Applied ×${isolatedBoostFactor.toFixed(1)} boost to isolated word "${isolatedWord.text}" (${isNoun ? 'noun' : isAdjective ? 'adjective' : 'other'}). Value before: ${valueBeforeIsolatedBoost.toFixed(2)}, after: ${isolatedWord.finalValue.toFixed(2)}`);
                     } else {
                         console.log(`[ISOLATED WORD BOOST] Skipped isolated word "${isolatedWord.text}" - it's a name/compound name (already has high value when isolated)`);
                     }
@@ -8564,9 +8590,51 @@ Return format (JSON array only, no other text):
                 console.log(`[LONG TEXT REDUCTION] Text has ${wordCount} words (≤25 words) - no additional reduction applied`);
             }
             
+            // ========== FINAL BOOST: 50% MORE VALUE FOR ISOLATED WORDS AND COMPOUND NAMES ==========
+            console.log('=== Applying 50% boost to isolated words and compound names ===');
+            
+            // Check if text has only one word (isolated word)
+            const isSingleWordText = totalWordsCount === 1 && analyzedWords.length === 1;
+            
+            // Get name groups to check for compound names
+            const finalNameGroups = nameGroups || window.nameGroups || [];
+            const finalCompoundNameIndices = new Set();
+            finalNameGroups.forEach(group => {
+                if (group.indices && group.indices.length > 1) {
+                    // This is a compound name group
+                    group.indices.forEach(idx => {
+                        if (idx >= 0 && idx < analyzedWords.length) {
+                            finalCompoundNameIndices.add(idx);
+                        }
+                    });
+                }
+            });
+            
+            // Apply 50% boost (×1.5) to isolated words and compound names
+            analyzedWords.forEach((wordData, index) => {
+                const isIsolatedWord = isSingleWordText && index === 0;
+                const isCompoundNamePart = finalCompoundNameIndices.has(index);
+                
+                if (isIsolatedWord || isCompoundNamePart) {
+                    const valueBeforeBoost = wordData.finalValue || 0;
+                    const boostedValue = valueBeforeBoost * 1.5; // 50% more = ×1.5
+                    wordData.finalValue = boostedValue;
+                    wordData.totalScore = boostedValue;
+                    
+                    const reason = isIsolatedWord ? 'isolated word' : 'compound name';
+                    console.log(`[FINAL BOOST] Applied 50% boost (×1.5) to "${wordData.text}" (${reason}). Value before: ${valueBeforeBoost.toFixed(2)}, after: ${boostedValue.toFixed(2)}`);
+                }
+            });
+            
+            // Recalculate total value after boost
+            totalValue = analyzedWords.reduce((sum, w) => sum + (w.finalValue || 0), 0);
+            
             console.log(`Total text value: ${totalValue.toFixed(2)} points`);
             
             // Store total value for display update
+            // Reset convergence total value when recalculating scores
+            // Convergence values will be added AFTER all devaluations, so they don't affect devaluation calculations
+            window.convergenceTotalValue = 0;
             window.totalTextScore = totalValue;
             
             // Calculate normalized scores for visualization (0 to 1)
@@ -12026,7 +12094,8 @@ Return format (JSON array only, no other text):
         }
         
         async function detectAndCreateConvergenceZones() {
-            // Clear existing convergence zones
+            // Clear existing convergence zones and subtract their values from total
+            let totalConvergenceValueToSubtract = 0;
             convergenceZones.forEach(zone => {
                 if (zone.group) {
                     zone.group.traverse((child) => {
@@ -12035,7 +12104,24 @@ Return format (JSON array only, no other text):
                     });
                     scene.remove(zone.group);
                 }
+                // Subtract zone value from total
+                if (zone.totalValue) {
+                    totalConvergenceValueToSubtract += zone.totalValue;
+                }
             });
+            
+            // Subtract convergence values from total before clearing
+            if (window.totalTextScore !== undefined && totalConvergenceValueToSubtract > 0) {
+                window.totalTextScore = Math.max(0, (window.totalTextScore || 0) - totalConvergenceValueToSubtract);
+                if (window.convergenceTotalValue !== undefined) {
+                    window.convergenceTotalValue = Math.max(0, (window.convergenceTotalValue || 0) - totalConvergenceValueToSubtract);
+                }
+                // Update display
+                if (typeof convertToEthereum === 'function') {
+                    convertToEthereum(window.totalTextScore);
+                }
+            }
+            
             convergenceZones = [];
             
             // Remove convergence nodes from nodes array
@@ -12152,7 +12238,7 @@ Return format (JSON array only, no other text):
                 modal.appendChild(container);
                 
                 const header = document.createElement('div');
-                header.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; margin-top: 0;';
+                header.style.cssText = 'display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; margin-top: 0; position: relative;';
                 
                 const closeBtn = document.createElement('button');
                 closeBtn.id = 'close-convergence-zones-modal';
@@ -12160,6 +12246,17 @@ Return format (JSON array only, no other text):
                 closeBtn.style.cssText = 'background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; display: flex; align-items: center; gap: 2px; white-space: nowrap; border-radius: 0; margin: 0; min-height: 16px; height: 16px;';
                 closeBtn.onclick = hideConvergenceZonesModal;
                 header.appendChild(closeBtn);
+                
+                // Add color mode button (same style as TOTAL VALUE)
+                const colorBtn = document.createElement('div');
+                colorBtn.id = 'convergence-zones-color-btn';
+                colorBtn.style.cssText = 'width: 16px; height: 16px; background: #808080; border: none; cursor: pointer; padding: 1px; display: flex; align-items: center; justify-content: center; border-radius: 0; margin: 0; position: absolute; top: 1px; right: 3px;';
+                const colorIndicator = document.createElement('div');
+                colorIndicator.id = 'convergence-zones-color-indicator';
+                colorIndicator.style.cssText = 'width: 12px; height: 12px; background: #000000; border-radius: 0;';
+                colorBtn.appendChild(colorIndicator);
+                colorBtn.addEventListener('click', toggleConvergenceZonesColorMode);
+                header.appendChild(colorBtn);
                 
                 container.appendChild(header);
                 
@@ -12190,25 +12287,37 @@ Return format (JSON array only, no other text):
                 modalContainer.style.margin = '0'; // Remove auto margin
             }
             
+            // Update color indicator
+            const colorIndicator = document.getElementById('convergence-zones-color-indicator');
+            if (colorIndicator) {
+                colorIndicator.style.background = convergenceZonesColorMode ? '#ffffff' : '#000000';
+            }
+            
+            // Get colors based on mode
+            const boxBg = convergenceZonesColorMode ? "#ffffff" : "#000000";
+            const boxBorder = convergenceZonesColorMode ? "#000000" : "#333333";
+            const textColor = convergenceZonesColorMode ? "#000000" : "#ffffff";
+            
             // Populate content
             const content = document.getElementById('convergence-zones-content');
             content.innerHTML = '';
             
             convergenceZones.forEach((zone, index) => {
                 const zoneDiv = document.createElement('div');
-                zoneDiv.style.cssText = 'margin-bottom: 8px; padding: 6px; background: #000000; color: #ffffff; border: 1px solid #333333;';
+                zoneDiv.style.cssText = `margin-bottom: 8px; padding: 6px; background: ${boxBg}; color: ${textColor}; border: 1px solid ${boxBorder};`;
                 
                 // Header with ZONE in uppercase
                 const zoneHeader = document.createElement('div');
-                zoneHeader.style.cssText = 'font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #ffffff;';
+                zoneHeader.style.cssText = `font-size: 11px; font-weight: bold; margin-bottom: 4px; color: ${textColor};`;
                 const word1 = (zone.node1 && zone.node1.userData && zone.node1.userData.wordData && zone.node1.userData.wordData.text) || 'Unknown';
                 const word2 = (zone.node2 && zone.node2.userData && zone.node2.userData.wordData && zone.node2.userData.wordData.text) || 'Unknown';
                 zoneHeader.textContent = `ZONE ${index + 1}: "${word1}" + "${word2}"`;
                 zoneDiv.appendChild(zoneHeader);
                 
                 // Summary information
+                const summaryBg = convergenceZonesColorMode ? "rgba(0, 0, 0, 0.05)" : "rgba(255, 255, 255, 0.05)";
                 const summaryDiv = document.createElement('div');
-                summaryDiv.style.cssText = 'font-size: 9px; line-height: 1.2; color: #ffffff; margin-bottom: 4px; padding: 4px; background: rgba(255, 255, 255, 0.05);';
+                summaryDiv.style.cssText = `font-size: 9px; line-height: 1.2; color: ${textColor}; margin-bottom: 4px; padding: 4px; background: ${summaryBg};`;
                 
                 // Get zone data
                 const position = zone.point || { x: 0, y: 0, z: 0 };
@@ -12248,21 +12357,37 @@ Return format (JSON array only, no other text):
                     totalNodeValueETH = totalNodeValue / ethPriceUSD;
                 }
                 
+                // Get convergence zone total value
+                const zoneTotalValue = zone.totalValue || 0;
+                let zoneTotalValueETH = 0;
+                if (typeof ethPriceUSD !== 'undefined' && ethPriceUSD && ethPriceUSD > 0) {
+                    zoneTotalValueETH = zoneTotalValue / ethPriceUSD;
+                }
+                const zoneTotalValueETHDisplay = zoneTotalValueETH >= 0.01 ? 
+                    `${zoneTotalValueETH.toFixed(6)} ETH` : 
+                    `${zoneTotalValueETH.toFixed(10)} ETH`;
+                
                 summaryDiv.innerHTML = `
                     <div><strong>Location:</strong> (${position.x.toFixed(2)}, ${position.y.toFixed(2)}, ${position.z.toFixed(2)})</div>
                     <div><strong>Nodes:</strong> ${convergenceNodeCount}</div>
                     <div><strong>Size:</strong> ${zoneSize.toFixed(3)}</div>
                     <div><strong>Weight:</strong> ${avgSphereSize.toFixed(4)}</div>
-                    <div><strong>Value:</strong> 0</div>
+                    <div><strong>Value:</strong> ${zoneTotalValueETHDisplay}</div>
                     <div><strong>Node Values:</strong> ${totalNodeValueETH > 0 ? totalNodeValueETH.toFixed(6) + ' ETH' : totalNodeValue.toFixed(2)}</div>
                     <div><strong>Strength:</strong> ${(strength * 100).toFixed(1)}%</div>
                 `;
                 zoneDiv.appendChild(summaryDiv);
                 
-                // Generated text (white text on black background)
+                // Generated text (invert colors based on mode: white mode = black bg/white text, black mode = white bg/black text)
                 const textDiv = document.createElement('div');
-                textDiv.style.cssText = 'font-size: 10px; line-height: 1.3; color: #ffffff; padding: 4px; background: #000000; border: none; margin-top: 2px;';
-                textDiv.textContent = zone.text || 'No text generated';
+                textDiv.style.cssText = 'font-size: 10px; line-height: 1.0; margin-top: 2px;';
+                // Wrap text in span with same style as TOTAL VALUE numbers
+                const textSpan = document.createElement('span');
+                const textBg = convergenceZonesColorMode ? "#000000" : "#ffffff";
+                const textFg = convergenceZonesColorMode ? "#ffffff" : "#000000";
+                textSpan.style.cssText = `background: ${textBg}; color: ${textFg} !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;`;
+                textSpan.textContent = zone.text || 'No text generated';
+                textDiv.appendChild(textSpan);
                 zoneDiv.appendChild(textDiv);
                 
                 content.appendChild(zoneDiv);
@@ -12486,7 +12611,95 @@ Return format (JSON array only, no other text):
             const smallNodeSize = 0.008; // Very small nodes
             const violetColor = 0x8B00FF; // Violet color
             
-            // Match words with their analysis
+            // Create analyzedWords array for value calculation
+            const convergenceAnalyzedWords = [];
+            convergenceWords.forEach((word, wordIndex) => {
+                const analysis = wordAnalysis.find(a => 
+                    a.word.toLowerCase() === word.toLowerCase() || 
+                    a.word === word
+                ) || wordAnalysis[wordIndex] || {
+                    word: word,
+                    pos: 'MISC',
+                    uposType: 'MISC',
+                    isName: false
+                };
+                
+                convergenceAnalyzedWords.push({
+                    text: word,
+                    pos: analysis.pos || 'MISC',
+                    uposType: analysis.uposType || analysis.pos || 'MISC',
+                    upos: analysis.uposType || analysis.pos || 'MISC',
+                    isName: analysis.isName || false
+                });
+            });
+            
+            // Create tokens array for value calculation
+            const convergenceTokens = convergenceWords.map((word, wordIndex) => {
+                const analysis = convergenceAnalyzedWords[wordIndex];
+                return {
+                    surface: word,
+                    type: analysis.uposType || analysis.pos || 'MISC',
+                    name_group: null,
+                    features: {}
+                };
+            });
+            
+            // Calculate multipliers for convergence text (simplified, since it's a short phrase)
+            // For convergence phrases, we'll use simplified multipliers
+            const convergenceRepetitionMultipliers = new Map();
+            convergenceWords.forEach((word, index) => {
+                const wordText = word.toLowerCase().replace(/[^\w]/g, '');
+                if (!convergenceRepetitionMultipliers.has(wordText)) {
+                    // Count occurrences in convergence text
+                    let count = 0;
+                    convergenceWords.forEach(w => {
+                        if (w.toLowerCase().replace(/[^\w]/g, '') === wordText) {
+                            count++;
+                        }
+                    });
+                    // Simple repetition multiplier
+                    let mult = 1.0;
+                    if (count === 1) mult = 1.5;
+                    else if (count === 2) mult = 1.2;
+                    else if (count >= 3) mult = 0.9;
+                    convergenceRepetitionMultipliers.set(wordText, mult);
+                }
+            });
+            
+            // Simplified multipliers for convergence text
+            const convergenceDiversityMult = 1.0; // No diversity devaluation for short phrases
+            const convergenceNonNameDevaluation = 1.0; // No devaluation for short phrases
+            const convergenceAdjectiveMult = 1.0; // No special handling
+            const convergenceTextLengthDevaluation = 1.0; // No length devaluation for short phrases
+            
+            // Calculate values for each word in convergence text
+            const convergenceWordValues = [];
+            convergenceWords.forEach((word, wordIndex) => {
+                const analysis = convergenceAnalyzedWords[wordIndex];
+                const token = convergenceTokens[wordIndex];
+                const wordText = word.toLowerCase().replace(/[^\w]/g, '');
+                const repetitionMult = convergenceRepetitionMultipliers.get(wordText) || 1.0;
+                
+                // Calculate value using the same function as main text
+                const valueInfo = calculateNewTokenValue(
+                    token, 
+                    wordIndex, 
+                    convergenceTokens, 
+                    [], // No name groups in convergence text
+                    convergenceAnalyzedWords, 
+                    repetitionMult, 
+                    convergenceDiversityMult, 
+                    convergenceNonNameDevaluation, 
+                    convergenceAdjectiveMult, 
+                    convergenceTextLengthDevaluation
+                );
+                
+                // Apply 40% reduction to convergence zone values (multiply by 0.6)
+                const reducedValue = valueInfo.final_value * 0.6;
+                convergenceWordValues.push(reducedValue);
+            });
+            
+            // Match words with their analysis and assign calculated values
             convergenceWords.forEach((word, wordIndex) => {
                 // Find matching analysis entry (by word text)
                 const analysis = wordAnalysis.find(a => 
@@ -12498,6 +12711,9 @@ Return format (JSON array only, no other text):
                     uposType: 'MISC',
                     isName: false
                 };
+                
+                // Get calculated value for this word
+                const calculatedValue = convergenceWordValues[wordIndex] || 1.0;
                 
                 // Create word data object for getWordTypeForShape
                 const wordData = {
@@ -12528,8 +12744,8 @@ Return format (JSON array only, no other text):
                         uposType: analysis.uposType || analysis.pos || 'MISC',
                         upos: analysis.uposType || analysis.pos || 'MISC',
                         isName: analysis.isName || false,
-                        finalValue: 0, // Los nodos violetas tienen valor 0
-                        totalScore: 0, // Los nodos violetas tienen valor 0
+                        finalValue: calculatedValue, // Valor calculado para el nodo violeta
+                        totalScore: calculatedValue, // Valor calculado para el nodo violeta
                         isConvergenceNode: true
                     },
                     index: -1, // Índice especial para nodos de convergencia
@@ -12611,6 +12827,29 @@ Return format (JSON array only, no other text):
                 }
             }
             
+            // Calculate total value for this convergence zone
+            const zoneTotalValue = convergenceWordValues.reduce((sum, val) => sum + val, 0);
+            
+            // Store convergence zone value separately (will be added to total AFTER all devaluations)
+            // Initialize convergence total value if it doesn't exist
+            if (window.convergenceTotalValue === undefined) {
+                window.convergenceTotalValue = 0;
+            }
+            window.convergenceTotalValue += zoneTotalValue;
+            
+            // Update global total value to include convergence zone values
+            // These values are added AFTER all devaluations, so they don't affect devaluation calculations
+            // The convergence values are pure additions - they are NOT subject to any devaluations
+            if (window.totalTextScore !== undefined) {
+                // Simply add the convergence zone value to the total
+                // This happens AFTER all devaluations have been applied to the main text
+                window.totalTextScore = (window.totalTextScore || 0) + zoneTotalValue;
+                // Update display
+                if (typeof convertToEthereum === 'function') {
+                    convertToEthereum(window.totalTextScore);
+                }
+            }
+            
             // Store convergence zone data
             const zoneData = {
                 group: convergenceGroup,
@@ -12618,7 +12857,9 @@ Return format (JSON array only, no other text):
                 node2: node2,
                 point: point,
                 strength: strength,
-                text: convergenceText
+                text: convergenceText,
+                totalValue: zoneTotalValue, // Store total value for this zone
+                wordValues: convergenceWordValues // Store individual word values
             };
             
             convergenceZones.push(zoneData);
@@ -12629,7 +12870,7 @@ Return format (JSON array only, no other text):
                 nodes.push(violetNode);
             });
             
-            console.log(`Created convergence zone ${index + 1}: "${convergenceText}" at (${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.z.toFixed(2)})`);
+            console.log(`Created convergence zone ${index + 1}: "${convergenceText}" at (${point.x.toFixed(2)}, ${point.y.toFixed(2)}, ${point.z.toFixed(2)}) with total value: ${zoneTotalValue.toFixed(2)}`);
         }
         
         function createSemanticConnections(cores, coreWords) {
@@ -13694,21 +13935,60 @@ Return format (JSON array only, no other text):
         }
 
         function clearScene() {
-            nodes.forEach(node => scene.remove(node));
-            connections.forEach(conn => scene.remove(conn));
-            // Clear convergence zones
+            // First, remove all convergence zones and their groups from scene
             convergenceZones.forEach(zone => {
                 if (zone.group) {
+                    // Dispose all children (violet nodes and lines) before removing group
                     zone.group.traverse((child) => {
                         if (child.geometry) child.geometry.dispose();
                         if (child.material) child.material.dispose();
                     });
+                    // Remove the entire group from scene
                     scene.remove(zone.group);
                 }
             });
+            
+            // Remove all nodes from scene (including convergence nodes)
+            // Make a copy of the array to avoid issues while iterating
+            const nodesToRemove = [...nodes];
+            nodesToRemove.forEach(node => {
+                // Remove node from scene
+                if (node.parent) {
+                    node.parent.remove(node);
+                } else {
+                    scene.remove(node);
+                }
+                // Dispose geometry and materials
+                if (node.isGroup) {
+                    node.traverse((child) => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) child.material.dispose();
+                    });
+                } else {
+                    if (node.geometry) node.geometry.dispose();
+                    if (node.material) node.material.dispose();
+                }
+            });
+            
+            // Remove all connections
+            connections.forEach(conn => {
+                if (conn.parent) {
+                    conn.parent.remove(conn);
+                } else {
+                    scene.remove(conn);
+                }
+                if (conn.geometry) conn.geometry.dispose();
+                if (conn.material) conn.material.dispose();
+            });
+            
+            // Clear arrays
             convergenceZones = [];
             nodes = [];
             connections = [];
+            
+            // Reset convergence total value
+            window.convergenceTotalValue = 0;
+            
             removeNametags();
             nametagsVisible = false;
             const toggleBtn = document.getElementById('toggleNametagsBtn');
@@ -17001,10 +17281,32 @@ Return format (JSON array only, no other text):
                 detailsContent.style.boxSizing = 'border-box';
                 detailsContent.style.overflowY = 'visible';
                 
+                // Check if it's a convergence node
+                const isConvergenceNode = node.userData && node.userData.isConvergenceNode;
+                const positionText = isConvergenceNode ? 
+                    'Convergence Zone' : 
+                    `${index + 1} / ${analyzedWords.length}`;
+                
+                // Find which convergence zone this node belongs to
+                let convergenceZoneInfo = '';
+                if (isConvergenceNode) {
+                    const zone = convergenceZones.find(z => {
+                        if (z.group && z.group.children) {
+                            return z.group.children.some(child => child === node || (child.userData && child.userData.isConvergenceNode && child.userData.wordData && child.userData.wordData.text === wordData.text));
+                        }
+                        return false;
+                    });
+                    if (zone) {
+                        const zoneIndex = convergenceZones.indexOf(zone);
+                        convergenceZoneInfo = `<div><strong>Source:</strong> Convergence Zone ${zoneIndex + 1}</div>`;
+                    }
+                }
+                
                 detailsContent.innerHTML = `
                     <div><strong>Word:</strong> ${wordData.text}</div>
                     <div><strong>Individual Value:</strong> ${individualValueETHDisplay}</div>
-                    <div><strong>Position in Text:</strong> ${index + 1} / ${analyzedWords.length}</div>
+                    <div><strong>Position in Text:</strong> ${positionText}</div>
+                    ${convergenceZoneInfo}
                     <div><strong>Value / Total:</strong> ${relativeValue} (${totalValueETHDisplay} total)</div>
                     <div><strong>Connections:</strong> ${node.userData.connectionCount || 0}</div>
                     <div><strong>Size (KB):</strong> ${nodeSizeKB} KB</div>
@@ -17040,8 +17342,15 @@ Return format (JSON array only, no other text):
                 canvas.style.cursor = 'pointer';
                 canvas.addEventListener('click', function(e) {
                     if (node && node.userData && node.userData.wordData) {
-                        const wordIndex = node.userData.index;
-                        showFractalModal(wordIndex, e.clientX, e.clientY);
+                        // Check if it's a convergence node
+                        if (node.userData.isConvergenceNode) {
+                            showFractalModalForConvergenceNode(node, e.clientX, e.clientY);
+                        } else {
+                            const wordIndex = node.userData.index;
+                            if (wordIndex >= 0 && wordIndex < analyzedWords.length) {
+                                showFractalModal(wordIndex, e.clientX, e.clientY);
+                            }
+                        }
                     }
                 });
             }
@@ -17787,6 +18096,21 @@ Return format (JSON array only, no other text):
             }
         }
         
+        function toggleConvergenceZonesColorMode() {
+            convergenceZonesColorMode = !convergenceZonesColorMode;
+            
+            // Update color indicator
+            const indicator = document.getElementById('convergence-zones-color-indicator');
+            if (indicator) {
+                indicator.style.background = convergenceZonesColorMode ? '#ffffff' : '#000000';
+            }
+            
+            // Re-generate the content with new colors
+            if (convergenceZones && convergenceZones.length > 0) {
+                showConvergenceZonesModal();
+            }
+        }
+        
         function saveValueLogicSummaryAsImage() {
             const modal = document.getElementById('value-logic-modal');
             if (!modal || modal.style.display === 'none') return;
@@ -18002,12 +18326,17 @@ Return format (JSON array only, no other text):
             }, 100);
         }
         
-        function addNodeListCanvasClickListener(canvas, nodeIndex) {
+        function addNodeListCanvasClickListener(canvas, nodeIndex, node) {
             if (canvas && !canvas.dataset.fractalListenerAdded) {
                 canvas.style.cursor = 'pointer';
                 canvas.dataset.fractalListenerAdded = 'true';
                 canvas.addEventListener('click', function(e) {
-                    if (analyzedWords && nodeIndex >= 0 && nodeIndex < analyzedWords.length) {
+                    // Check if it's a convergence node (violet node)
+                    if (node && node.userData && node.userData.isConvergenceNode) {
+                        // For convergence nodes, show fractal using the node's word data
+                        showFractalModalForConvergenceNode(node, e.clientX, e.clientY);
+                    } else if (analyzedWords && nodeIndex >= 0 && nodeIndex < analyzedWords.length) {
+                        // For normal nodes, use the standard fractal modal
                         showFractalModal(nodeIndex, e.clientX, e.clientY);
                     }
                 });
@@ -18064,6 +18393,179 @@ Return format (JSON array only, no other text):
             
             // Generate fractal
             generateWordFractal(wordIndex);
+        }
+        
+        function showFractalModalForConvergenceNode(node, mouseX, mouseY) {
+            if (fractalGenerationInProgress || !node || !node.userData || !node.userData.wordData) {
+                return;
+            }
+            
+            const wordData = node.userData.wordData;
+            currentFractalWordIndex = -1; // Special index for convergence nodes
+            
+            // Update modal title
+            document.getElementById('fractal-word-name').textContent = wordData.text;
+            
+            // Show modal
+            const fractalModal = document.getElementById('fractal-modal');
+            fractalModal.style.display = 'block';
+            fractalModal.style.visibility = 'visible';
+            fractalModal.style.opacity = '1';
+            fractalModal.style.pointerEvents = 'auto';
+            
+            // Position container at mouse position if provided, otherwise use default position
+            const fractalModalContainer = document.getElementById('fractal-modal-container');
+            if (fractalModalContainer) {
+                if (mouseX !== undefined && mouseY !== undefined) {
+                    // Position at mouse coordinates
+                    fractalModalContainer.style.top = mouseY + 'px';
+                    fractalModalContainer.style.left = mouseX + 'px';
+                    fractalModalContainer.style.right = 'auto';
+                    fractalModalContainer.style.bottom = 'auto';
+                    fractalModalContainer.style.transform = 'none';
+                    
+                    // Ensure modal doesn't go off screen
+                    const modalWidth = 300; // max-width of modal
+                    const modalHeight = 250; // approximate height
+                    if (mouseX + modalWidth > window.innerWidth) {
+                        fractalModalContainer.style.left = (window.innerWidth - modalWidth - 10) + 'px';
+                    }
+                    if (mouseY + modalHeight > window.innerHeight) {
+                        fractalModalContainer.style.top = (window.innerHeight - modalHeight - 10) + 'px';
+                    }
+                } else {
+                    // Default position: just below fps bar, fully to the right
+                    fractalModalContainer.style.top = '25px';
+                    fractalModalContainer.style.right = '0px';
+                    fractalModalContainer.style.left = 'auto';
+                    fractalModalContainer.style.bottom = 'auto';
+                    fractalModalContainer.style.transform = 'none';
+                }
+            }
+            
+            // Generate fractal for convergence node
+            generateWordFractalForConvergenceNode(node);
+        }
+        
+        function generateWordFractalForConvergenceNode(node) {
+            if (!fractalCtx || !node || !node.userData || !node.userData.wordData) {
+                return;
+            }
+            
+            fractalGenerationInProgress = true;
+            
+            const wordData = node.userData.wordData;
+            // Calculate fractal parameters based on word data
+            const params = calculateFractalParametersForConvergenceNode(wordData);
+            
+            // Clear canvas
+            fractalCtx.fillStyle = '#000000';
+            fractalCtx.fillRect(0, 0, fractalCanvas.width, fractalCanvas.height);
+            
+            // Generate fractal based on family type
+            setTimeout(() => {
+                try {
+                    renderFractal(params);
+                    fractalGenerationInProgress = false;
+                } catch (e) {
+                    console.error('Error generating fractal for convergence node:', e);
+                    fractalGenerationInProgress = false;
+                }
+            }, 10); // Small delay to prevent blocking
+        }
+        
+        function calculateFractalParametersForConvergenceNode(wordData) {
+            // Use the same logic as calculateFractalParameters but adapted for convergence nodes
+            // Since convergence nodes don't have leftWord/rightWord context, we'll use simplified context
+            
+            const isToBe = wordData.isSerEstar;
+            
+            // Determine fractal family based on POS and context (same as normal nodes)
+            let family = 'Mandelbrot';
+            if (wordData.pos === 'pronoun' || wordData.uposType === 'PRON') {
+                family = 'OrbitTrap';
+            } else if (isToBe) {
+                family = 'Multibrot';
+            } else if (wordData.pos === 'verb' || wordData.uposType === 'VERB') {
+                family = 'Newton';
+            } else if (wordData.pos === 'noun' || wordData.uposType === 'NOUN') {
+                family = 'Mandelbrot';
+            } else if (wordData.pos === 'adjective' || wordData.uposType === 'ADJ') {
+                family = 'Julia';
+            } else if (wordData.pos === 'conjunction' || wordData.text.toLowerCase().match(/^(if|because|although|though|while)$/)) {
+                family = 'LSystem';
+            } else if (wordData.pos === 'preposition' || wordData.pos === 'determiner') {
+                family = 'IFS';
+            } else if (wordData.text.toLowerCase().match(/^(must|can|should|may|might|could|would)$/)) {
+                family = 'DomainColoring';
+            }
+            
+            // Calculate depth based on value (same as normal nodes)
+            const wordValue = wordData.finalValue || wordData.totalScore || 0;
+            
+            // Calculate seed from word data (similar to normal nodes but without context words)
+            const seedStr = `${wordData.text}|${wordData.pos}|${wordValue}`;
+            const seed = simpleHash(seedStr);
+            
+            // Additional seed-based variations for uniqueness (same as normal nodes)
+            const seedNorm1 = (seed % 997) / 997;
+            const seedNorm2 = ((seed * 7919) % 997) / 997;
+            const seedNorm3 = ((seed * 3571) % 997) / 997;
+            
+            // Calculate depth (same logic as normal nodes)
+            let depth = 200; // Default
+            if (wordValue < 0.1) depth = 80;
+            else if (wordValue < 2) depth = 80 + (wordValue - 0.1) * (120 / 1.9);
+            else if (wordValue < 5) depth = 200 + (wordValue - 2) * (400 / 3);
+            else if (wordValue < 10) depth = 600 + (wordValue - 5) * (1400 / 5);
+            else depth = 2000;
+            depth = Math.round(Math.min(2000, Math.max(80, depth)));
+            
+            // Calculate zoom (same logic as normal nodes)
+            let zoom = 0.3 + seedNorm1 * 0.4;
+            if (isToBe) {
+                zoom = 0.4 + seedNorm1 * 0.3;
+                zoom *= 0.8; // Even lower for "to be"
+            } else {
+                zoom = 0.2 + seedNorm1 * 0.3 + (wordValue * 0.05);
+            }
+            zoom = Math.min(1.0, Math.max(0.15, zoom));
+            
+            // Calculate symmetry (same logic as normal nodes)
+            let symmetry = 0.5;
+            if (wordData.semanticMultiplier && wordData.semanticMultiplier > 1.2) {
+                symmetry = 0.7 + (wordData.semanticMultiplier - 1.2) * 0.3;
+            }
+            if (isToBe) symmetry = 0.9;
+            symmetry = Math.min(1.0, Math.max(0.1, symmetry));
+            
+            // Calculate perturbation (same logic as normal nodes)
+            let perturbation = 0.1;
+            const wordLower = wordData.text.toLowerCase();
+            if (wordLower === 'not' || wordLower === 'no') {
+                perturbation = 0.8;
+            } else if (wordLower.match(/^(if|unless|unless|when|while)$/)) {
+                perturbation = 0.6;
+            }
+            
+            // Determine palette
+            let palette = 'high_contrast'; // Default
+            
+            return {
+                family: family,
+                seed: seed,
+                seedNorm1: seedNorm1,
+                seedNorm2: seedNorm2,
+                seedNorm3: seedNorm3,
+                depth: depth,
+                zoom: zoom,
+                symmetry: symmetry,
+                perturbation: perturbation,
+                palette: palette,
+                wordValue: wordValue,
+                wordText: wordData.text.toLowerCase(),
+                pos: wordData.pos
+            };
         }
         
         function generateWordFractal(wordIndex) {
@@ -19009,7 +19511,11 @@ Return format (JSON array only, no other text):
             // Update all fields
             document.getElementById('max-value-word').textContent = wordData.text;
             document.getElementById('max-value-individual-value').textContent = individualValueETHDisplay;
-            document.getElementById('max-value-position').textContent = (index + 1) + ' / ' + analyzedWords.length;
+            // For convergence nodes, show "Convergence Zone" instead of position
+            const positionText = maxValueNode.userData.isConvergenceNode ? 
+                'Convergence Zone' : 
+                ((index + 1) + ' / ' + analyzedWords.length);
+            document.getElementById('max-value-position').textContent = positionText;
             document.getElementById('max-value-relative-value').textContent = relativeValue + ' (' + totalValueETHDisplay + ' total)';
             document.getElementById('max-value-connections').textContent = maxValueNode.userData.connectionCount || 0;
             document.getElementById('max-value-size').textContent = nodeSizeKB + ' KB';
@@ -19035,10 +19541,14 @@ Return format (JSON array only, no other text):
             const baseSize = 0.06;
             const enlargedSize = 0.3; // Size for max-value-panel
             
-            // Get color using the same function as nodes (getValueBasedColor)
-            // This ensures colors match between nodes and all panels
-            const nodeIndex = maxValueNode.userData.index !== undefined ? maxValueNode.userData.index : 0;
-            const color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+            // Get color - use violet for convergence nodes, otherwise use value-based color
+            let color;
+            if (maxValueNode.userData.isConvergenceNode) {
+                color = 0x8B00FF; // Violet color for convergence nodes
+            } else {
+                const nodeIndex = maxValueNode.userData.index !== undefined ? maxValueNode.userData.index : 0;
+                color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+            }
             
             // Get word type to determine correct shape
             const wordType = getWordTypeForShape(wordData, maxValueNode.userData.index || 0);
@@ -19096,13 +19606,32 @@ Return format (JSON array only, no other text):
             mappedContainer.style.display = 'none';
             textInput.style.display = 'block';
             mappedTextVisible = false;
+            
+            // First, remove all convergence zones and their groups from scene
+            convergenceZones.forEach(zone => {
+                if (zone.group) {
+                    // Dispose all children (violet nodes and lines) before removing group
+                    zone.group.traverse((child) => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) child.material.dispose();
+                    });
+                    // Remove the entire group from scene
+                    scene.remove(zone.group);
+                }
+            });
+            
             // Clear scene - properly handle both regular nodes and noun groups
             nodes.forEach(node => {
-                scene.remove(node);
+                // Remove node from scene
+                if (node.parent) {
+                    node.parent.remove(node);
+                } else {
+                    scene.remove(node);
+                }
                 
                 // Handle noun groups (THREE.Group objects)
                 if (node.isGroup) {
-                    node.children.forEach(child => {
+                    node.traverse((child) => {
                         if (child.geometry) child.geometry.dispose();
                         if (child.material) child.material.dispose();
                     });
@@ -19114,15 +19643,27 @@ Return format (JSON array only, no other text):
             });
             
             connections.forEach(conn => {
-                scene.remove(conn);
+                if (conn.parent) {
+                    conn.parent.remove(conn);
+                } else {
+                    scene.remove(conn);
+                }
                 if (conn.geometry) conn.geometry.dispose();
                 if (conn.material) conn.material.dispose();
             });
             
+            // Clear arrays
+            convergenceZones = [];
             nodes = [];
             connections = [];
             analyzedWords = [];
             selectedNode = null;
+            
+            // Reset convergence total value
+            window.convergenceTotalValue = 0;
+            
+            // Update convergence zone button state
+            updateConvergenceZoneButton();
             
             // Disable Map Text and related buttons after clearing
             disableMapTextButtons();
@@ -19817,9 +20358,26 @@ Return format (JSON array only, no other text):
                 return scoreB - scoreA; // Descending order
             });
             
-            // Return top 48 normal nodes, then add all convergence nodes at the end
-            const topNormalNodes = sortedNormalNodes.slice(0, 48);
-            return [...topNormalNodes, ...convergenceNodes];
+            // Sort convergence nodes by their totalScore (only include those with significant value)
+            const sortedConvergenceNodes = [...convergenceNodes].sort((a, b) => {
+                const scoreA = a.userData.wordData ? (a.userData.wordData.totalScore || 0) : 0;
+                const scoreB = b.userData.wordData ? (b.userData.wordData.totalScore || 0) : 0;
+                return scoreB - scoreA; // Descending order
+            });
+            
+            // Get top 1000 normal nodes
+            const topNormalNodes = sortedNormalNodes.slice(0, 1000);
+            
+            // Include convergence nodes that have high enough value to appear in top nodes
+            // They should compete with normal nodes based on their value
+            const allNodesSorted = [...topNormalNodes, ...sortedConvergenceNodes].sort((a, b) => {
+                const scoreA = a.userData.wordData ? (a.userData.wordData.totalScore || 0) : 0;
+                const scoreB = b.userData.wordData ? (b.userData.wordData.totalScore || 0) : 0;
+                return scoreB - scoreA; // Descending order
+            });
+            
+            // Return top 1000 nodes (which may include convergence nodes if they have high values)
+            return allNodesSorted.slice(0, 1000);
         }
 
         function createNodeListItems() {
@@ -19898,11 +20456,33 @@ Return format (JSON array only, no other text):
                     `${totalValueETH.toFixed(6)} ETH` : 
                     `${totalValueETH.toFixed(10)} ETH`;
                 
+                // Check if it's a convergence node
+                const isConvergenceNode = node.userData && node.userData.isConvergenceNode;
+                const positionText = isConvergenceNode ? 
+                    'Convergence Zone' : 
+                    `${nodeIndex + 1} / ${analyzedWords.length}`;
+                
+                // Find which convergence zone this node belongs to
+                let convergenceZoneInfo = '';
+                if (isConvergenceNode) {
+                    const zone = convergenceZones.find(z => {
+                        if (z.group && z.group.children) {
+                            return z.group.children.some(child => child === node || (child.userData && child.userData.isConvergenceNode && child.userData.wordData && child.userData.wordData.text === wordData.text));
+                        }
+                        return false;
+                    });
+                    if (zone) {
+                        const zoneIndex = convergenceZones.indexOf(zone);
+                        convergenceZoneInfo = `<div><strong>Source:</strong> Convergence Zone ${zoneIndex + 1}</div>`;
+                    }
+                }
+                
                 // Add info fields
                 infoContainer.innerHTML = `
                     <div><strong>Word:</strong> ${wordData.text}</div>
                     <div><strong>Individual Value:</strong> ${individualValueETHDisplay}</div>
-                    <div><strong>Position in Text:</strong> ${nodeIndex + 1} / ${analyzedWords.length}</div>
+                    <div><strong>Position in Text:</strong> ${positionText}</div>
+                    ${convergenceZoneInfo}
                     <div><strong>Value / Total:</strong> ${relativeValue} (${totalValueETHDisplay} total)</div>
                     <div><strong>Connections:</strong> ${node.userData.connectionCount || 0}</div>
                     <div><strong>Size (KB):</strong> ${nodeSizeKB} KB</div>
@@ -19955,7 +20535,7 @@ Return format (JSON array only, no other text):
                                 createNodeList3DScene(index, top12Nodes[index], canvas);
                                 // Add fractal click listener
                                 const nodeIndex = top12Nodes[index].userData.index;
-                                addNodeListCanvasClickListener(canvas, nodeIndex);
+                                addNodeListCanvasClickListener(canvas, nodeIndex, top12Nodes[index]);
                             }
                         }
                     } else {
