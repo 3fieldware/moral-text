@@ -19049,6 +19049,17 @@ Return format (JSON array only, no other text):
                 }
             }
             
+            // Helper function to highlight main terms (same style as numbers)
+            function highlightTerm(term) {
+                if (infoColorMode) {
+                    // White mode: black background, white text
+                    return `<span style="background: #000000; color: #ffffff !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;">${term}</span>`;
+                } else {
+                    // Black mode: white background, black text
+                    return `<span style="background: #ffffff; color: #000000 !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;">${term}</span>`;
+                }
+            }
+            
             // Helper function to highlight sylvia variations and forest
             function highlightSylvia(text) {
                 // Pattern to match: @sylvia, #sylvia, sylvia.implicit, sylvia.500, sylvia.unit, forest (case insensitive)
@@ -19079,37 +19090,64 @@ Return format (JSON array only, no other text):
                 </div>
                 
                 <div style="${boxStyle}">
-                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">1. TEXT ANALYSIS</h3>
-                    <div style="${itemStyle} color: ${textColor};">When you input text:</div>
-                    <div style="${itemStyle} color: ${textColor}; padding-left: 10px;">• It splits into words as tokens.</div>
-                    <div style="${itemStyle} color: ${textColor}; padding-left: 10px;">• It sends each word to OpenAI to define its type based on its context.</div>
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">INTERFACE</h3>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('Text box')} (top left corner): Opens or closes the text box.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('Export Body')} (or ENTER key) → converts the text into a node-based body following a series of parameters.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('Map Text')} → visually maps the text box to help access specific nodes and adds colours in reference to the node values.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('CLEAR')} → Deletes all text in the text box.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('TOTAL VALUE')} (to the right of the text box button): Displays the total value of the node body after a series of complex operations. When clicked, it displays a window with a summary of the value calculation and allows you to make the purchase via the ${highlightTerm('CLAIM')} button.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('CLAIM')} → displays a window where you can preview the items in your purchase</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('GALLERY')}: Displays a list of purchases made by other collectors, sorted from highest to lowest value.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('TOP NODES')}: Displays a list of all nodes in the exported body, sorted from highest to lowest value.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Click on the nodes → Allows you to view a fractal generated based on the semantics and specific value of the node within the body.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('CONVERGENCE ZONES')}: Displays a window where, if available, you can view the generated content of the convergence zones.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('SHOW NAMETAGS')}: Makes the words corresponding to the nodes in the node-based body visible.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('RESET VIEW')}: Allows the user to return to the main view.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('FULLSCREEN')}: Expands the interface to fill the entire screen.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('COLOUR')}: Changes the background colour of the node-based body area to make it easier to find specific nodes and to suit the user's preferences.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('INFO')}: Displays a window with general information about the GUI and the work.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('@SYLVIA')}: Displays a small window with information about the software and the user.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">${highlightTerm('COLLAPSE')} (bottom right corner): Hides the window with the highlighted node (the most valuable node in the text and its information).</div>
                 </div>
                 
                 <div style="${boxStyle}">
-                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">2. BASE VALUE ASSIGNMENT</h3>
-                    <div style="${itemStyle} color: ${textColor};">Each word gets an initial value by type.</div>
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">TEXT INPUT</h3>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Text can be imported from the text box on the left.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The text accepts up to ${highlightNumber('500')} words.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Words are recognised and evaluated based on their context within the market (purchases by previous collectors) and based on the context of the text itself. Words have different values if their context is different.</div>
                 </div>
                 
                 <div style="${boxStyle}">
-                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">3. CONTEXTUAL ADJUSTMENTS</h3>
-                    <div style="${itemStyle} color: ${textColor};">The base value is modified by context:</div>
-                    <div style="${itemStyle} color: ${textColor}; padding-left: 10px;">• Repetition</div>
-                    <div style="${itemStyle} color: ${textColor}; padding-left: 10px;">• Diversity</div>
-                    <div style="${itemStyle} color: ${textColor}; padding-left: 10px;">• Predication nucleus</div>
-                    <div style="${itemStyle} color: ${textColor}; padding-left: 10px;">• Semantic closure</div>
-                    <div style="${itemStyle} color: ${textColor}; padding-left: 10px;">• Nucleus repetition</div>
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">GENERATION OF NODE-BASED BODIES</h3>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Based on the structure of the text and the values of its words, the nodes are organised in different ways.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The same text will never have exactly the same form. Each generation slightly alters the position of the nodes, in an almost imperceptible way.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The colour of the nodes corresponds to their value.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Each node generated is represented in the ${highlightTerm('TOP NODES')} list, in order of value, from highest to lowest. In this list, you can access specific information about each node.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Each node contains a fractal generated through the context provided by the body and its specific semantic value in this context.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The shape of the nodes depends on their semantic value in the context of the text itself. There are many different types of nodes, some of which are very rare.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Navigation can be done with the touchpad, mouse, and keyboard arrows.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Using the ${highlightTerm('SHOW NAMETAGS')} option, the user can see the location of the words on the nodes that represent them.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">If you click on a word in the text box in the ${highlightTerm('Map Text')} option, or directly on a node in the display, the camera will move around that node. To return to free navigation, click on ${highlightTerm('RESET VIEW')}.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Each node has an area of activity.</div>
                 </div>
                 
                 <div style="${boxStyle}">
-                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">4. DISTRIBUTION IN 3D SPACE</h3>
-                    <div style="${itemStyle} color: ${textColor};">Nodes are positioned based on semantic and syntactic text structure.</div>
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">CONVERGENCE ZONES</h3>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The areas of activity of the nodes depend on their relative value to the text. The greater the relative value, the larger the area of activity.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">If two areas of activity from two or more nodes converge, ${highlightTerm('convergence zones')} appear.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Convergence zones generate additional individual node bodies to the main text. These node bodies appear only in convergence zones, hidden between the boundaries of the areas of activity.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The node bodies in convergence zones form texts have a reduced number of words. These words are evaluated like the rest of the words and add value to the total value of the body. It is likely that the more convergence zones there are, the more total value the node body will have.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The texts generated by convergence zones are based on the words of the nodes that have generated the activity areas.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The texts generated in the convergence zones can be accessed from the ${highlightTerm('CONVERGENCE ZONES')} button.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">Convergence may or may not occur, depending on the generation. The same text may have more or fewer convergence zones depending on how close or far apart certain nodes are generated from each other (as we saw previously, where each generation is slightly different in terms of the precise coordinates of its nodes).</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The texts (and therefore the bodies) generated in the convergence zones will always be different, even if the nodes that converge are the same.</div>
                 </div>
                 
                 <div style="${boxStyle}">
-                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">5. INTERACTIVE VISUALIZATION</h3>
-                    <div style="${itemStyle} color: ${textColor};">• Clicking a node shows detailed information (word, individual value, position in text, connections, size, performance, 3D coordinates).</div>
-                    <div style="${itemStyle} color: ${textColor};">• Colors are assigned by type and value.</div>
-                    <div style="${itemStyle} color: ${textColor};">• You can rotate and zoom the 3D visualization.</div>
+                    <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">VALUE CALCULATION</h3>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The individual value of nodes is calculated based on a variety of factors related to the context of the text and starting from a base value associated with each type of word.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The total value is calculated by adding up all the values, and boosts or devaluations are applied depending on general contextual reasons in the text.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 3px;">The total value takes into account the most popular words from previous purchases or other collectors, so the base value of specific words may increase if their popularity increases.</div>
                 </div>
                 
                 <div style="${boxStyle}">
