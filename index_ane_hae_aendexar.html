@@ -952,6 +952,413 @@
             visibility: inherit;
             opacity: inherit;
         }
+        
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            /* Canvas Container - Full screen behind all UI elements */
+            #canvas-container {
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100vh;
+                z-index: 1;
+                position: fixed;
+            }
+            
+            /* Top Bar - Move to top, desktop style buttons in two rows */
+            #top-bar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: auto;
+                height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 5px;
+                padding: 4px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                z-index: 1500;
+                background: rgba(255, 255, 255, 0.98);
+                border-bottom: 1px solid #e0e0e0;
+            }
+            
+            body.left-panel-collapsed #top-bar {
+                left: 0;
+            }
+            
+            .top-bar-item {
+                padding: 2px 4px; /* Equal padding on all sides */
+                font-size: 8px;
+                min-height: auto;
+                flex: 0 0 auto;
+                white-space: nowrap;
+                width: auto; /* Auto width based on content */
+                max-width: calc(50% - 2.5px); /* Max two columns */
+                box-sizing: border-box;
+            }
+            
+            /* Total value display takes full width */
+            #total-value-display {
+                width: 100%;
+                flex: 1 1 100%;
+                order: -1;
+                max-width: 100%;
+            }
+            
+            #mobile-menu-toggle {
+                display: none !important;
+            }
+            
+            #total-value-display span {
+                font-size: 9px !important;
+            }
+            
+            /* FPS bar below top bar - positioned dynamically */
+            #fps-bar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                height: 7px;
+                z-index: 1501;
+                background: #ff6600;
+            }
+            
+            /* Bottom bar - Show only fps bar, above left panel */
+            #bottom-bar {
+                position: fixed;
+                left: 0;
+                right: 0;
+                height: 7px;
+                z-index: 1501;
+            }
+            
+            #bottom-fps-bar {
+                position: relative;
+                width: 100%;
+                height: 7px;
+                background: #ff6600;
+            }
+            
+            #realtime-info-panel {
+                display: none !important;
+            }
+            
+            /* Left Panel - Collapsible text box at bottom */
+            #left-panel {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: auto;
+                width: 100%;
+                height: auto;
+                max-height: 50vh;
+                flex-direction: column;
+                z-index: 2000;
+                border-top: 1px solid #e0e0e0;
+                background: #ffffff;
+            }
+            
+            #left-panel.collapsed {
+                max-height: 24px;
+            }
+            
+            #left-panel.collapsed #text-container {
+                display: none;
+            }
+            
+            #left-panel.collapsed #generate-button-container {
+                display: none;
+            }
+            
+            #left-panel-header-wrapper {
+                padding: 1px 3px;
+            }
+            
+            #text-box-toggle-btn {
+                font-size: 8px;
+                padding: 1px 4px;
+                min-height: 20px;
+                width: 100%;
+                line-height: 1.1;
+            }
+            
+            /* Text Input - Collapsible */
+            #text-container {
+                padding: 4px;
+                max-height: 40vh;
+                overflow-y: auto;
+            }
+            
+            #textInput {
+                font-size: 12px !important;
+                padding: 4px !important;
+                min-height: 60px !important;
+                line-height: 1.4 !important;
+            }
+            
+            /* Mapped text container - Same size as textInput on mobile */
+            #mapped-text-container {
+                font-size: 12px !important;
+                padding: 4px !important;
+                min-height: 60px !important;
+                width: 100% !important;
+                flex: 1 !important;
+                box-sizing: border-box !important;
+                line-height: 1.4 !important;
+            }
+            
+            #mapped-text-container span {
+                font-size: 12px !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: inline !important;
+                line-height: 1.4 !important;
+            }
+            
+            #mapped-text-container .mapped-word {
+                font-size: 12px !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: inline !important;
+                line-height: 1.4 !important;
+            }
+            
+            /* Generate buttons - Smaller, horizontal layout */
+            #generate-button-container {
+                flex-direction: row;
+                gap: 2px;
+                padding: 2px 4px;
+                flex-wrap: wrap;
+            }
+            
+            #generateBtn, #mapTextBtn, #clearTextBtn {
+                flex: 1 1 auto;
+                padding: 2px; /* Equal padding on all sides */
+                font-size: 8px;
+                min-height: auto;
+                min-width: 60px;
+                line-height: 1.1;
+            }
+            
+            /* Hide FULLSCREEN and @sylvia buttons on mobile */
+            #fullscreenBtn {
+                display: none !important;
+            }
+            
+            #testBtn {
+                display: none !important;
+            }
+            
+            /* INFO button - Move to right, aligned with TOTAL VALUE */
+            #infoBtn {
+                margin-left: auto !important;
+                margin-right: 0 !important;
+                order: 999; /* Push to end */
+            }
+            
+            /* Ensure INFO button aligns with TOTAL VALUE right edge */
+            #top-bar {
+                justify-content: flex-start;
+            }
+            
+            #infoBtn {
+                margin-left: auto !important;
+            }
+            
+            /* Node List Container - Two columns, smaller items - positioned dynamically */
+            #node-list-container {
+                left: 0;
+                right: 0;
+                padding: 4px;
+                gap: 4px;
+                z-index: 2500; /* Above left-panel (2000) */
+                /* top and bottom set dynamically by positionMobileElements() */
+            }
+            
+            .node-list-item {
+                width: calc(50% - 2px);
+                max-width: calc(50% - 2px);
+                margin-bottom: 4px;
+                padding: 4px;
+            }
+            
+            .node-list-item-header {
+                font-size: 10px;
+                padding: 2px;
+            }
+            
+            .node-list-item-canvas-container {
+                height: 140px; /* Increased from 80px to prevent horizontal stretching */
+                margin-bottom: 6px;
+                aspect-ratio: 200/140; /* Maintain proper aspect ratio */
+            }
+            
+            .node-list-item-canvas {
+                width: 100%;
+                height: 100%;
+                object-fit: contain; /* Prevent stretching */
+            }
+            
+            .node-list-item-info {
+                font-size: 9px;
+                padding: 6px;
+                line-height: 1.3;
+            }
+            
+            /* Gallery Modal - Two columns layout */
+            #gallery-modal-container {
+                max-width: 95%;
+                width: 95%;
+                left: 50% !important;
+                transform: translate(-50%, -50%);
+                top: 50% !important;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+            
+            .gallery-item {
+                width: calc(50% - 4px) !important;
+                display: inline-block;
+                vertical-align: top;
+                margin: 2px;
+            }
+            
+            /* Max Value Panel - Hide on mobile */
+            #max-value-panel {
+                display: none !important;
+            }
+            
+            /* Right Panel - Full width on mobile */
+            #right-panel {
+                width: 100%;
+                max-width: 100%;
+                height: auto;
+                max-height: 60vh;
+                bottom: 80px;
+                right: 0;
+                left: 0;
+            }
+            
+            .right-panel-clone {
+                width: 100%;
+                max-width: 100%;
+                height: auto;
+                max-height: 60vh;
+            }
+            
+            /* Node Info Panel - Adjust size */
+            .node-info-panel {
+                max-width: 150px;
+                font-size: 10px;
+            }
+            
+            /* Modals - Full width on mobile, positioned in 3D visualization space */
+            #value-logic-modal-container,
+            #convergence-zones-modal-container,
+            #info-modal-container {
+                max-width: 95%;
+                width: 95%;
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%) !important;
+                /* top and max-height set dynamically by JavaScript - no !important here */
+                bottom: auto !important;
+                overflow-y: auto;
+                position: fixed !important;
+            }
+            
+            /* Claim Modal - Smaller and centered */
+            #claim-modal-container {
+                max-width: 95%;
+                width: 95%;
+                left: 50% !important;
+                transform: translate(-50%, -50%);
+                top: 50% !important;
+                max-height: 85vh;
+                overflow-y: auto;
+                padding: 8px;
+            }
+            
+            /* Fractal Modal - Adjust for mobile */
+            #fractal-modal-container {
+                max-width: 95%;
+                width: 95%;
+                left: 50% !important;
+                transform: translate(-50%, -50%);
+                top: 50% !important;
+            }
+            
+            /* Test Dropdown - Full width on mobile */
+            #testDropdown {
+                width: 100%;
+                max-width: 100%;
+                right: 0;
+                left: 0;
+            }
+            
+            /* Ensure touch-friendly interactions */
+            button, .top-bar-item {
+                -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+                touch-action: manipulation;
+            }
+            
+            /* Prevent text input from changing layout when mapped */
+            #mapped-text-container {
+                font-size: 14px;
+                padding: 8px;
+                width: 100%;
+                flex: 1;
+                min-height: 80px;
+                box-sizing: border-box;
+            }
+            
+            #mapped-text-container span {
+                font-size: 14px;
+                padding: 2px 4px;
+                display: inline-block;
+            }
+            
+            /* Ensure gallery uses same container as TOP NODES */
+            #node-list-container.visible {
+                display: flex;
+                flex-wrap: wrap;
+            }
+            
+            /* Fix canvas visibility */
+            #canvas-container canvas {
+                display: block !important;
+                width: 100% !important;
+                height: 100% !important;
+            }
+        }
+        
+        /* Extra small mobile devices */
+        @media screen and (max-width: 480px) {
+            #textInput {
+                font-size: 16px; /* Prevent zoom on iOS */
+            }
+            
+            #top-bar {
+                max-height: 60vh;
+            }
+            
+            .top-bar-item {
+                font-size: 12px;
+                padding: 10px;
+            }
+            
+            #left-panel {
+                max-height: 60vh;
+            }
+            
+            #bottom-bar {
+                max-height: 40vh;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1059,7 +1466,7 @@
         <div class="top-bar-item black" id="total-value-display" style="cursor: pointer;">
             <span style="font-size: 9px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">Total Value: <span id="valueScore">0.00</span> <span id="valueETH"></span></span>
         </div>
-        <button class="top-bar-item grey" id="galleryBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">GALLERY</button>
+        <button class="top-bar-item grey" id="galleryBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">LEADERBOARD</button>
         <button class="top-bar-item grey" id="nodeListBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">TOP NODES</button>
         <button class="top-bar-item grey" id="convergenceZoneBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">CONVERGENCE ZONES</button>
         <button class="top-bar-item grey" id="toggleNametagsBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">SHOW NAMETAGS</button>
@@ -1070,7 +1477,7 @@
         </button>
         <button class="top-bar-item grey" id="infoBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; margin-left: auto; transform: translateX(-3px);">INFO</button>
         <div style="position: relative; transform: translateX(-3px);">
-            <button class="top-bar-item grey" id="testBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">@sylvia</button>
+            <button class="top-bar-item grey" id="testBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">INDEX</button>
             <div id="testDropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; z-index: 10000; background: #ffffff; padding: 12px; border: 1px solid #333333; min-width: 280px;">
                 <div style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #000000; font-weight: bold; margin-bottom: 12px;" id="versionDisplay"></div>
                 <div style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #000000; margin-bottom: 6px; margin-top: 6px;" id="userDisplay">USER: <span id="userIdDisplay"></span></div>
@@ -1570,6 +1977,14 @@
                 document.body.classList.add('left-panel-collapsed');
             } else {
                 document.body.classList.remove('left-panel-collapsed');
+            }
+            
+            // On mobile, adjust canvas size and element positions when panel is toggled
+            if (window.innerWidth <= 768 && renderer && camera) {
+                setTimeout(() => {
+                    positionMobileElements();
+                    onWindowResize();
+                }, 100);
             }
         }
 
@@ -12277,14 +12692,25 @@ Return format (JSON array only, no other text):
                 }
             }
             
-            // Position modal below the button
+            // Position modal below the button (or centered on mobile)
             const convergenceZoneBtn = document.getElementById('convergenceZoneBtn');
             const modalContainer = document.getElementById('convergence-zones-modal-container');
             if (convergenceZoneBtn && modalContainer) {
-                const btnRect = convergenceZoneBtn.getBoundingClientRect();
-                modalContainer.style.top = (btnRect.bottom + 5) + 'px'; // 5px gap below button
-                modalContainer.style.left = btnRect.left + 'px';
-                modalContainer.style.margin = '0'; // Remove auto margin
+                // Check if mobile (screen width <= 768px)
+                if (window.innerWidth <= 768) {
+                    // Center modal on mobile
+                    modalContainer.style.top = '50%';
+                    modalContainer.style.left = '50%';
+                    modalContainer.style.transform = 'translate(-50%, -50%)';
+                    modalContainer.style.margin = '0';
+                } else {
+                    // Desktop positioning: below button
+                    const btnRect = convergenceZoneBtn.getBoundingClientRect();
+                    modalContainer.style.top = (btnRect.bottom + 5) + 'px'; // 5px gap below button
+                    modalContainer.style.left = btnRect.left + 'px';
+                    modalContainer.style.transform = 'none';
+                    modalContainer.style.margin = '0'; // Remove auto margin
+                }
             }
             
             // Update color indicator
@@ -15003,6 +15429,17 @@ Return format (JSON array only, no other text):
             });
             
             html += `</div>`;
+            
+            // Add input text block at the end
+            const inputText = (document.getElementById('textInput')?.value || '').trim();
+            if (inputText) {
+                html += `
+                    <div style="${boxStyle}">
+                        <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">Input Text</h3>
+                        <div style="${itemStyle} color: ${textColor}; white-space: pre-wrap; word-wrap: break-word;">${inputText}</div>
+                    </div>
+                `;
+            }
             
             content.innerHTML = html;
             
@@ -17759,12 +18196,50 @@ Return format (JSON array only, no other text):
                 modal.style.pointerEvents = 'auto';
             }
             
-            // Position modal below the button
+            // Position modal below the button (or in 3D visualization space on mobile)
             if (totalValueBtn && modalContainer) {
-                const btnRect = totalValueBtn.getBoundingClientRect();
-                modalContainer.style.top = (btnRect.bottom + 5) + 'px'; // 5px gap below button
-                modalContainer.style.left = btnRect.left + 'px';
-                modalContainer.style.margin = '0'; // Remove auto margin
+                // Check if mobile (screen width <= 768px)
+                if (window.innerWidth <= 768) {
+                    // Ensure mobile elements are positioned first
+                    positionMobileElements();
+                    
+                    // Wait for elements to be positioned correctly, then position modal
+                    setTimeout(() => {
+                        // Position modal in same space as 3D visualization (below top bar and fps bar)
+                        const topBar = document.getElementById('top-bar');
+                        const fpsBar = document.getElementById('fps-bar');
+                        const bottomBar = document.getElementById('bottom-bar');
+                        const leftPanel = document.getElementById('left-panel');
+                        
+                        const topBarHeight = topBar ? (topBar.offsetHeight || 0) : 0;
+                        const fpsBarHeight = fpsBar ? (fpsBar.offsetHeight || 7) : 7;
+                        const bottomBarHeight = bottomBar ? (bottomBar.offsetHeight || 7) : 7;
+                        const leftPanelHeight = leftPanel && !leftPanel.classList.contains('collapsed') ? (leftPanel.offsetHeight || 0) : 0;
+                        
+                        const topPosition = topBarHeight + fpsBarHeight;
+                        const bottomMargin = bottomBarHeight + leftPanelHeight;
+                        const availableHeight = window.innerHeight - topPosition - bottomMargin;
+                        
+                        // Use setProperty with important flag to override CSS and inline styles
+                        modalContainer.style.setProperty('position', 'fixed', 'important');
+                        modalContainer.style.setProperty('top', topPosition + 'px', 'important');
+                        modalContainer.style.setProperty('left', '50%', 'important');
+                        modalContainer.style.setProperty('transform', 'translateX(-50%)', 'important');
+                        modalContainer.style.setProperty('margin', '0', 'important');
+                        modalContainer.style.setProperty('max-width', '95%', 'important');
+                        modalContainer.style.setProperty('width', '95%', 'important');
+                        modalContainer.style.setProperty('max-height', Math.max(availableHeight - 10, 100) + 'px', 'important');
+                        modalContainer.style.setProperty('bottom', 'auto', 'important');
+                        modalContainer.style.setProperty('overflow-y', 'auto', 'important');
+                    }, 300); // Increased timeout to ensure elements are positioned
+                } else {
+                    // Desktop positioning: below button
+                    const btnRect = totalValueBtn.getBoundingClientRect();
+                    modalContainer.style.top = (btnRect.bottom + 5) + 'px'; // 5px gap below button
+                    modalContainer.style.left = btnRect.left + 'px';
+                    modalContainer.style.transform = 'none';
+                    modalContainer.style.margin = '0'; // Remove auto margin
+                }
             }
             
             // Calculate statistics
@@ -18045,6 +18520,17 @@ Return format (JSON array only, no other text):
             html += `
                 </div>
             `;
+            
+            // Add input text block at the end
+            const inputText = (document.getElementById('textInput')?.value || '').trim();
+            if (inputText) {
+                html += `
+                    <div style="${boxStyle}">
+                        <h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">Input Text</h3>
+                        <div style="${itemStyle} color: ${textColor}; white-space: pre-wrap; word-wrap: break-word;">${inputText}</div>
+                    </div>
+                `;
+            }
             
             content.innerHTML = html;
             
@@ -19163,26 +19649,75 @@ Return format (JSON array only, no other text):
             
             content.innerHTML = infoHTML;
             
-            // Position modal below the INFO button (right edge aligned)
+            // Position modal below the INFO button (right edge aligned) or in 3D visualization space on mobile
             // Do this after content is rendered to get actual modal width
             const infoBtn = document.getElementById('infoBtn');
             const modalContainer = document.getElementById('info-modal-container');
             if (infoBtn && modalContainer) {
-                const btnRect = infoBtn.getBoundingClientRect();
-                const modalRect = modalContainer.getBoundingClientRect();
-                
-                // Calculate left position to align right edge of modal with right edge of button
-                let leftPos = btnRect.right - modalRect.width;
-                
-                // Ensure modal doesn't go off the left edge of the screen
-                if (leftPos < 0) {
-                    leftPos = 0;
+                // Check if mobile (screen width <= 768px)
+                if (window.innerWidth <= 768) {
+                    // Ensure mobile elements are positioned first
+                    positionMobileElements();
+                    
+                    // Wait for elements to be positioned correctly, then position modal
+                    setTimeout(() => {
+                        // Position modal in same space as 3D visualization (below top bar and fps bar)
+                        const topBar = document.getElementById('top-bar');
+                        const fpsBar = document.getElementById('fps-bar');
+                        const bottomBar = document.getElementById('bottom-bar');
+                        const leftPanel = document.getElementById('left-panel');
+                        
+                        const topBarHeight = topBar ? (topBar.offsetHeight || 0) : 0;
+                        const fpsBarHeight = fpsBar ? (fpsBar.offsetHeight || 7) : 7;
+                        const bottomBarHeight = bottomBar ? (bottomBar.offsetHeight || 7) : 7;
+                        const leftPanelHeight = leftPanel && !leftPanel.classList.contains('collapsed') ? (leftPanel.offsetHeight || 0) : 0;
+                        
+                        const topPosition = topBarHeight + fpsBarHeight;
+                        const bottomMargin = bottomBarHeight + leftPanelHeight;
+                        const availableHeight = window.innerHeight - topPosition - bottomMargin;
+                        
+                        console.log('INFO Modal positioning:', {
+                            topBarHeight,
+                            fpsBarHeight,
+                            bottomBarHeight,
+                            leftPanelHeight,
+                            topPosition,
+                            bottomMargin,
+                            availableHeight,
+                            windowHeight: window.innerHeight
+                        });
+                        
+                        // Use setProperty with important flag to override CSS and inline styles
+                        modalContainer.style.setProperty('position', 'fixed', 'important');
+                        modalContainer.style.setProperty('top', topPosition + 'px', 'important');
+                        modalContainer.style.setProperty('left', '50%', 'important');
+                        modalContainer.style.setProperty('transform', 'translateX(-50%)', 'important');
+                        modalContainer.style.setProperty('margin', '0', 'important');
+                        modalContainer.style.setProperty('max-width', '95%', 'important');
+                        modalContainer.style.setProperty('width', '95%', 'important');
+                        modalContainer.style.setProperty('max-height', Math.max(availableHeight - 10, 100) + 'px', 'important');
+                        modalContainer.style.setProperty('bottom', 'auto', 'important');
+                        modalContainer.style.setProperty('overflow-y', 'auto', 'important');
+                    }, 300); // Increased timeout to ensure elements are positioned
+                } else {
+                    // Desktop positioning: below button, right edge aligned
+                    const btnRect = infoBtn.getBoundingClientRect();
+                    const modalRect = modalContainer.getBoundingClientRect();
+                    
+                    // Calculate left position to align right edge of modal with right edge of button
+                    let leftPos = btnRect.right - modalRect.width;
+                    
+                    // Ensure modal doesn't go off the left edge of the screen
+                    if (leftPos < 0) {
+                        leftPos = 0;
+                    }
+                    
+                    // Position relative to fixed parent container (same as TOTAL VALUE modal)
+                    modalContainer.style.top = (btnRect.bottom + 5) + 'px';
+                    modalContainer.style.left = leftPos + 'px';
+                    modalContainer.style.transform = 'none';
+                    modalContainer.style.margin = '0';
                 }
-                
-                // Position relative to fixed parent container (same as TOTAL VALUE modal)
-                modalContainer.style.top = (btnRect.bottom + 5) + 'px';
-                modalContainer.style.left = leftPos + 'px';
-                modalContainer.style.margin = '0';
             }
         }
         
@@ -20194,7 +20729,38 @@ Return format (JSON array only, no other text):
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+            
+            // On mobile, canvas should fill entire screen behind UI
+            if (window.innerWidth <= 768) {
+                const canvasContainer = document.getElementById('canvas-container');
+                const topBar = document.getElementById('top-bar');
+                const leftPanel = document.getElementById('left-panel');
+                
+                if (canvasContainer) {
+                    // Canvas fills entire viewport behind all UI elements
+                    canvasContainer.style.top = '0';
+                    canvasContainer.style.left = '0';
+                    canvasContainer.style.width = '100%';
+                    canvasContainer.style.height = '100vh';
+                    canvasContainer.style.bottom = 'auto';
+                    
+                    // Calculate visible area for renderer
+                    let renderHeight = window.innerHeight;
+                    if (topBar) {
+                        renderHeight -= (topBar.offsetHeight || 80);
+                    }
+                    if (leftPanel && !leftPanel.classList.contains('collapsed')) {
+                        renderHeight -= (leftPanel.offsetHeight || 0);
+                    }
+                    
+                    // Renderer uses full viewport size (canvas will be behind UI)
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                } else {
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                }
+            } else {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
         }
 
         // ==================== ACTUALIZACIÓN DE ESTADÍSTICAS ====================
@@ -21172,13 +21738,15 @@ Return format (JSON array only, no other text):
                 if (wordStart > currentTextIndex) {
                     const beforeWord = text.substring(currentTextIndex, wordStart);
                     const escapedBefore = beforeWord.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    mappedHTML += `<span style="background-color: ${lastBgColor}; color: ${lastTextColor}; padding: 0; margin: 0; display: inline;">${escapedBefore}</span>`;
+                    const fontSize = window.innerWidth <= 768 ? 'font-size: 12px !important;' : '';
+                    mappedHTML += `<span style="background-color: ${lastBgColor}; color: ${lastTextColor}; padding: 0; margin: 0; display: inline; ${fontSize}">${escapedBefore}</span>`;
                 }
                 
                 // Add the word with its color and data attribute for click handling
                 const escapedWord = word.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 const wordSpanId = `mapped-word-${analyzedWordIndex}`;
-                mappedHTML += `<span id="${wordSpanId}" data-word-index="${analyzedWordIndex}" class="mapped-word" style="background-color: ${bgColor}; color: ${textColor}; padding: 0; margin: 0; display: inline; cursor: pointer;" title="Click to view node details">${escapedWord}</span>`;
+                const fontSize = window.innerWidth <= 768 ? 'font-size: 12px !important;' : '';
+                mappedHTML += `<span id="${wordSpanId}" data-word-index="${analyzedWordIndex}" class="mapped-word" style="background-color: ${bgColor}; color: ${textColor}; padding: 0; margin: 0; display: inline; cursor: pointer; ${fontSize}" title="Click to view node details">${escapedWord}</span>`;
                 
                 // Update last colors for next iteration
                 lastBgColor = bgColor;
@@ -21191,7 +21759,8 @@ Return format (JSON array only, no other text):
             if (currentTextIndex < text.length) {
                 const remaining = text.substring(currentTextIndex);
                 const escapedRemaining = remaining.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                mappedHTML += `<span style="background-color: ${lastBgColor}; color: ${lastTextColor}; padding: 0; margin: 0; display: inline;">${escapedRemaining}</span>`;
+                const fontSize = window.innerWidth <= 768 ? 'font-size: 12px !important;' : '';
+                mappedHTML += `<span style="background-color: ${lastBgColor}; color: ${lastTextColor}; padding: 0; margin: 0; display: inline; ${fontSize}">${escapedRemaining}</span>`;
             }
             
             mappedContainer.innerHTML = mappedHTML;
@@ -21405,10 +21974,120 @@ Return format (JSON array only, no other text):
             }
         }
 
+        // Mobile menu toggle handler
+        function setupMobileMenu() {
+            const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+            const topBar = document.getElementById('top-bar');
+            
+            if (mobileMenuToggle && topBar) {
+                mobileMenuToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    topBar.classList.toggle('mobile-collapsed');
+                });
+                
+                // Close menu when clicking outside on mobile
+                document.addEventListener('click', function(e) {
+                    if (window.innerWidth <= 768) {
+                        if (!topBar.contains(e.target) && !topBar.classList.contains('mobile-collapsed')) {
+                            topBar.classList.add('mobile-collapsed');
+                        }
+                    }
+                });
+            }
+        }
+        
+        // Position FPS bars and adjust margins on mobile
+        function positionMobileElements() {
+            if (window.innerWidth <= 768) {
+                const topBar = document.getElementById('top-bar');
+                const fpsBar = document.getElementById('fps-bar');
+                const bottomBar = document.getElementById('bottom-bar');
+                const leftPanel = document.getElementById('left-panel');
+                const nodeListContainer = document.getElementById('node-list-container');
+                
+                if (topBar && fpsBar) {
+                    // Position fps bar below top bar
+                    const topBarHeight = topBar.offsetHeight || 0;
+                    fpsBar.style.top = topBarHeight + 'px';
+                    fpsBar.style.bottom = 'auto';
+                }
+                
+                if (leftPanel && bottomBar) {
+                    // Position bottom fps bar above left panel
+                    const leftPanelHeight = leftPanel.offsetHeight || 0;
+                    bottomBar.style.bottom = leftPanelHeight + 'px';
+                    bottomBar.style.top = 'auto';
+                }
+                
+                // Adjust node list container margins
+                if (nodeListContainer && topBar && fpsBar && bottomBar && leftPanel) {
+                    const topBarHeight = topBar.offsetHeight || 0;
+                    const fpsBarHeight = fpsBar.offsetHeight || 7;
+                    const bottomBarHeight = bottomBar.offsetHeight || 7;
+                    const leftPanelHeight = leftPanel.classList.contains('collapsed') ? 0 : (leftPanel.offsetHeight || 0);
+                    
+                    const topMargin = topBarHeight + fpsBarHeight;
+                    const bottomMargin = bottomBarHeight + leftPanelHeight;
+                    
+                    nodeListContainer.style.top = topMargin + 'px';
+                    nodeListContainer.style.bottom = bottomMargin + 'px';
+                }
+            }
+        }
+        
+        // Handle window resize for mobile adaptations
+        function handleMobileResize() {
+            const topBar = document.getElementById('top-bar');
+            if (window.innerWidth > 768 && topBar) {
+                topBar.classList.remove('mobile-collapsed');
+            }
+            
+            // Position mobile elements
+            positionMobileElements();
+            
+            // Adjust canvas on mobile resize
+            if (window.innerWidth <= 768 && renderer && camera) {
+                setTimeout(() => {
+                    onWindowResize();
+                }, 100);
+            }
+        }
+        
         // Start screen handler
         document.addEventListener('DOMContentLoaded', function() {
             const startScreen = document.getElementById('start-screen');
             const startButton = document.getElementById('start-button');
+            
+            // Setup mobile menu
+            setupMobileMenu();
+            
+            // Position mobile elements on load
+            setTimeout(() => {
+                positionMobileElements();
+            }, 100);
+            
+            // Handle window resize
+            window.addEventListener('resize', handleMobileResize);
+            
+            // Observe top bar and left panel changes for dynamic positioning
+            if (window.innerWidth <= 768) {
+                const topBar = document.getElementById('top-bar');
+                const leftPanel = document.getElementById('left-panel');
+                
+                if (topBar) {
+                    const topBarObserver = new MutationObserver(() => {
+                        positionMobileElements();
+                    });
+                    topBarObserver.observe(topBar, { attributes: true, childList: true, subtree: true });
+                }
+                
+                if (leftPanel) {
+                    const leftPanelObserver = new MutationObserver(() => {
+                        positionMobileElements();
+                    });
+                    leftPanelObserver.observe(leftPanel, { attributes: true, childList: true, subtree: true });
+                }
+            }
             
             // Initially hide all main content (exclude modals - they should stay hidden)
             const mainContent = document.querySelectorAll('#canvas-container, #left-panel, #top-bar, #fps-bar, #realtime-info-panel, #node-list-container, #max-value-panel');
