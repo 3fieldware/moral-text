@@ -86,6 +86,8 @@
         
         #left-panel.collapsed {
             background : transparent;
+            z-index: 999; /* Below top-bar and fps-bar (1000) so it doesn't block clicks */
+            pointer-events: none; /* Don't block clicks on buttons */
         }
         
         #left-panel-header-wrapper {
@@ -97,28 +99,51 @@
             padding: 4px 10px 5px 10px;
             flex-shrink: 0;
             align-items: flex-start;
+            position: relative;
+            z-index: 1002; /* Above collapsed left-panel (1001) */
         }
         
         #left-panel.collapsed #left-panel-header-wrapper {
-            border-bottom: 1px solid #ffffff;
+            display: none; /* Hide header wrapper when panel is collapsed to prevent white rectangle */
         }
 
         #text-box-toggle-btn {
-            padding: 2px 6px 1px 6px;
+            padding: 0;
             background: #808080;
             border: none;
             color: #ffffff;
             cursor: pointer;
             font-family: Helvetica, Arial, sans-serif;
-            font-size: 8px;
+            font-size: 11px;
             line-height: 1.2;
             white-space: nowrap;
             flex: 0 1 auto;
             margin: 0;
             box-sizing: border-box;
+            position: relative;
+            z-index: 1003; /* Above header wrapper (1002) */
+            display: flex;
         }
         
         #text-box-toggle-btn:hover {
+            background: #707070;
+        }
+        
+        #text-box-toggle-btn-top {
+            padding: 0;
+            background: #808080;
+            border: none;
+            color: #ffffff;
+            cursor: pointer;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.2;
+            white-space: nowrap;
+            margin: 0;
+            box-sizing: border-box;
+        }
+        
+        #text-box-toggle-btn-top:hover {
             background: #707070;
         }
 
@@ -233,6 +258,7 @@
         
         body.left-panel-collapsed #top-bar {
             left: 0;
+            padding-left: 10px; /* Add left margin when panel is collapsed */
         }
         
         body.left-panel-collapsed #fps-bar {
@@ -486,6 +512,98 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
             line-height: 1.4;
         }
+        
+        #leaderboard-info-panel {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 400px;
+            top: calc(35px + 50vh + 10px);
+            max-height: calc(100vh - 35px - 50vh - 10px - 10px - 21px);
+            z-index: 999;
+            background: rgba(255, 255, 255, 0.95);
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 0;
+            display: none;
+            flex-direction: column;
+            box-sizing: border-box;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+        }
+        
+        #leaderboard-info-panel::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        
+        #leaderboard-info-panel.visible {
+            display: flex;
+        }
+        
+        #leaderboard-info-panel-title {
+            position: sticky;
+            top: 0;
+            background: rgba(220, 220, 220, 0.76);
+            padding: 4px 12px;
+            color: #000000;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            font-weight: normal;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        
+        #leaderboard-info-panel-content {
+            padding: 4px 12px 12px 12px;
+            background: rgba(220, 220, 220, 0.76);
+            color: #000000;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.1;
+            flex: 1;
+            min-height: calc(100% - 30px);
+            box-sizing: border-box;
+        }
+        
+        .leaderboard-info-section {
+            margin-bottom: 5px;
+        }
+        
+        .leaderboard-info-section-title {
+            font-weight: bold;
+            font-size: 11px;
+            margin-bottom: 3px;
+            margin-top: 5px;
+            color: #ffffff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 3px;
+        }
+        
+        .leaderboard-info-item {
+            margin-bottom: 2px;
+            padding: 0;
+            color: #ffffff;
+        }
+        
+        .leaderboard-info-label {
+            font-weight: bold;
+            color: #ffffff;
+        }
+        
+        .leaderboard-info-value {
+            color: #ffffff;
+        }
+        
+        .leaderboard-info-number {
+            background: #ffffff;
+            color: #000000;
+            padding: 0;
+            display: inline-block;
+            line-height: 1.0;
+            vertical-align: baseline;
+        }
 
         .node-list-item {
             width: 200px;
@@ -713,12 +831,13 @@
         .top-bar-item {
             background: #ffffff;
             border: none;
-            padding: 2px 6px;
+            padding: 0;
             border-radius: 0;
             display: flex;
             align-items: center;
             white-space: nowrap;
-            font-size: 8px;
+            font-size: 11px;
+            line-height: 1.2;
         }
 
         .top-bar-item.black {
@@ -731,6 +850,14 @@
             color: #ffffff;
             border: none;
             text-transform: uppercase;
+        }
+
+        #backgroundColorBtn {
+            border: 2px solid #808080;
+        }
+
+        #crossButton {
+            border: 2px solid #808080;
         }
 
         .control-panel h2 {
@@ -1081,8 +1208,8 @@
             }
             
             .top-bar-item {
-                padding: 2px 4px; /* Equal padding on all sides */
-                font-size: 8px;
+                padding: 0; /* No padding, same as CLEAR button */
+                font-size: 11px;
                 min-height: auto;
                 flex: 0 0 auto;
                 white-space: nowrap;
@@ -1104,7 +1231,7 @@
             }
             
             #total-value-display span {
-                font-size: 9px !important;
+                font-size: 11px !important;
             }
             
             /* FPS bar below top bar - positioned dynamically */
@@ -1170,11 +1297,11 @@
             }
             
             #text-box-toggle-btn {
-                font-size: 8px;
-                padding: 1px 4px;
+                font-size: 11px;
+                padding: 0;
                 min-height: 20px;
                 width: 100%;
-                line-height: 1.1;
+                line-height: 1.2;
             }
             
             /* Text Input - Collapsible */
@@ -1556,28 +1683,29 @@
     </div>
 
     <div id="top-bar">
+        <button class="top-bar-item grey" id="text-box-toggle-btn-top" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px; display: none;">OPEN TEXT BOX</button>
         <div class="top-bar-item black" id="total-value-display" style="cursor: pointer;">
-            <span style="font-size: 9px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">Total Value: <span id="valueScore">0.00</span> <span id="valueETH"></span></span>
+            <span style="font-size: 11px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">Total Value: <span id="valueScore">0.00</span> <span id="valueETH"></span></span>
         </div>
-        <button class="top-bar-item grey" id="galleryBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">LEADERBOARD</button>
-        <button class="top-bar-item grey" id="nodeListBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">TOP NODES</button>
-        <button class="top-bar-item grey" id="convergenceZoneBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">CONVERGENCE ZONES</button>
-        <button class="top-bar-item grey" id="toggleNametagsBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">SHOW NAMETAGS</button>
-        <button class="top-bar-item grey" id="resetCameraBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Reset View</button>
-        <button class="top-bar-item grey" id="switchControlModesBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">SWITCH CONTROL MODES</button>
-        <button class="top-bar-item grey" id="fullscreenBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">Fullscreen</button>
-        <button class="top-bar-item grey" id="backgroundColorBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; display: flex; align-items: center; gap: 4px;">
+        <button class="top-bar-item grey" id="galleryBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">LEADERBOARD</button>
+        <button class="top-bar-item grey" id="nodeListBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">TOP NODES</button>
+        <button class="top-bar-item grey" id="convergenceZoneBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">CONVERGENCE ZONES</button>
+        <button class="top-bar-item grey" id="toggleNametagsBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">SHOW NAMETAGS</button>
+        <button class="top-bar-item grey" id="resetCameraBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">Reset View</button>
+        <button class="top-bar-item grey" id="switchControlModesBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">SWITCH CONTROL MODES</button>
+        <button class="top-bar-item grey" id="fullscreenBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">Fullscreen</button>
+        <button class="top-bar-item grey" id="backgroundColorBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px; display: flex; align-items: center; gap: 4px;">
             <span id="bgColorSquare" style="display: inline-block; width: 10px; height: 10px; background: #0000FF; border: 1px solid #000000;"></span>
         </button>
-        <button class="top-bar-item grey" id="crossButton" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; display: flex; align-items: center; justify-content: center; gap: 4px;">
+        <button class="top-bar-item grey" id="crossButton" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 4px;">
             <span id="crossSquare" style="display: inline-block; width: 10px; height: 10px; background: #000000; border: 1px solid #ffffff; position: relative;">
                 <span style="position: absolute; top: 50%; left: 0; width: 100%; height: 1px; background: #ffffff; transform: translateY(-50%);"></span>
                 <span style="position: absolute; left: 50%; top: 0; width: 1px; height: 100%; background: #ffffff; transform: translateX(-50%);"></span>
             </span>
         </button>
-        <button class="top-bar-item grey" id="infoBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; margin-left: auto; transform: translateX(-3px);">INFO</button>
+        <button class="top-bar-item grey" id="infoBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px; margin-left: auto; transform: translateX(-3px);">INFO</button>
         <div style="position: relative; transform: translateX(-3px);">
-            <button class="top-bar-item grey" id="testBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">INDEX</button>
+            <button class="top-bar-item grey" id="testBtn" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">INDEX</button>
             <div id="testDropdown" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 4px; z-index: 10000; background: #ffffff; padding: 12px; border: 1px solid #333333; min-width: 280px;">
                 <div style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #000000; font-weight: bold; margin-bottom: 12px;" id="versionDisplay"></div>
                 <div style="font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #000000; margin-bottom: 6px; margin-top: 6px;" id="userDisplay">USER: <span id="userIdDisplay"></span></div>
@@ -1633,6 +1761,11 @@
             <div id="leaderboard-right-panel-stats"></div>
             <canvas id="leaderboard-right-panel-canvas"></canvas>
         </div>
+    </div>
+    
+    <!-- Leaderboard Info Panel -->
+    <div id="leaderboard-info-panel">
+        <div id="leaderboard-info-panel-content"></div>
     </div>
 
     <!-- Value Logic Summary Modal -->
@@ -1775,11 +1908,11 @@
             <button id="purchase-vis-close-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; border-radius: 0; display: flex; align-items: center; gap: 2px; white-space: nowrap; min-height: 16px; height: 16px;">
                 <span style="font-size: 12px;">×</span><span>CLOSE</span>
             </button>
-            <button id="purchase-vis-top-nodes-btn" class="top-bar-item grey" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">TOP NODES</button>
-            <button id="purchase-vis-bg-color-btn" class="top-bar-item grey" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; display: flex; align-items: center; gap: 4px;">
+            <button id="purchase-vis-top-nodes-btn" class="top-bar-item grey" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">TOP NODES</button>
+            <button id="purchase-vis-bg-color-btn" class="top-bar-item grey" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px; display: flex; align-items: center; gap: 4px;">
                 <span id="purchase-vis-bg-color-square" style="display: inline-block; width: 10px; height: 10px; background: #0000FF; border: 1px solid #000000;"></span>
             </button>
-            <button id="purchase-vis-nametags-btn" class="top-bar-item grey" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px;">SHOW NAMETAGS</button>
+            <button id="purchase-vis-nametags-btn" class="top-bar-item grey" style="cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 11px;">SHOW NAMETAGS</button>
         </div>
         <!-- FPS Bar (orange line below top bar) -->
         <div id="purchase-vis-fps-bar" style="position: fixed; top: 30px; left: 0; right: 0; height: 7px; background: rgba(255, 140, 0, 0.98); z-index: 40001;"></div>
@@ -1858,7 +1991,7 @@
         let isDragging = false;
         let isPanning = false; // Track if we're panning (Shift + middle mouse) vs rotating (middle mouse)
         let isViewingPurchase = false; // Flag to track if we're viewing a purchase from leaderboard
-        let alternativeControlMode = false; // Track if alternative control mode is active (click and drag, keyboard arrows)
+        let alternativeControlMode = false; // Track if alternative control mode is active - false = default (any mouse button, high sensitivity), true = alternative (middle mouse, normal sensitivity)
         
         // Grid mode variables
         let gridMode = false;
@@ -2122,14 +2255,18 @@
             const textContainer = document.getElementById('text-container');
             const leftPanel = document.getElementById('left-panel');
             const textBoxToggleBtn = document.getElementById('text-box-toggle-btn');
+            const textBoxToggleBtnTop = document.getElementById('text-box-toggle-btn-top');
             textContainer.classList.toggle('collapsed');
             leftPanel.classList.toggle('collapsed');
             // Add/remove class to body to control fps-bar position
             if (leftPanel.classList.contains('collapsed')) {
                 document.body.classList.add('left-panel-collapsed');
-                // Update button text when collapsed
+                // Hide original button and show top-bar button
                 if (textBoxToggleBtn) {
-                    textBoxToggleBtn.textContent = 'OPEN TEXT BOX';
+                    textBoxToggleBtn.style.display = 'none';
+                }
+                if (textBoxToggleBtnTop) {
+                    textBoxToggleBtnTop.style.display = 'flex';
                 }
                 // Position all bars at the left edge of the screen when panel is collapsed
                 setTimeout(() => {
@@ -2143,6 +2280,7 @@
                         topBar.style.position = 'fixed';
                         topBar.style.top = '0';
                         topBar.style.right = '0';
+                        topBar.style.paddingLeft = '10px'; // Add left margin
                     }
                     if (fpsBar) {
                         fpsBar.style.left = '0';
@@ -2159,9 +2297,13 @@
                 }, 10);
             } else {
                 document.body.classList.remove('left-panel-collapsed');
-                // Update button text when expanded
+                // Show original button and hide top-bar button
                 if (textBoxToggleBtn) {
+                    textBoxToggleBtn.style.display = 'flex';
                     textBoxToggleBtn.textContent = 'TEXT BOX';
+                }
+                if (textBoxToggleBtnTop) {
+                    textBoxToggleBtnTop.style.display = 'none';
                 }
                 // Reset all bars position when panel is expanded (remove inline styles to let CSS handle it)
                 const topBar = document.getElementById('top-bar');
@@ -2378,10 +2520,17 @@
             const generateBtn = document.getElementById('generateBtn');
             if (generateBtn) {
                 generateBtn.addEventListener('click', function() {
+                    // Check if button is disabled
+                    if (generateBtn.disabled) {
+                        return;
+                    }
                     // Simply generate/update the visualization (don't export GLB)
                     generateVisualization();
                 });
             }
+            
+            // Initialize button states on page load
+            updateButtonStates();
             document.getElementById('resetCameraBtn').addEventListener('click', resetCamera);
             document.getElementById('switchControlModesBtn').addEventListener('click', toggleControlMode);
             document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
@@ -2403,6 +2552,9 @@
             document.getElementById('mapTextBtn').addEventListener('click', mapText);
             document.getElementById('backgroundColorBtn').addEventListener('click', changeBackgroundColor);
             document.getElementById('crossButton').addEventListener('click', toggleGrid);
+            
+            // Initialize leaderboard button state
+            updateLeaderboardButtonState();
             
             // Disable Map Text and related buttons initially
             disableMapTextButtons();
@@ -2466,6 +2618,11 @@
             
             document.getElementById('right-panel-close').addEventListener('click', hideNodeDetails);
             document.getElementById('total-value-display').addEventListener('click', function() {
+                const totalValueBtn = document.getElementById('total-value-display');
+                // Check if button is disabled (no text)
+                if (totalValueBtn.style.pointerEvents === 'none') {
+                    return;
+                }
                 if (isViewingPurchase) {
                     returnToInputMode();
                 } else {
@@ -2543,6 +2700,10 @@
             }
             document.getElementById('clearTextBtn').addEventListener('click', clearTextBox);
             document.getElementById('text-box-toggle-btn').addEventListener('click', toggleTextBox);
+            const textBoxToggleBtnTop = document.getElementById('text-box-toggle-btn-top');
+            if (textBoxToggleBtnTop) {
+                textBoxToggleBtnTop.addEventListener('click', toggleTextBox);
+            }
             
             // Initialize fractal modal
             fractalCanvas = document.getElementById('fractal-canvas');
@@ -2575,6 +2736,7 @@
             // Text input validation - limit to 500 words
             const textInput = document.getElementById('textInput');
             textInput.addEventListener('input', limitWordCount);
+            textInput.addEventListener('input', updateButtonStates);
             textInput.addEventListener('paste', handlePaste);
             textInput.addEventListener('keydown', function(event) {
                 // Handle Enter key to generate/update visualization (but allow Shift+Enter for new line)
@@ -15156,12 +15318,8 @@ Return format (JSON array only, no other text):
                 stopLoadingProgressBar();
             }
             
-            // Enable Export Body button
-            if (generateBtn) {
-                generateBtn.disabled = false;
-                generateBtn.style.opacity = '1';
-                generateBtn.style.cursor = 'pointer';
-            }
+            // Enable Export Body button (will be updated by updateButtonStates based on text)
+            updateButtonStates();
         }
         
         // Show purchase success message
@@ -15370,6 +15528,11 @@ Return format (JSON array only, no other text):
             hideNodeDetails();
             
             const text = document.getElementById('textInput').value.trim();
+            
+            // Check if there's text before proceeding
+            if (!text || text.length === 0) {
+                return;
+            }
             
             if (!text) {
                 alert('Please enter some text');
@@ -17657,6 +17820,7 @@ Return format (JSON array only, no other text):
                 }));
 
                 // Store node positions and connections (minimal data)
+                // Include ALL nodes, including convergence nodes
                 const nodesData = nodes.map(node => {
                     const pos = node.position || { x: 0, y: 0, z: 0 };
                     // Use index from userData (not wordIndex)
@@ -17669,9 +17833,45 @@ Return format (JSON array only, no other text):
                             pos: node.userData.wordData.pos,
                             finalValue: node.userData.wordData.finalValue,
                             totalScore: node.userData.wordData.totalScore
-                        } : null
+                        } : null,
+                        isConvergenceNode: false // Regular nodes are not convergence nodes
                     };
                 });
+                
+                // Collect convergence nodes from all convergence zones
+                const convergenceNodesData = [];
+                if (convergenceZones && Array.isArray(convergenceZones)) {
+                    convergenceZones.forEach(zone => {
+                        if (zone.group) {
+                            zone.group.traverse((child) => {
+                                if (child.userData && child.userData.isConvergenceNode) {
+                                    const pos = child.position || { x: 0, y: 0, z: 0 };
+                                    // Get world position (relative to convergence zone center)
+                                    const worldPos = new THREE.Vector3();
+                                    child.getWorldPosition(worldPos);
+                                    convergenceNodesData.push({
+                                        wordIndex: -1, // Convergence nodes have special index
+                                        position: { x: worldPos.x, y: worldPos.y, z: worldPos.z },
+                                        wordData: child.userData.wordData ? {
+                                            text: child.userData.wordData.text,
+                                            pos: child.userData.wordData.pos,
+                                            finalValue: child.userData.wordData.finalValue,
+                                            totalScore: child.userData.wordData.totalScore
+                                        } : null,
+                                        isConvergenceNode: true
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                // Combine regular nodes and convergence nodes
+                const allNodesData = [...nodesData, ...convergenceNodesData];
+                
+                // Count convergence zones and convergence nodes
+                const convergenceZoneCount = convergenceZones ? convergenceZones.length : 0;
+                const convergenceNodeCount = convergenceNodesData.length;
 
                 // Store connections using wordIndex (index in analyzedWords array)
                 // This is more reliable than array positions since wordIndex is stable
@@ -17752,8 +17952,11 @@ Return format (JSON array only, no other text):
                         isCompoundName: data.isCompoundName
                     })), // Store repetition counts at purchase time
                     analyzedWords: analyzedWordsData, // Store analyzed words data for visualization recreation
-                    nodesData: nodesData, // Store node positions
-                    connectionsData: connectionsData // Store connections
+                    nodesData: allNodesData, // Store node positions (includes all nodes, including convergence nodes)
+                    connectionsData: connectionsData, // Store connections
+                    convergenceZoneCount: convergenceZoneCount, // Store number of convergence zones
+                    convergenceNodeCount: convergenceNodeCount, // Store number of convergence nodes
+                    totalNodeCount: allNodesData.length // Store total node count (including convergence nodes)
                 };
                 
                 // Verify image is in purchaseData before saving
@@ -17780,6 +17983,9 @@ Return format (JSON array only, no other text):
                         // Update leaderboard visualization when new purchase is made
                         createLeaderboardRightPanelVisualization();
                     }
+                    
+                    // Update leaderboard button state (now it should be enabled)
+                    updateLeaderboardButtonState();
                 } else {
                     console.error('Failed to save purchase to gallery. Check console for details.');
                     // Show user-friendly error message
@@ -17907,20 +18113,7 @@ Return format (JSON array only, no other text):
         // ==================== CONTROLES DE CÁMARA ====================
         function onMouseDown(event) {
             if (alternativeControlMode) {
-                // Alternative mode: any mouse button can be used to drag and rotate
-                // Prevent default to avoid text selection
-                if (event.button === 0 || event.button === 1 || event.button === 2) {
-                    event.preventDefault();
-                    isDragging = true;
-                    isPanning = false; // No panning in alternative mode
-                    
-                    previousMousePosition = {
-                        x: event.clientX,
-                        y: event.clientY
-                    };
-                }
-            } else {
-                // Normal mode: Only activate with middle mouse button (button === 1)
+                // Alternative mode: Only activate with middle mouse button (button === 1)
                 if (event.button !== 1) return;
                 
                 event.preventDefault();
@@ -17933,6 +18126,19 @@ Return format (JSON array only, no other text):
                     x: event.clientX,
                     y: event.clientY
                 };
+            } else {
+                // Default mode: any mouse button can be used to drag and rotate
+                // Prevent default to avoid text selection
+                if (event.button === 0 || event.button === 1 || event.button === 2) {
+                    event.preventDefault();
+                    isDragging = true;
+                    isPanning = false; // No panning in default mode
+                    
+                    previousMousePosition = {
+                        x: event.clientX,
+                        y: event.clientY
+                    };
+                }
             }
         }
 
@@ -17943,16 +18149,7 @@ Return format (JSON array only, no other text):
             const deltaY = event.clientY - previousMousePosition.y;
             
             if (alternativeControlMode) {
-                // Alternative mode: always rotate (no panning with mouse)
-                cameraAngleY += deltaX * 0.01;
-                cameraAngleX += deltaY * 0.01;
-                
-                // Limitar ángulo vertical
-                cameraAngleX = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleX));
-                
-                updateCameraPosition();
-            } else {
-                // Normal mode: check for panning or rotation
+                // Alternative mode: check for panning or rotation
                 // Update panning state if Shift key state changed
                 if (event.shiftKey !== isPanning) {
                     isPanning = event.shiftKey;
@@ -17998,6 +18195,15 @@ Return format (JSON array only, no other text):
                     
                     updateCameraPosition();
                 }
+            } else {
+                // Default mode: always rotate (no panning with mouse)
+                cameraAngleY += deltaX * 0.01;
+                cameraAngleX += deltaY * 0.01;
+                
+                // Limitar ángulo vertical
+                cameraAngleX = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleX));
+                
+                updateCameraPosition();
             }
             
             previousMousePosition = {
@@ -18008,14 +18214,14 @@ Return format (JSON array only, no other text):
 
         function onMouseUp(event) {
             if (alternativeControlMode) {
-                // Alternative mode: any mouse button release stops dragging
-                if (event.button === 0 || event.button === 1 || event.button === 2) {
+                // Alternative mode: Only deactivate if middle mouse button is released
+                if (event.button === 1) {
                     isDragging = false;
                     isPanning = false;
                 }
             } else {
-                // Normal mode: Only deactivate if middle mouse button is released
-                if (event.button === 1) {
+                // Default mode: any mouse button release stops dragging
+                if (event.button === 0 || event.button === 1 || event.button === 2) {
                     isDragging = false;
                     isPanning = false;
                 }
@@ -20978,6 +21184,55 @@ Return format (JSON array only, no other text):
             maxValuePanelAnimationId = requestAnimationFrame(animateMaxValuePanelNode);
         }
         
+        function updateButtonStates() {
+            const textInput = document.getElementById('textInput');
+            const generateBtn = document.getElementById('generateBtn');
+            const totalValueBtn = document.getElementById('total-value-display');
+            
+            if (!textInput) return;
+            
+            const hasText = textInput.value.trim().length > 0;
+            const hasBody = (nodes && nodes.length > 0) || (analyzedWords && analyzedWords.length > 0);
+            
+            // Update EXPORT BODY button
+            if (generateBtn) {
+                if (hasText && !isViewingPurchase) {
+                    generateBtn.disabled = false;
+                    generateBtn.style.opacity = '1';
+                    generateBtn.style.cursor = 'pointer';
+                } else {
+                    generateBtn.disabled = true;
+                    generateBtn.style.opacity = '0.5';
+                    generateBtn.style.cursor = 'not-allowed';
+                }
+            }
+            
+            // Update TOTAL VALUE button
+            if (totalValueBtn) {
+                if (isViewingPurchase) {
+                    // When viewing a purchase, always show as "RETURN TO INPUT MODE" with full opacity
+                    totalValueBtn.style.opacity = '1';
+                    totalValueBtn.style.cursor = 'pointer';
+                    totalValueBtn.style.pointerEvents = 'auto';
+                } else if (hasBody) {
+                    // Has body imported - full opacity
+                    totalValueBtn.style.opacity = '1';
+                    totalValueBtn.style.cursor = 'pointer';
+                    totalValueBtn.style.pointerEvents = 'auto';
+                } else if (hasText) {
+                    // Has text but no body - medium opacity
+                    totalValueBtn.style.opacity = '0.5';
+                    totalValueBtn.style.cursor = 'not-allowed';
+                    totalValueBtn.style.pointerEvents = 'none';
+                } else {
+                    // No text - even lighter opacity
+                    totalValueBtn.style.opacity = '0.3';
+                    totalValueBtn.style.cursor = 'not-allowed';
+                    totalValueBtn.style.pointerEvents = 'none';
+                }
+            }
+        }
+        
         function clearTextBox() {
             // Always close all right panels when clearing
             hideNodeDetails();
@@ -20988,6 +21243,9 @@ Return format (JSON array only, no other text):
             }
             
             document.getElementById('textInput').value = '';
+            
+            // Update button states after clearing
+            updateButtonStates();
             // Reset stats
             document.getElementById('valueScore').textContent = '0.00';
             document.getElementById('valueETH').textContent = '';
@@ -21310,7 +21568,7 @@ Return format (JSON array only, no other text):
             // Further nodes = higher sensitivity (faster zoom)
             // The further away, the more sensitive the zoom becomes
             // In alternative control mode (touchpad), increase sensitivity multiplier
-            const sensitivityMultiplier = alternativeControlMode ? 8.0 : 1.0;
+            const sensitivityMultiplier = alternativeControlMode ? 1.0 : 8.0; // Default mode (false) = high sensitivity, Alternative mode (true) = normal sensitivity
             const baseSensitivity = 0.02;
             const minSensitivity = 0.0008; // Minimum sensitivity when very close
             const closeDistance = 3.0; // Distance at which we want minimum sensitivity
@@ -21343,7 +21601,8 @@ Return format (JSON array only, no other text):
             
             // Apply zoom with adjusted sensitivity
             cameraRadius += event.deltaY * sensitivity;
-            cameraRadius = Math.max(3, Math.min(50, cameraRadius));
+            // Allow zooming closer to the center (minimum 0.1 instead of 3)
+            cameraRadius = Math.max(0.1, Math.min(50, cameraRadius));
             updateCameraPosition();
         }
         
@@ -21371,7 +21630,7 @@ Return format (JSON array only, no other text):
             // Pan speed factor (relative to camera distance, same as mouse pan)
             // Increase sensitivity in alternative control mode
             const basePanSpeed = cameraRadius * 0.001;
-            const panSpeed = alternativeControlMode ? basePanSpeed * 5.0 : basePanSpeed;
+            const panSpeed = alternativeControlMode ? basePanSpeed : basePanSpeed * 5.0; // Default mode (false) = high sensitivity, Alternative mode (true) = normal sensitivity
             
             // Get camera's current forward direction
             const forward = new THREE.Vector3();
@@ -21420,6 +21679,12 @@ Return format (JSON array only, no other text):
         }
         
         function resetCamera() {
+            // If viewing a purchase, reset to purchase view position
+            if (isViewingPurchase && window.currentPurchase) {
+                positionCameraForPurchase(window.currentPurchase);
+                return;
+            }
+            
             // Reset camera to initial position
             cameraRadius = initialCameraRadius;
             cameraAngleX = initialCameraAngleX;
@@ -21785,8 +22050,8 @@ Return format (JSON array only, no other text):
             // Clear existing grid
             gridContainer.innerHTML = '';
             
-            // Calculate number of rows and columns for grid (30px squares - more squares to cover full screen)
-            const squareSize = 30;
+            // Calculate number of rows and columns for grid (36px squares - more squares to cover full screen)
+            const squareSize = 36;
             const cols = Math.ceil(window.innerWidth / squareSize);
             const rows = Math.ceil(window.innerHeight / squareSize);
             
@@ -21937,7 +22202,7 @@ Return format (JSON array only, no other text):
             
             gridSquareCache.length = 0; // Clear cache
             const allSquares = gridContainer.querySelectorAll('.grid-square');
-            const squareSize = 30;
+            const squareSize = 36;
             const squareSizeHalf = squareSize / 2;
             
             for (let i = 0; i < allSquares.length; i++) {
@@ -22068,7 +22333,7 @@ Return format (JSON array only, no other text):
                 if (val > maxValue) maxValue = val;
             }
             const valueRange = Math.max(maxValue - minValue, 1);
-            const squareSize = 37.5;
+            const squareSize = 45;
             
             // Update each grid square using cached data
             const nodeDataCount = nodeScreenData.length;
@@ -22081,6 +22346,7 @@ Return format (JSON array only, no other text):
                 // Find closest node using squared distance
                 let closestNodeData = null;
                 let minDistanceSquared = Infinity;
+                let closestDistance = Infinity;
                 
                 for (let j = 0; j < nodeDataCount; j++) {
                     const nodeData = nodeScreenData[j];
@@ -22092,6 +22358,7 @@ Return format (JSON array only, no other text):
                     
                     if (distanceSquared < minDistanceSquared) {
                         minDistanceSquared = distanceSquared;
+                        closestDistance = Math.sqrt(distanceSquared); // Calculate actual distance
                         closestNodeData = nodeData;
                     }
                 }
@@ -22129,8 +22396,10 @@ Return format (JSON array only, no other text):
                         cached.valueLabel.textContent = displayValue;
                         
                         // Draw graph only if enough history
+                        // Pass distance and node value to affect graph height based on node distance and value
                         if (history.length >= 2) {
-                            drawGraph(cached.graphSVG, history, minValue, maxValue, valueRange, squareSize);
+                            const nodeValue = closestNodeData.value || 0;
+                            drawGraph(cached.graphSVG, history, minValue, maxValue, valueRange, squareSize, closestDistance, nodeValue);
                         }
                     }
                 } else {
@@ -22148,7 +22417,7 @@ Return format (JSON array only, no other text):
         }
         
         // Function to draw graph in SVG
-        function drawGraph(svg, history, minValue, maxValue, valueRange, squareSize) {
+        function drawGraph(svg, history, minValue, maxValue, valueRange, squareSize, nodeDistance = 0, nodeValue = 0) {
             if (!svg || !history || history.length < 2) {
                 if (svg) svg.innerHTML = '';
                 return;
@@ -22164,13 +22433,30 @@ Return format (JSON array only, no other text):
                 const graphWidth = width - (padding * 2);
                 const graphHeight = height - (padding * 2) - 6; // Leave space for label
                 
+                // Calculate distance attenuation factor
+                // The further the node, the less the graph should be affected
+                // Use a maximum distance threshold (e.g., 150 pixels) beyond which graph is barely affected
+                const maxDistance = 150; // Maximum distance for full effect
+                
+                // Calculate distance factor (1.0 when close, 0.0 when far)
+                // Closer nodes (distance = 0) get full effect, farther nodes get reduced effect
+                const distanceFactor = Math.max(0, Math.min(1, 1 - (nodeDistance / maxDistance)));
+                
+                // Calculate value factor (normalize node value relative to maxValue)
+                // Higher value nodes should have more impact on graph height
+                const valueFactor = maxValue > 0 ? Math.min(1, nodeValue / maxValue) : 0;
+                
+                // Combined factor: distance * value
+                // Graph height is affected by both how close the node is AND how valuable it is
+                const combinedFactor = distanceFactor * valueFactor;
+                
                 // Set viewBox and ensure SVG is visible
                 svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
                 svg.setAttribute('width', width);
                 svg.setAttribute('height', height);
                 svg.style.display = 'block';
                 svg.style.visibility = 'visible';
-                svg.style.opacity = '1';
+                svg.style.opacity = '0.9';
                 
                 // Calculate local min/max for this history to better visualize changes
                 let localMin = Infinity;
@@ -22197,8 +22483,15 @@ Return format (JSON array only, no other text):
                     const normalizedPrev = ((prevValue - localMin) / localRange);
                     const normalizedCurrent = ((currentValue - localMin) / localRange);
                     
-                    const y1 = height - padding - 6 - (normalizedPrev * graphHeight);
-                    const y2 = height - padding - 6 - (normalizedCurrent * graphHeight);
+                    // Apply distance and value factor to graph height
+                    // The graph should be taller when node is closer AND has higher value
+                    // Base Y position (bottom of graph area)
+                    const baseY = height - padding - 6;
+                    
+                    // Calculate Y positions with distance/value attenuation
+                    // combinedFactor = 1.0 means full height, combinedFactor = 0.0 means minimal height
+                    const y1 = baseY - (normalizedPrev * graphHeight * combinedFactor);
+                    const y2 = baseY - (normalizedCurrent * graphHeight * combinedFactor);
                     
                     // Determine color based on value change
                     let color = '#ffffff'; // Default white
@@ -22224,6 +22517,7 @@ Return format (JSON array only, no other text):
                     }
                     
                     // Draw line
+                    // Graph height is already affected by distance and value through y1 and y2
                     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                     line.setAttribute('x1', String(x1));
                     line.setAttribute('y1', String(y1));
@@ -22259,6 +22553,7 @@ Return format (JSON array only, no other text):
                         topBar.style.top = '0';
                         topBar.style.right = '0';
                         topBar.style.display = 'flex';
+                        topBar.style.paddingLeft = '10px'; // Add left margin
                     }
                     if (fpsBar) {
                         fpsBar.style.left = '0';
@@ -22283,6 +22578,7 @@ Return format (JSON array only, no other text):
                         topBar.style.top = '0';
                         topBar.style.right = '0';
                         topBar.style.display = 'flex';
+                        topBar.style.paddingLeft = ''; // Remove left margin when expanded
                     }
                     if (fpsBar) {
                         fpsBar.style.removeProperty('left');
@@ -22341,7 +22637,7 @@ Return format (JSON array only, no other text):
                     gridContainer = gridContainerElement;
                     gridContainer.innerHTML = '';
                     
-                    const squareSize = 30;
+                    const squareSize = 36;
                     const cols = Math.ceil(window.innerWidth / squareSize);
                     const rows = Math.ceil(window.innerHeight / squareSize);
                     
@@ -23027,6 +23323,11 @@ Return format (JSON array only, no other text):
                 rightPanel.classList.remove('visible');
             }
             
+            const infoPanel = document.getElementById('leaderboard-info-panel');
+            if (infoPanel) {
+                infoPanel.classList.remove('visible');
+            }
+            
             // Clean up visualization
             if (leaderboardRightPanelAnimationId) {
                 cancelAnimationFrame(leaderboardRightPanelAnimationId);
@@ -23058,7 +23359,32 @@ Return format (JSON array only, no other text):
             leaderboardRightPanelSphereCrosses = [];
         }
         
+        function updateLeaderboardButtonState() {
+            const galleryBtn = document.getElementById('galleryBtn');
+            if (!galleryBtn) return;
+            
+            const purchases = getGalleryPurchases();
+            const hasPurchases = purchases && purchases.length > 0;
+            
+            if (hasPurchases) {
+                // Normal opacity when there are purchases
+                galleryBtn.style.opacity = '1';
+                galleryBtn.style.cursor = 'pointer';
+            } else {
+                // More transparent (clearer) when no purchases
+                galleryBtn.style.opacity = '0.3';
+                galleryBtn.style.cursor = 'not-allowed';
+            }
+        }
+        
         function toggleGallery() {
+            // Check if there are any purchases before opening
+            const purchases = getGalleryPurchases();
+            if (!purchases || purchases.length === 0) {
+                // Don't open if there are no purchases
+                return;
+            }
+            
             galleryVisible = !galleryVisible;
             const container = document.getElementById('node-list-container');
             const rightPanel = document.getElementById('leaderboard-right-panel');
@@ -23075,6 +23401,10 @@ Return format (JSON array only, no other text):
                 if (rightPanel) {
                     rightPanel.classList.add('visible');
                 }
+                const infoPanel = document.getElementById('leaderboard-info-panel');
+                if (infoPanel) {
+                    infoPanel.classList.add('visible');
+                }
                 createGalleryItems();
                 createLeaderboardRightPanelVisualization();
                 
@@ -23082,6 +23412,7 @@ Return format (JSON array only, no other text):
                 const purchases = getGalleryPurchases();
                 if (purchases.length > 0) {
                     purchases.sort((a, b) => (b.totalValue || 0) - (a.totalValue || 0));
+                    updateLeaderboardInfoPanel(purchases);
                     updateMaxValuePanelWithPurchase(purchases[0]);
                 }
             } else {
@@ -23415,63 +23746,194 @@ Return format (JSON array only, no other text):
                 return;
             }
             
-            // Calculate CONVERGENCE: percentage of purchases that have convergence zones
-            // We'll estimate this by checking if purchases have connections (which indicate convergence potential)
-            let purchasesWithConvergence = 0;
+            // Calculate CONVERGENCE: average number of convergence zones per purchase
+            // Scale: 100 zones average = 100%, 0 zones = 0%
+            let totalConvergenceZones = 0;
             
-            // Calculate TRAFFIC: average number of nodes per purchase
+            // Calculate TRAFFIC: average number of nodes per purchase (including convergence nodes)
+            // Scale: 1000 nodes = 100%, 1 node = 0.1%
             let totalNodes = 0;
             
             purchases.forEach(purchase => {
-                // Count nodes
+                // Count convergence zones
+                let convergenceZoneCount = 0;
+                if (purchase.convergenceZoneCount !== undefined && purchase.convergenceZoneCount !== null) {
+                    // Use stored convergence zone count if available
+                    convergenceZoneCount = purchase.convergenceZoneCount;
+                } else if (purchase.convergenceZonesData && Array.isArray(purchase.convergenceZonesData)) {
+                    convergenceZoneCount = purchase.convergenceZonesData.length;
+                } else if (purchase.convergenceZones && Array.isArray(purchase.convergenceZones)) {
+                    convergenceZoneCount = purchase.convergenceZones.length;
+                }
+                totalConvergenceZones += convergenceZoneCount;
+                
+                // Count ALL nodes including convergence nodes
                 let nodeCount = 0;
-                if (purchase.nodesData && Array.isArray(purchase.nodesData)) {
+                if (purchase.totalNodeCount !== undefined && purchase.totalNodeCount !== null) {
+                    // Use stored total node count if available (includes convergence nodes)
+                    nodeCount = purchase.totalNodeCount;
+                } else if (purchase.nodesData && Array.isArray(purchase.nodesData)) {
+                    // Count all nodes in nodesData (should include convergence nodes if marked)
                     nodeCount = purchase.nodesData.length;
                 } else if (purchase.analyzedWords && Array.isArray(purchase.analyzedWords)) {
+                    // Fallback: use analyzedWords count (but this doesn't include convergence nodes)
                     nodeCount = purchase.analyzedWords.length;
                 }
                 totalNodes += nodeCount;
-                
-                // Estimate convergence: if purchase has connections, it likely has convergence zones
-                // Or check if it has convergenceZonesData stored
-                let hasConvergence = false;
-                if (purchase.convergenceZonesData && Array.isArray(purchase.convergenceZonesData) && purchase.convergenceZonesData.length > 0) {
-                    hasConvergence = true;
-                } else if (purchase.convergenceZones && Array.isArray(purchase.convergenceZones) && purchase.convergenceZones.length > 0) {
-                    hasConvergence = true;
-                } else if (purchase.connectionsData && Array.isArray(purchase.connectionsData) && purchase.connectionsData.length > 0) {
-                    // If it has connections, estimate that it has convergence zones
-                    // We'll use a heuristic: if connections > nodes/10, likely has convergence
-                    hasConvergence = purchase.connectionsData.length > (nodeCount / 10);
-                }
-                
-                if (hasConvergence) {
-                    purchasesWithConvergence++;
-                }
             });
             
-            // Calculate percentages
-            // CONVERGENCE: percentage of purchases that have convergence zones
-            const convergencePercentage = purchases.length > 0 ? (purchasesWithConvergence / purchases.length) * 100 : 0;
+            // Calculate CONVERGENCE percentage
+            // Average convergence zones per purchase
+            const avgConvergenceZones = purchases.length > 0 ? totalConvergenceZones / purchases.length : 0;
+            // Scale: 100 zones = 100%, so each zone = 1%
+            const convergencePercentage = Math.min(100, avgConvergenceZones);
             
-            // TRAFFIC: average nodes per purchase as a percentage
-            // Normalize to a scale where we use the max nodes found as 100%
-            const maxNodesInPurchase = Math.max(...purchases.map(p => {
-                if (p.nodesData && Array.isArray(p.nodesData)) {
-                    return p.nodesData.length;
-                } else if (p.analyzedWords && Array.isArray(p.analyzedWords)) {
-                    return p.analyzedWords.length;
-                }
-                return 0;
-            }), 1);
+            // Calculate TRAFFIC percentage
+            // Average nodes per purchase
             const avgNodes = purchases.length > 0 ? totalNodes / purchases.length : 0;
-            const trafficPercentage = maxNodesInPurchase > 0 ? (avgNodes / maxNodesInPurchase) * 100 : 0;
+            // Scale: 1000 nodes = 100%, so each node = 0.1%
+            const trafficPercentage = Math.min(100, (avgNodes / 1000) * 100);
             
             // Update stats display
             statsElement.innerHTML = `
                 <div>CONVERGENCE: ${convergencePercentage.toFixed(1)}%</div>
                 <div>TRAFFIC: ${trafficPercentage.toFixed(1)}%</div>
             `;
+        }
+        
+        function updateLeaderboardInfoPanel(purchases) {
+            const infoPanel = document.getElementById('leaderboard-info-panel');
+            const contentElement = document.getElementById('leaderboard-info-panel-content');
+            
+            if (!infoPanel || !contentElement || !purchases || purchases.length === 0) {
+                if (infoPanel) {
+                    infoPanel.classList.remove('visible');
+                }
+                if (contentElement) {
+                    contentElement.innerHTML = '';
+                }
+                return;
+            }
+            
+            // Collect all top words from all purchases
+            const allTopWords = new Map();
+            const userCollectors = new Set();
+            const purchaseDates = [];
+            
+            purchases.forEach(purchase => {
+                // Collect top words
+                if (purchase.topWords && Array.isArray(purchase.topWords)) {
+                    purchase.topWords.forEach(wordInfo => {
+                        const wordText = typeof wordInfo === 'string' ? wordInfo : (wordInfo.text || wordInfo.word || '');
+                        const wordLower = wordText.toLowerCase().trim();
+                        if (wordLower) {
+                            const currentCount = allTopWords.get(wordLower) || 0;
+                            allTopWords.set(wordLower, currentCount + 1);
+                        }
+                    });
+                }
+                
+                // Collect user IDs
+                if (purchase.userId) {
+                    userCollectors.add(purchase.userId);
+                }
+                
+                // Collect dates
+                if (purchase.purchaseTime) {
+                    purchaseDates.push({
+                        date: purchase.purchaseTime,
+                        userId: purchase.userId || 'Unknown',
+                        value: purchase.totalValue || 0
+                    });
+                } else if (purchase.timestamp) {
+                    purchaseDates.push({
+                        date: new Date(purchase.timestamp).toLocaleString(),
+                        userId: purchase.userId || 'Unknown',
+                        value: purchase.totalValue || 0
+                    });
+                }
+            });
+            
+            // Sort top words by frequency
+            const sortedTopWords = Array.from(allTopWords.entries())
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 100); // Top 100 most frequent words
+            
+            // Sort dates by most recent first
+            purchaseDates.sort((a, b) => {
+                const dateA = new Date(a.date);
+                const dateB = new Date(b.date);
+                return dateB - dateA;
+            });
+            
+            // Build HTML content with blocks like TOTAL VALUE
+            const boxBg = "#000000";
+            const boxBorder = "#ffffff";
+            const textColor = "#ffffff";
+            const borderColor = boxBorder;
+            const dividerColor = "#333333";
+            const boxStyle = `background: ${boxBg}; border: 1px solid ${boxBorder}; padding: 4px; margin-bottom: 3px; border-radius: 0;`;
+            const itemStyle = "margin: 0.5px 0;";
+            
+            // Helper function to wrap numbers with white background
+            const wrapNumber = (num) => `<span class="leaderboard-info-number">${num}</span>`;
+            
+            let html = '';
+            
+            // Top Words Section (as block)
+            html += `<div style="${boxStyle}">`;
+            html += `<h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">TOP WORDS</h3>`;
+            if (sortedTopWords.length > 0) {
+                sortedTopWords.forEach(([word, count], index) => {
+                    html += `<div style="${itemStyle} color: ${textColor};"><strong>${wrapNumber(index + 1)}. ${word}:</strong> ${wrapNumber(count)} ${count === 1 ? 'purchase' : 'purchases'}</div>`;
+                });
+            } else {
+                html += `<div style="${itemStyle} color: ${textColor};">No top words available</div>`;
+            }
+            html += '</div>';
+            
+            // Collectors Section (as block)
+            html += `<div style="${boxStyle}">`;
+            html += `<h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">COLLECTORS</h3>`;
+            html += `<div style="${itemStyle} color: ${textColor};"><strong>Total Collectors:</strong> ${wrapNumber(userCollectors.size)}</div>`;
+            const sortedCollectors = Array.from(userCollectors).sort();
+            sortedCollectors.slice(0, 10).forEach((userId, index) => {
+                html += `<div style="${itemStyle} color: ${textColor};"><strong>${wrapNumber(index + 1)}.</strong> ${userId}</div>`;
+            });
+            if (sortedCollectors.length > 10) {
+                html += `<div style="${itemStyle} color: ${textColor};">... and ${wrapNumber(sortedCollectors.length - 10)} more</div>`;
+            }
+            html += '</div>';
+            
+            // Recent Purchases Section (as block)
+            html += `<div style="${boxStyle}">`;
+            html += `<h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">RECENT PURCHASES</h3>`;
+            if (purchaseDates.length > 0) {
+                purchaseDates.slice(0, 10).forEach((purchase, index) => {
+                    const valueETH = ethPriceUSD && purchase.value ? (purchase.value / ethPriceUSD).toFixed(6) : '0.000000';
+                    html += `<div style="${itemStyle} color: ${textColor}; padding: 2px 0; border-top: 1px solid ${dividerColor};"><strong>${wrapNumber(index + 1)}. ${purchase.date}</strong><br>`;
+                    html += `<span style="font-size: 8px;">User: ${purchase.userId} | Value: <span class="leaderboard-info-number">${valueETH}</span> ETH</span></div>`;
+                });
+            } else {
+                html += `<div style="${itemStyle} color: ${textColor};">No purchase dates available</div>`;
+            }
+            html += '</div>';
+            
+            // Statistics Section (as block)
+            html += `<div style="${boxStyle}">`;
+            html += `<h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">STATISTICS</h3>`;
+            const totalPurchases = purchases.length;
+            const totalValue = purchases.reduce((sum, p) => sum + (p.totalValue || 0), 0);
+            const avgValue = totalPurchases > 0 ? totalValue / totalPurchases : 0;
+            const totalValueETH = ethPriceUSD && totalValue ? (totalValue / ethPriceUSD).toFixed(6) : '0.000000';
+            const avgValueETH = ethPriceUSD && avgValue ? (avgValue / ethPriceUSD).toFixed(6) : '0.000000';
+            
+            html += `<div style="${itemStyle} color: ${textColor};"><strong>Total Purchases:</strong> ${wrapNumber(totalPurchases)}</div>`;
+            html += `<div style="${itemStyle} color: ${textColor};"><strong>Total Value:</strong> <span class="leaderboard-info-number">${totalValueETH}</span> ETH</div>`;
+            html += `<div style="${itemStyle} color: ${textColor};"><strong>Average Value:</strong> <span class="leaderboard-info-number">${avgValueETH}</span> ETH</div>`;
+            html += '</div>';
+            
+            contentElement.innerHTML = html;
         }
         
         function createLeaderboardRightPanelVisualization() {
@@ -23806,19 +24268,35 @@ Return format (JSON array only, no other text):
                         const y_final = finalY * (1 + variation * 0.5);
                         const z_final = z * (1 - variation * 0.3);
                         
-                        // Calculate node size based on value (normalized) - make them bigger and more visible
+                        // Calculate node size based on value (normalized) - make them much smaller
                         const normalizedValue = maxValue > 0 ? nodeData.value / maxValue : 1;
-                        const nodeSize = 0.15 + (normalizedValue * 0.25); // Increased from 0.05-0.20 to 0.15-0.40
+                        const nodeSize = 0.02 + (normalizedValue * 0.04); // Much smaller: 0.02-0.06
                         
-                        // Create sphere geometry
-                        const geometry = new THREE.SphereGeometry(nodeSize, 16, 16);
+                        // Create sphere geometry with fewer segments for performance
+                        const geometry = new THREE.SphereGeometry(nodeSize, 8, 8);
                         
-                        // Choose color based on whether it's a name
-                        const color = nodeData.isName ? 0xff6600 : 0x0066ff;
+                        // Get color using the same function as main visualization (getValueBasedColor)
+                        // Create a wordData object compatible with getValueBasedColor
+                        const wordData = {
+                            text: nodeData.text,
+                            finalValue: nodeData.value,
+                            isName: nodeData.isName || false,
+                            index: index
+                        };
+                        
+                        // Use all topNodes as the allWords array for percentile calculation
+                        const allWordsForColor = topNodes.map((n, idx) => ({
+                            text: n.text,
+                            finalValue: n.value,
+                            isName: n.isName || false,
+                            index: idx
+                        }));
+                        
+                        const color = getValueBasedColor(wordData, index, allWordsForColor);
                         const material = new THREE.MeshBasicMaterial({ 
                             color: color,
                             transparent: true,
-                            opacity: 0.9 // Increased opacity for better visibility
+                            opacity: 0.9
                         });
                         
                         const mesh = new THREE.Mesh(geometry, material);
@@ -23839,6 +24317,7 @@ Return format (JSON array only, no other text):
                 
                 // Calculate and display CONVERGENCE and TRAFFIC metrics
                 updateLeaderboardRightPanelStats(purchases);
+                updateLeaderboardInfoPanel(purchases);
                 
                 // Force initial render immediately
                 if (leaderboardRightPanelScene && leaderboardRightPanelCamera && leaderboardRightPanelRenderer) {
@@ -24032,9 +24511,14 @@ Return format (JSON array only, no other text):
             // Load nodes and connections into main scene
             await loadPurchaseIntoMainScene(purchase);
             
-            // Activate MAP TEXT mode automatically
+            // Activate or update MAP TEXT mode automatically
+            // Always update the mapped text, even if already visible
             if (!mappedTextVisible) {
                 mapText();
+            } else {
+                // If already in Map Text mode, force update by temporarily disabling
+                mappedTextVisible = false;
+                mapText(); // This will regenerate the mapped text with new content
             }
             
             // Disable EXPORT BODY button
@@ -24053,6 +24537,22 @@ Return format (JSON array only, no other text):
                 nodeListBtn.style.cursor = 'pointer';
             }
             
+            // Enable SHOW NAMETAGS button when viewing a purchase
+            const toggleNametagsBtn = document.getElementById('toggleNametagsBtn');
+            if (toggleNametagsBtn) {
+                toggleNametagsBtn.disabled = false;
+                toggleNametagsBtn.style.opacity = '1';
+                toggleNametagsBtn.style.cursor = 'pointer';
+            }
+            
+            // Enable Reset View button when viewing a purchase
+            const resetCameraBtn = document.getElementById('resetCameraBtn');
+            if (resetCameraBtn) {
+                resetCameraBtn.disabled = false;
+                resetCameraBtn.style.opacity = '1';
+                resetCameraBtn.style.cursor = 'pointer';
+            }
+            
             // Change TOTAL VALUE button to "RETURN TO INPUT MODE"
             const totalValueBtn = document.getElementById('total-value-display');
             if (totalValueBtn) {
@@ -24061,11 +24561,14 @@ Return format (JSON array only, no other text):
                     totalValueBtn.dataset.originalText = totalValueBtn.innerHTML;
                 }
                 // Change text to "RETURN TO INPUT MODE"
-                totalValueBtn.innerHTML = '<span style="font-size: 9px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">RETURN TO INPUT MODE</span>';
+                totalValueBtn.innerHTML = '<span style="font-size: 11px; font-weight: bold; font-family: Helvetica, Arial, sans-serif;">RETURN TO INPUT MODE</span>';
                 totalValueBtn.style.pointerEvents = 'auto';
                 totalValueBtn.style.opacity = '1';
                 totalValueBtn.style.cursor = 'pointer';
             }
+            
+            // Store current purchase for resetCamera function
+            window.currentPurchase = purchase;
             
             // Position camera to view all nodes
             positionCameraForPurchase(purchase);
@@ -24074,6 +24577,7 @@ Return format (JSON array only, no other text):
         function returnToInputMode() {
             // Restore normal mode
             isViewingPurchase = false;
+            window.currentPurchase = null;
             
             // Clear the scene
             clearScene();
@@ -24087,13 +24591,8 @@ Return format (JSON array only, no other text):
                 textInput.value = '';
             }
             
-            // Restore EXPORT BODY button
-            const generateBtn = document.getElementById('generateBtn');
-            if (generateBtn) {
-                generateBtn.disabled = false;
-                generateBtn.style.opacity = '1';
-                generateBtn.style.cursor = 'pointer';
-            }
+            // Restore EXPORT BODY button (will be updated by updateButtonStates based on text)
+            updateButtonStates();
             
             // Disable TOP NODES button when returning to input mode (if no nodes)
             const nodeListBtn = document.getElementById('nodeListBtn');
@@ -24119,6 +24618,9 @@ Return format (JSON array only, no other text):
                 textInput.style.display = 'block';
             }
             mappedTextVisible = false;
+            
+            // Update button states after returning to input mode
+            updateButtonStates();
             
             // Reset stats
             document.getElementById('valueScore').textContent = '0.00';
@@ -26395,12 +26897,10 @@ Return format (JSON array only, no other text):
             }
             lastFrameTime = currentTime - (deltaTime % frameInterval);
             
-            // Update keyboard navigation (only in alternative control mode)
-            if (alternativeControlMode) {
-                if (keysPressed.ArrowUp || keysPressed.ArrowDown || 
-                    keysPressed.ArrowLeft || keysPressed.ArrowRight) {
-                    updateKeyboardNavigation();
-                }
+            // Update keyboard navigation (works in both modes, with different sensitivity)
+            if (keysPressed.ArrowUp || keysPressed.ArrowDown || 
+                keysPressed.ArrowLeft || keysPressed.ArrowRight) {
+                updateKeyboardNavigation();
             }
             
             // Update connections if nodes move (less frequently)
