@@ -423,7 +423,7 @@
             position: fixed;
             top: 25px;
             left: 250px;
-            right: 400px;
+            right: 420px; /* 400px (width of leaderboard panels) + 10px (right margin) + 10px (gap margin) */
             bottom: 0;
             z-index: 998;
             overflow-y: auto;
@@ -565,6 +565,7 @@
             flex: 1;
             min-height: calc(100% - 30px);
             box-sizing: border-box;
+            position: relative;
         }
         
         .leaderboard-info-section {
@@ -1131,12 +1132,13 @@
         }
         
         /* When modals are explicitly shown via JavaScript, they will override the default */
+        /* Keep pointer-events: none on overlay so clicks pass through to elements behind */
         #value-logic-modal[style*="display: block"],
         #value-logic-modal[style*="display: flex"] {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
-            pointer-events: auto !important;
+            pointer-events: none !important;
         }
         
         #fractal-modal[style*="display: block"],
@@ -1147,12 +1149,13 @@
             pointer-events: auto !important;
         }
         
+        /* Keep pointer-events: none on overlay so clicks pass through to elements behind */
         #info-modal[style*="display: block"],
         #info-modal[style*="display: flex"] {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
-            pointer-events: auto !important;
+            pointer-events: none !important;
         }
         
         #value-logic-modal-container,
@@ -1860,17 +1863,25 @@
                 <button id="claim-back-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 3px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 9px; border-radius: 0; display: flex; align-items: center; gap: 2px; white-space: nowrap;"><span style="font-size: 12px;">×</span><span>CLOSE</span></button>
                 <button id="claim-purchase-btn" style="background: #808080; color: #ffffff; border: none; padding: 1px 2px; font-size: 10px; font-family: Helvetica, Arial, sans-serif; cursor: pointer; border-radius: 0; position: absolute; right: 8px;">PURCHASE</button>
             </div>
-            <div style="display: flex; gap: 10px; flex-wrap: nowrap; margin-bottom: 5px; align-items: flex-start; overflow: visible;">
+            <div style="display: flex; gap: 10px; flex-wrap: nowrap; margin-bottom: 5px; align-items: flex-start; overflow: visible; position: relative;">
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <div id="claim-3d-container" style="flex: 0 0 auto; width: 350px; height: 500px; background: #000000; position: relative; border: 1px solid #000000;"></div>
-                    <div id="claim-expanded-section" style="display: none; width: 350px; background: #000000; padding: 5px; border: 1px solid #000000;">
-                        <div id="claim-top4-fractals-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; width: 100%;"></div>
+                    <div id="claim-expanded-section" style="display: none; width: 350px; background: #000000; padding: 5px; border: 1px solid #000000; position: relative;">
+                        <div id="claim-top4-fractals-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; width: 100%; margin-bottom: 5px;"></div>
                     </div>
                 </div>
                 <div id="claim-total-value-container" style="flex: 0 0 auto; width: 350px; height: 500px; min-height: 500px; max-height: none; background: rgba(220, 220, 220, 0.95); padding: 4px 8px 8px 8px; border-radius: 0; color: #000000; font-family: Helvetica, Arial, sans-serif; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; border: 1px solid #000000; position: relative; transition: height 0.3s ease;">
                     <div id="claim-total-value-content" style="min-height: 100%;"></div>
                     <button id="claim-scroll-down-btn" style="position: absolute; bottom: 5px; right: 5px; background: rgba(128, 128, 128, 0.7); color: #ffffff; border: none; padding: 2px 4px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 8px; border-radius: 0; z-index: 10;">↓</button>
                 </div>
+            </div>
+            <div id="claim-nodes-list-container" style="display: none; width: 100%; max-width: 710px; max-height: 400px; overflow-y: auto; overflow-x: hidden; scrollbar-width: none; -ms-overflow-style: none; margin-top: 8px; margin-bottom: 5px;">
+                <style>
+                    #claim-nodes-list-container::-webkit-scrollbar {
+                        display: none;
+                    }
+                </style>
+                <div id="claim-nodes-list-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; width: 100%;"></div>
             </div>
             <div style="position: relative; margin-top: -13px; min-height: 30px;">
                 <button id="claim-expand-btn" style="position: absolute; left: 0; bottom: 2px; background: #808080; color: #ffffff; border: none; padding: 1px 2px; cursor: pointer; font-family: Helvetica, Arial, sans-serif; font-size: 10px; border-radius: 0; display: flex; align-items: center; justify-content: center; gap: 3px;">
@@ -1997,7 +2008,9 @@
         let gridMode = false;
         let gridContainer = null;
         let lastGridLabelUpdate = 0;
-        const GRID_LABEL_UPDATE_INTERVAL = 1000; // Update every second
+        const GRID_LABEL_UPDATE_INTERVAL = 1000; // Update every second (base interval)
+        const GRID_LABEL_UPDATE_INTERVAL_LARGE = 2000; // Update every 2 seconds for large bodies
+        const LARGE_BODY_THRESHOLD = 500; // Consider it a large body if > 500 nodes
         const gridSquareValueHistory = new Map(); // Store value history for each square
         const MAX_HISTORY_POINTS = 20; // Maximum number of points in graph
         const gridSquareCache = []; // Cache square data to avoid repeated DOM queries
@@ -2047,6 +2060,9 @@
         let sharedTopNodesRenderer = null;
         let sharedTopNodesScene = null;
         let sharedTopNodesCamera = null;
+        let sharedClaimNodesRenderer = null;
+        let sharedClaimNodesScene = null;
+        let sharedClaimNodesCamera = null;
         let ethPriceUSD = null; // Store Ethereum conversion rate (used to convert points directly to ETH)
         let raycaster = new THREE.Raycaster();
         let mouse = new THREE.Vector2();
@@ -2101,6 +2117,7 @@
         let valueLogicColorMode = false; // false = black boxes, true = white boxes
         let convergenceZonesColorMode = false; // false = black boxes, true = white boxes
         let infoColorMode = false; // false = black boxes, true = white boxes
+        let leaderboardMarketColorMode = false; // false = black boxes, true = white boxes
         let valueLogicOverviewScene = null;
         let valueLogicOverviewRenderer = null;
         let valueLogicOverviewCamera = null;
@@ -2144,7 +2161,7 @@
                 if (gridMode) {
                     renderer.setClearColor(0x000000, 0);
                 } else {
-                    renderer.setClearColor(currentBackgroundColor, 1);
+                renderer.setClearColor(currentBackgroundColor, 1);
                 }
             });
             
@@ -2687,16 +2704,6 @@
                 if (indicator) {
                     indicator.style.background = valueLogicColorMode ? '#ffffff' : '#000000';
                 }
-            }
-            // Close modal when clicking outside (only on the modal container, not the overlay)
-            const modalContainer = document.getElementById('value-logic-modal-container');
-            if (modalContainer) {
-                document.addEventListener('click', (e) => {
-                    const modal = document.getElementById('value-logic-modal');
-                    if (modal.style.display === 'block' && !modalContainer.contains(e.target) && e.target.id !== 'total-value-display' && !e.target.closest('#total-value-display')) {
-                        hideValueLogicSummary();
-                    }
-                });
             }
             document.getElementById('clearTextBtn').addEventListener('click', clearTextBox);
             document.getElementById('text-box-toggle-btn').addEventListener('click', toggleTextBox);
@@ -9426,25 +9433,25 @@ Return format (JSON array only, no other text):
                         });
                     } else {
                         // Word appears in 3 or fewer purchases - still rare, increase value
-                        // RADICAL: Use 10% increase for names/compound names (instead of 2%)
-                        const increasePercent = repetitions * 0.10; // 10% per repetition for names/compound names
-                        const increaseFactor = 1 + increasePercent;
-                        
-                        const valueBeforeIncrease = wordData.finalValue || 0;
-                        const increaseAmount = valueBeforeIncrease * increasePercent;
-                        
-                        wordData.finalValue = valueBeforeIncrease * increaseFactor;
-                        wordData.totalScore = wordData.finalValue;
-                        
-                        galleryIncreaseTotal += increaseAmount;
-                        wordsWithIncrease.set(wordText, {
-                            repetitions: repetitions,
-                            increasePercent: increasePercent * 100,
-                            increaseAmount: increaseAmount,
-                            appliedBefore: true,
+                    // RADICAL: Use 10% increase for names/compound names (instead of 2%)
+                    const increasePercent = repetitions * 0.10; // 10% per repetition for names/compound names
+                    const increaseFactor = 1 + increasePercent;
+                    
+                    const valueBeforeIncrease = wordData.finalValue || 0;
+                    const increaseAmount = valueBeforeIncrease * increasePercent;
+                    
+                    wordData.finalValue = valueBeforeIncrease * increaseFactor;
+                    wordData.totalScore = wordData.finalValue;
+                    
+                    galleryIncreaseTotal += increaseAmount;
+                    wordsWithIncrease.set(wordText, {
+                        repetitions: repetitions,
+                        increasePercent: increasePercent * 100,
+                        increaseAmount: increaseAmount,
+                        appliedBefore: true,
                             isName: true,
                             isCommon: false
-                        });
+                    });
                     }
                 }
             });
@@ -9620,23 +9627,23 @@ Return format (JSON array only, no other text):
                         });
                     } else {
                         // Word appears in 3 or fewer purchases - still rare, increase value
-                        const increasePercent = repetitions * 0.02; // 2% per repetition
-                        const increaseFactor = 1 + increasePercent;
-                        
-                        const valueBeforeIncrease = wordData.finalValue || 0;
-                        const increaseAmount = valueBeforeIncrease * increasePercent;
-                        
-                        wordData.finalValue = valueBeforeIncrease * increaseFactor;
-                        wordData.totalScore = wordData.finalValue;
-                        
-                        nonNameGalleryIncreaseTotal += increaseAmount;
-                        nonNameWordsWithIncrease.set(wordText, {
-                            repetitions: repetitions,
-                            increasePercent: increasePercent * 100,
-                            increaseAmount: increaseAmount,
+                    const increasePercent = repetitions * 0.02; // 2% per repetition
+                    const increaseFactor = 1 + increasePercent;
+                    
+                    const valueBeforeIncrease = wordData.finalValue || 0;
+                    const increaseAmount = valueBeforeIncrease * increasePercent;
+                    
+                    wordData.finalValue = valueBeforeIncrease * increaseFactor;
+                    wordData.totalScore = wordData.finalValue;
+                    
+                    nonNameGalleryIncreaseTotal += increaseAmount;
+                    nonNameWordsWithIncrease.set(wordText, {
+                        repetitions: repetitions,
+                        increasePercent: increasePercent * 100,
+                        increaseAmount: increaseAmount,
                             appliedBefore: false,
                             isCommon: false
-                        });
+                    });
                     }
                 }
             });
@@ -15815,6 +15822,10 @@ Return format (JSON array only, no other text):
                 expandedSection.style.display = 'none';
                 expandedSection.style.visibility = 'hidden';
             }
+            const nodesListContainer = document.getElementById('claim-nodes-list-container');
+            if (nodesListContainer) {
+                nodesListContainer.style.display = 'none';
+            }
             if (expandBtn) {
                 expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
             }
@@ -16646,6 +16657,7 @@ Return format (JSON array only, no other text):
             const expandedSection = document.getElementById('claim-expanded-section');
             const expandBtn = document.getElementById('claim-expand-btn');
             const totalValueContainer = document.getElementById('claim-total-value-container');
+            const nodesListContainer = document.getElementById('claim-nodes-list-container');
 
             if (!expandedSection || !expandBtn) return;
 
@@ -16653,39 +16665,55 @@ Return format (JSON array only, no other text):
                 // Expandir
                 expandedSection.style.display = 'block';
                 expandedSection.style.visibility = 'visible'; // Asegurar que sea visible
+                
+                // Mostrar contenedor de nodos
+                if (nodesListContainer) {
+                    nodesListContainer.style.display = 'block';
+                }
+                
                 expandBtn.innerHTML = '<span>COLLAPSE</span><span style="font-size: 7px;">↑</span>';
 
-                // Ampliar el recuadro de TOTAL VALUE verticalmente
+                // Calcular altura para que ambas ventanas terminen en la misma línea
+                const containerWidth = 350;
+                const padding = 5;
+                const gridWidth = containerWidth - (padding * 2);
+                const gap = 2;
+
+                // Obtener el número de nodos para calcular la altura correcta
+                const top8Words = analyzedWords ? [...analyzedWords]
+                    .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
+                    .slice(0, 8) : [];
+                const totalNodes = top8Words.length;
+
+                let squareSize;
+                let rows;
+
+                if (totalNodes === 2) {
+                    // 1 fila de 2 columnas
+                    squareSize = Math.floor((gridWidth - (gap * 1)) / 2);
+                    rows = 1;
+                } else {
+                    // 2 filas de 4 columnas
+                    squareSize = Math.floor((gridWidth - (gap * 3)) / 4);
+                    rows = 2;
+                }
+
+                // Calcular altura del expanded section (incluyendo padding)
+                const expandedSectionHeight = (squareSize * rows) + (gap * (rows - 1)) + (padding * 2);
+                // La altura total debe ser: 500px (3D container) + 5px (gap) + expandedSectionHeight
+                const totalHeight = 500 + 5 + expandedSectionHeight;
+                
+                // Establecer la misma altura total para ambas columnas
                 if (totalValueContainer) {
-                    // Calcular altura adicional según el número de nodos
-                    const containerWidth = 350;
-                    const padding = 5;
-                    const gridWidth = containerWidth - (padding * 2);
-                    const gap = 2;
-
-                    // Obtener el número de nodos para calcular la altura correcta
-                    const top8Words = analyzedWords ? [...analyzedWords]
-                        .sort((a, b) => (b.finalValue || 0) - (a.finalValue || 0))
-                        .slice(0, 8) : [];
-                    const totalNodes = top8Words.length;
-
-                    let squareSize;
-                    let rows;
-
-                    if (totalNodes === 2) {
-                        // 1 fila de 2 columnas
-                        squareSize = Math.floor((gridWidth - (gap * 1)) / 2);
-                        rows = 1;
-                    } else {
-                        // 2 filas de 4 columnas
-                        squareSize = Math.floor((gridWidth - (gap * 3)) / 4);
-                        rows = 2;
-                    }
-
-                    const expandedHeight = (squareSize * rows) + (gap * (rows - 1)) + (padding * 2) + 5;
-                    const newHeight = 500 + expandedHeight;
-                    totalValueContainer.style.height = newHeight + 'px';
-                    totalValueContainer.style.minHeight = newHeight + 'px';
+                    totalValueContainer.style.height = totalHeight + 'px';
+                    totalValueContainer.style.minHeight = totalHeight + 'px';
+                }
+                
+                if (expandedSection) {
+                    // El expanded section debe tener exactamente la altura calculada
+                    expandedSection.style.height = expandedSectionHeight + 'px';
+                    expandedSection.style.minHeight = expandedSectionHeight + 'px';
+                    expandedSection.style.maxHeight = expandedSectionHeight + 'px';
                 }
 
                 // Siempre limpiar y regenerar para asegurar que se usen los datos actuales
@@ -16697,12 +16725,17 @@ Return format (JSON array only, no other text):
                         // Verificar que la sección esté visible antes de generar
                         if (expandedSection.style.display === 'block' && expandedSection.style.visibility !== 'hidden') {
                             generateClaimTop4Fractals();
+                            generateClaimNodesList();
                         }
                     }, 100);
                 }
             } else {
                 // Contraer
                 expandedSection.style.display = 'none';
+                // Ocultar contenedor de nodos
+                if (nodesListContainer) {
+                    nodesListContainer.style.display = 'none';
+                }
                 // No establecer visibility: hidden aquí para que pueda expandirse de nuevo
                 expandBtn.innerHTML = '<span>EXPAND</span><span style="font-size: 7px;">↓</span>';
 
@@ -16976,6 +17009,402 @@ Return format (JSON array only, no other text):
             }
         }
 
+        function generateClaimNodesList() {
+            if (!analyzedWords || analyzedWords.length === 0 || !nodes || nodes.length === 0) return;
+
+            const listGrid = document.getElementById('claim-nodes-list-grid');
+            if (!listGrid) return;
+
+            // Obtener todos los nodos ordenados por valor (de más valioso a menos)
+            const sortedNodes = [...nodes]
+                .filter(node => node.userData && node.userData.wordData)
+                .sort((a, b) => {
+                    const aValue = a.userData.wordData.finalValue || a.userData.wordData.totalScore || 0;
+                    const bValue = b.userData.wordData.finalValue || b.userData.wordData.totalScore || 0;
+                    return bValue - aValue;
+                });
+
+            if (sortedNodes.length === 0) return;
+
+            // Limpiar grid
+            listGrid.innerHTML = '';
+
+            // Crear una pequeña ventana para cada nodo (similar a node-info-panel)
+            sortedNodes.forEach((node, idx) => {
+                const wordData = node.userData.wordData;
+                const nodeIndex = node.userData.index;
+                const totalValue = window.totalTextScore || 0;
+                const individualValue = wordData.finalValue || wordData.totalScore || 0;
+                const relativeValue = totalValue > 0 ? ((individualValue / totalValue) * 100).toFixed(2) + '%' : '0%';
+
+                // Calculate node size in KB
+                let nodeSizeKB = 0;
+                if (node.userData.isSerEstar) {
+                    nodeSizeKB = (1 * 1 * 1 * 4 * 3) + (1.5 * 0.1 * 1.2 * 4 * 3);
+                } else if (node.userData.isNoun) {
+                    nodeSizeKB = (8 * 8 * 8 * 4 * 3) + (1 * 1 * 1 * 4 * 3);
+                } else if (node.userData.connectionCount > 0) {
+                    nodeSizeKB = (8 * 4 * 3);
+                } else {
+                    nodeSizeKB = (8 * 8 * 8 * 4 * 3);
+                }
+                nodeSizeKB = (nodeSizeKB / 1024).toFixed(4);
+
+                // Convert individual value to ETH for display
+                let individualValueETH = 0;
+                if (ethPriceUSD) {
+                    individualValueETH = individualValue / ethPriceUSD;
+                }
+                const individualValueETHDisplay = individualValueETH >= 0.01 ? 
+                    `${individualValueETH.toFixed(4)} ETH` : 
+                    `${individualValueETH.toFixed(6)} ETH`;
+
+                const positionText = (node.userData && node.userData.isConvergenceNode) ? 
+                    'C' : 
+                    `${nodeIndex + 1}/${analyzedWords.length}`;
+
+                const performanceText = node.userData.connectionCount > 0 ? 'M' : 'L';
+                const pos = node.position;
+                const coordsText = `${pos.x.toFixed(1)},${pos.y.toFixed(1)},${pos.z.toFixed(1)}`;
+
+                // Get color for canvas background
+                let color;
+                if (node.userData && node.userData.isConvergenceNode) {
+                    color = '#8B00FF';
+                } else {
+                    color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+                    const hexColor = '#' + color.toString(16).padStart(6, '0');
+                    color = hexColor;
+                }
+
+                // Crear contenedor de la ventana pequeña (similar a node-info-panel)
+                const panelDiv = document.createElement('div');
+                panelDiv.style.cssText = 'background: #ffffff; border: 1px solid #000000; padding: 3px; min-width: 100px; max-width: 110px; font-family: Helvetica, Arial, sans-serif; font-size: 4px; color: #000000;';
+                panelDiv.className = 'claim-node-info-panel';
+                panelDiv.dataset.nodeIndex = idx;
+
+                // Crear canvas container
+                const canvasContainer = document.createElement('div');
+                canvasContainer.className = 'node-info-canvas-container';
+                const canvas = document.createElement('canvas');
+                canvas.className = 'node-info-canvas';
+                canvas.id = `claim-node-info-canvas-${idx}`;
+                canvasContainer.appendChild(canvas);
+                panelDiv.appendChild(canvasContainer);
+
+                // Crear contenido (grid 3x3)
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'node-info-content';
+
+                // Crear items del grid
+                const items = [
+                    { label: 'W', value: wordData.text.length > 8 ? wordData.text.substring(0, 8) + '...' : wordData.text },
+                    { label: 'V', value: individualValueETH >= 0.01 ? individualValueETH.toFixed(4) + ' ETH' : individualValueETH.toFixed(6) + ' ETH' },
+                    { label: 'P', value: positionText },
+                    { label: '%', value: relativeValue },
+                    { label: 'C', value: node.userData.connectionCount || 0 },
+                    { label: 'KB', value: parseFloat(nodeSizeKB).toFixed(2) },
+                    { label: 'Perf', value: performanceText },
+                    { label: '3D', value: coordsText }
+                ];
+
+                items.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'node-info-item';
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'node-info-label';
+                    labelSpan.textContent = item.label;
+                    const valueSpan = document.createElement('span');
+                    valueSpan.className = 'node-info-value';
+                    valueSpan.textContent = item.value;
+                    itemDiv.appendChild(labelSpan);
+                    itemDiv.appendChild(valueSpan);
+                    contentDiv.appendChild(itemDiv);
+                });
+
+                panelDiv.appendChild(contentDiv);
+                listGrid.appendChild(panelDiv);
+            });
+
+            // Renderizar canvas solo para los nodos visibles (lazy loading)
+            // Esperar un momento para que el DOM se actualice
+            setTimeout(() => {
+                renderVisibleClaimNodeCanvases();
+            }, 100);
+            
+            // Observar cambios en el scroll para renderizar nuevos canvas visibles
+            const listContainer = document.getElementById('claim-nodes-list-container');
+            if (listContainer) {
+                listContainer.addEventListener('scroll', () => {
+                    renderVisibleClaimNodeCanvases();
+                });
+            }
+        }
+
+        function renderVisibleClaimNodeCanvases() {
+            // Obtener nodos ordenados una vez (reutilizar la lógica de generateClaimNodesList)
+            const sortedNodes = [...nodes]
+                .filter(node => node.userData && node.userData.wordData)
+                .sort((a, b) => {
+                    const aValue = a.userData.wordData.finalValue || a.userData.wordData.totalScore || 0;
+                    const bValue = b.userData.wordData.finalValue || b.userData.wordData.totalScore || 0;
+                    return bValue - aValue;
+                });
+
+            // Encontrar todos los canvas que aún no han sido renderizados
+            const allCanvases = Array.from(document.querySelectorAll('[id^="claim-node-info-canvas-"]'));
+            const unrenderedCanvases = allCanvases.filter(canvas => canvas.dataset.rendered !== 'true');
+            
+            if (unrenderedCanvases.length === 0) return; // Todos ya renderizados
+
+            // Renderizar todos los canvas sin renderizar en batches
+            const batchSize = 10; // Renderizar 10 a la vez para no sobrecargar
+            let currentBatch = 0;
+
+            function renderNextBatch() {
+                const startIdx = currentBatch * batchSize;
+                const endIdx = Math.min(startIdx + batchSize, unrenderedCanvases.length);
+
+                for (let i = startIdx; i < endIdx; i++) {
+                    const canvas = unrenderedCanvases[i];
+                    const canvasId = canvas.id;
+                    const match = canvasId.match(/claim-node-info-canvas-(\d+)/);
+
+                    if (match) {
+                        const nodeIdx = parseInt(match[1]);
+                        
+                        if (nodeIdx < sortedNodes.length) {
+                            setTimeout(() => {
+                                // Solo renderizar si aún no ha sido renderizado
+                                if (canvas.dataset.rendered !== 'true') {
+                                    createClaimNodeInfoCanvas(canvasId, sortedNodes[nodeIdx]);
+                                }
+                            }, (i - startIdx) * 30); // Espaciar ligeramente dentro del batch
+                        }
+                    }
+                }
+
+                currentBatch++;
+
+                // Si hay más canvas por renderizar, continuar con el siguiente batch
+                if (endIdx < unrenderedCanvases.length) {
+                    setTimeout(renderNextBatch, 200); // Pausa entre batches
+                }
+            }
+
+            // Empezar a renderizar
+            renderNextBatch();
+        }
+
+        function createClaimNodeInfoCanvas(canvasId, node) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas || !node) {
+                console.warn('createClaimNodeInfoCanvas: canvas or node not found', canvasId);
+                return;
+            }
+
+            // Verificar si ya fue renderizado usando atributo de datos
+            if (canvas.dataset.rendered === 'true') {
+                return;
+            }
+
+            try {
+                const canvasSize = 100; // Tamaño fijo para los canvas pequeños
+                const canvasHeight = 60; // Altura del contenedor
+                canvas.width = canvasSize;
+                canvas.height = canvasHeight;
+
+                // Usar renderer compartido si no existe
+                if (!sharedClaimNodesRenderer) {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvasSize;
+                    tempCanvas.height = canvasHeight;
+                    sharedClaimNodesRenderer = new THREE.WebGLRenderer({ canvas: tempCanvas, antialias: false });
+                    sharedClaimNodesRenderer.setSize(canvasSize, canvasHeight);
+                    sharedClaimNodesRenderer.setPixelRatio(0.75);
+
+                    sharedClaimNodesScene = new THREE.Scene();
+                    sharedClaimNodesScene.background = new THREE.Color(0x000000);
+
+                    sharedClaimNodesCamera = new THREE.PerspectiveCamera(50, canvasSize / canvasHeight, 0.1, 100);
+                    sharedClaimNodesCamera.position.set(0, 0, 2);
+                    sharedClaimNodesCamera.lookAt(0, 0, 0);
+
+                    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+                    sharedClaimNodesScene.add(ambientLight);
+                    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                    directionalLight.position.set(2, 2, 2);
+                    sharedClaimNodesScene.add(directionalLight);
+                }
+
+                // Limpiar escena anterior (mantener solo las luces)
+                while (sharedClaimNodesScene.children.length > 2) {
+                    const child = sharedClaimNodesScene.children[2];
+                    sharedClaimNodesScene.remove(child);
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            child.material.forEach(m => m.dispose());
+                        } else {
+                            child.material.dispose();
+                        }
+                    }
+                    if (child.children) {
+                        child.children.forEach(grandChild => {
+                            if (grandChild.geometry) grandChild.geometry.dispose();
+                            if (grandChild.material) {
+                                if (Array.isArray(grandChild.material)) {
+                                    grandChild.material.forEach(m => m.dispose());
+                                } else {
+                                    grandChild.material.dispose();
+                                }
+                            }
+                        });
+                    }
+                }
+
+                // Crear el nodo ampliado (similar a showEnlargedNode)
+                const wordData = node.userData.wordData;
+                const enlargedSize = 0.3;
+
+                // Get color
+                let color;
+                if (node.userData && node.userData.isConvergenceNode) {
+                    color = 0x8B00FF;
+                } else {
+                    const nodeIndex = node.userData.index !== undefined ? node.userData.index : 0;
+                    color = getValueBasedColor(wordData, nodeIndex, analyzedWords);
+                }
+
+                // Get word type to determine correct shape
+                const wordType = getWordTypeForShape(wordData, node.userData.index || 0);
+
+                // Determine opacity
+                let nodeOpacity = 0.92;
+                const semiTransparentTypes = ['proper_noun', 'object_pronoun', 'intensive_pronoun', 
+                                             'interrogative_pronoun', 'superlative_adjective', 'modal_verb',
+                                             'concrete_noun', 'gerundial_noun', 'interrogative_determiner'];
+                if (semiTransparentTypes.includes(wordType)) {
+                    nodeOpacity = 0.80;
+                }
+
+                // Create geometry using the correct shape function
+                const colorHex = typeof color === 'number' ? color : parseInt(color, 16);
+                const mesh = createWordTypeGeometry(wordType, enlargedSize, colorHex, nodeOpacity);
+                sharedClaimNodesScene.add(mesh);
+
+                // Rotar un poco el nodo para la vista inicial
+                mesh.rotation.y = 0.5;
+                mesh.rotation.x = 0.3;
+
+                // Renderizar a una textura temporal
+                const renderTarget = new THREE.WebGLRenderTarget(canvasSize, canvasHeight);
+                const originalSize = sharedClaimNodesRenderer.getSize(new THREE.Vector2());
+                const originalClearColor = sharedClaimNodesRenderer.getClearColor(new THREE.Color());
+                const originalRenderTarget = sharedClaimNodesRenderer.getRenderTarget();
+
+                // Renderizar
+                sharedClaimNodesRenderer.setRenderTarget(renderTarget);
+                sharedClaimNodesRenderer.setSize(canvasSize, canvasHeight);
+                sharedClaimNodesRenderer.setClearColor(0x000000, 1);
+                sharedClaimNodesRenderer.render(sharedClaimNodesScene, sharedClaimNodesCamera);
+
+                // Esperar un frame para asegurar que el renderizado se complete
+                requestAnimationFrame(() => {
+                    try {
+                        // Leer la textura y dibujarla en el canvas 2D
+                        const ctx2D = canvas.getContext('2d', { willReadFrequently: true });
+                        const pixels = new Uint8Array(canvasSize * canvasHeight * 4);
+                        
+                        sharedClaimNodesRenderer.readRenderTargetPixels(renderTarget, 0, 0, canvasSize, canvasHeight, pixels);
+                        
+                        // Verificar que los píxeles no estén todos en cero (negro)
+                        let hasContent = false;
+                        for (let i = 0; i < pixels.length; i += 4) {
+                            if (pixels[i + 3] > 0) { // Alpha > 0
+                                hasContent = true;
+                                break;
+                            }
+                        }
+                        
+                        if (hasContent) {
+                            const imageData = ctx2D.createImageData(canvasSize, canvasHeight);
+                            for (let i = 0; i < pixels.length; i += 4) {
+                                imageData.data[i] = pixels[i];
+                                imageData.data[i + 1] = pixels[i + 1];
+                                imageData.data[i + 2] = pixels[i + 2];
+                                imageData.data[i + 3] = pixels[i + 3];
+                            }
+                            ctx2D.putImageData(imageData, 0, 0);
+                            
+                            // Marcar canvas como renderizado
+                            canvas.dataset.rendered = 'true';
+                        } else {
+                            console.warn('Canvas renderizado sin contenido:', canvasId);
+                            // Intentar renderizar de nuevo después de un pequeño delay
+                            setTimeout(() => {
+                                if (canvas.dataset.rendered !== 'true') {
+                                    createClaimNodeInfoCanvas(canvasId, node);
+                                }
+                            }, 100);
+                        }
+
+                        // Restaurar estado del renderer
+                        sharedClaimNodesRenderer.setRenderTarget(originalRenderTarget);
+                        sharedClaimNodesRenderer.setSize(originalSize.x, originalSize.y);
+                        sharedClaimNodesRenderer.setClearColor(originalClearColor, 1);
+
+                        // Limpiar render target
+                        renderTarget.dispose();
+                    } catch (readError) {
+                        console.error('Error reading render target pixels:', readError, canvasId);
+                        
+                        // Restaurar estado del renderer incluso si hay error
+                        try {
+                            sharedClaimNodesRenderer.setRenderTarget(originalRenderTarget);
+                            sharedClaimNodesRenderer.setSize(originalSize.x, originalSize.y);
+                            sharedClaimNodesRenderer.setClearColor(originalClearColor, 1);
+                            renderTarget.dispose();
+                        } catch (cleanupError) {
+                            console.error('Error during cleanup:', cleanupError);
+                        }
+                        
+                        // Intentar renderizar de nuevo después de un pequeño delay
+                        setTimeout(() => {
+                            if (canvas.dataset.rendered !== 'true') {
+                                createClaimNodeInfoCanvas(canvasId, node);
+                            }
+                        }, 200);
+                    }
+                });
+
+                // Limpiar mesh de la escena (ya copiado al canvas)
+                sharedClaimNodesScene.remove(mesh);
+                mesh.geometry.dispose();
+                if (mesh.material) {
+                    if (Array.isArray(mesh.material)) {
+                        mesh.material.forEach(m => m.dispose());
+                    } else {
+                        mesh.material.dispose();
+                    }
+                }
+                if (mesh.children) {
+                    mesh.children.forEach(child => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => m.dispose());
+                            } else {
+                                child.material.dispose();
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('Error creating claim node info canvas:', e);
+            }
+        }
+
         function hideClaimModal() {
             const modal = document.getElementById('claim-modal');
             if (modal) {
@@ -17003,6 +17432,38 @@ Return format (JSON array only, no other text):
                 });
                 claimScene = null;
             }
+
+            // Limpiar renderer compartido de claim nodes
+            if (sharedClaimNodesRenderer) {
+                if (sharedClaimNodesScene) {
+                    sharedClaimNodesScene.children.forEach(child => {
+                        if (child.geometry) child.geometry.dispose();
+                        if (child.material) {
+                            if (Array.isArray(child.material)) {
+                                child.material.forEach(m => m.dispose());
+                            } else {
+                                child.material.dispose();
+                            }
+                        }
+                        if (child.children) {
+                            child.children.forEach(grandChild => {
+                                if (grandChild.geometry) grandChild.geometry.dispose();
+                                if (grandChild.material) {
+                                    if (Array.isArray(grandChild.material)) {
+                                        grandChild.material.forEach(m => m.dispose());
+                                    } else {
+                                        grandChild.material.dispose();
+                                    }
+                                }
+                            });
+                        }
+                    });
+                    sharedClaimNodesScene = null;
+                }
+                sharedClaimNodesRenderer.dispose();
+                sharedClaimNodesRenderer = null;
+                sharedClaimNodesCamera = null;
+            }
             
             // Limpiar renderer compartido de nodos
             if (sharedNodeListRenderer) {
@@ -17027,6 +17488,10 @@ Return format (JSON array only, no other text):
 
         async function downloadClaimPurchasePack() {
             try {
+                // Close INFO and TOTAL VALUE modals if open
+                hideInfoModal();
+                hideValueLogicSummary();
+                
                 // Verificar JSZip
                 if (typeof JSZip === 'undefined') {
                     // Cargar JSZip dinámicamente
@@ -18117,7 +18582,7 @@ Return format (JSON array only, no other text):
                 if (event.button !== 1) return;
                 
                 event.preventDefault();
-                isDragging = true;
+            isDragging = true;
                 
                 // Check if Shift is pressed for panning
                 isPanning = event.shiftKey;
@@ -18134,10 +18599,10 @@ Return format (JSON array only, no other text):
                     isDragging = true;
                     isPanning = false; // No panning in default mode
                     
-                    previousMousePosition = {
-                        x: event.clientX,
-                        y: event.clientY
-                    };
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
                 }
             }
         }
@@ -18187,13 +18652,13 @@ Return format (JSON array only, no other text):
                     updateCoordinatesDisplay();
                 } else {
                     // Rotate: change camera angles
-                    cameraAngleY += deltaX * 0.01;
-                    cameraAngleX += deltaY * 0.01;
-                    
-                    // Limitar ángulo vertical
-                    cameraAngleX = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleX));
-                    
-                    updateCameraPosition();
+            cameraAngleY += deltaX * 0.01;
+            cameraAngleX += deltaY * 0.01;
+            
+            // Limitar ángulo vertical
+            cameraAngleX = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, cameraAngleX));
+            
+            updateCameraPosition();
                 }
             } else {
                 // Default mode: always rotate (no panning with mouse)
@@ -18216,7 +18681,7 @@ Return format (JSON array only, no other text):
             if (alternativeControlMode) {
                 // Alternative mode: Only deactivate if middle mouse button is released
                 if (event.button === 1) {
-                    isDragging = false;
+            isDragging = false;
                     isPanning = false;
                 }
             } else {
@@ -19179,11 +19644,13 @@ Return format (JSON array only, no other text):
             const totalValueBtn = document.getElementById('total-value-display');
             
             // Show modal explicitly
+            // Keep pointer-events: none on overlay so clicks pass through to elements behind
+            // Only the container has pointer-events: auto (set in HTML)
             if (modal) {
                 modal.style.display = 'block';
                 modal.style.visibility = 'visible';
                 modal.style.opacity = '1';
-                modal.style.pointerEvents = 'auto';
+                modal.style.pointerEvents = 'none';
             }
             
             // Position modal below the button (or in 3D visualization space on mobile)
@@ -20501,10 +20968,12 @@ Return format (JSON array only, no other text):
             if (!modal || !content) return;
             
             // Show modal
+            // Keep pointer-events: none on overlay so clicks pass through to elements behind
+            // Only the container has pointer-events: auto (set in HTML)
             modal.style.display = 'block';
             modal.style.visibility = 'visible';
             modal.style.opacity = '1';
-            modal.style.pointerEvents = 'auto';
+            modal.style.pointerEvents = 'none';
             
             // Use same styling as TOTAL VALUE modal (with color mode support)
             const boxBg = infoColorMode ? "#ffffff" : "#000000";
@@ -20536,6 +21005,19 @@ Return format (JSON array only, no other text):
                 }
             }
             
+            // Helper function to highlight "index" word (same style as numbers)
+            function highlightIndex(text) {
+                // Pattern to match "index" case-insensitive, but preserve original case
+                const pattern = /\b(index)\b/gi;
+                const highlightStyle = infoColorMode 
+                    ? 'background: #000000; color: #ffffff !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;'
+                    : 'background: #ffffff; color: #000000 !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;';
+                
+                return text.replace(pattern, (match) => {
+                    return `<span style="${highlightStyle}">${match}</span>`;
+                });
+            }
+            
             // Helper function to highlight sylvia variations and forest
             function highlightSylvia(text) {
                 // Pattern to match: @sylvia, #sylvia, sylvia.implicit, sylvia.500, sylvia.unit, forest (case insensitive)
@@ -20558,11 +21040,11 @@ Return format (JSON array only, no other text):
             // Generate content
             const infoHTML = `
                 <div style="${boxStyle}">
-                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">${highlightSylvia('@sylvia is a language-based, interface-based, decentralised marketplace as an artistic work and body of work, presented within the context of implicit-explicit, a digital culture project that unifies research, artists, events, collaborations and gaming, carried out from within the Ethereum blockchain as its medium.')}</div>
-                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">${highlightSylvia('The #sylvia project is based on a critical understanding of language in the digital framework as an object maker (objectifier) through the dynamics of abstraction that appear at the intersection between signified and signifier. A contextualised value is produced within the framework of the work through a text input. Framework, content, and abstraction emerge as body and value, that is, as a meaning and its thing.')}</div>
-                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">Starting from a text box, the input language is processed by a series of algorithms that define its composition, interpret a system of semantic contexts, shape it into a complex body, and associate specific values using both given parameters and a meta-context—or market—related to the piece immersed in the interaction of the collectors.</div>
-                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">For each minted body with meaning, the market grows and the given values change, adding dynamics of risk, speculation, flux, and scale. The bodies, composed of node-based diagrammatic structures, form scales of representation. At the atomic level, each word appears with a unique geometric body as type—a kind of diagram of its own—depending on its activity within both the input text and the market.</div>
-                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">${highlightSylvia('@sylvia (#sylvia, sylvia.implicit, sylvia.500, sylvia.unit, even forest) functions by critically understanding the decontextualised token as the ultimate sign of representation, almost as "the closest sign of presentation", producing an interface-based navigation that raises questions about identity associated with objects and their spatiality. Value and objectivity merge in the dynamic process of a language-based, body-based market in-formation, establishing a bridge between the token as a fixed entity and the system as an ever-changing dynamic process. Language—as technology—here appears as a form of economy of its own, with the hability to become value producer and/through organisational potency.')}</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">${highlightIndex('index is an artistic work that operates as a market using a language-based interface system. It is presented within the context of implicit-explicit, a project that unifies research, artists, events, collaborations, gaming and digital culture framed in the Ethereum blockchain.')}</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">${highlightIndex('index allows collectors to transform language into a node-based body through a system that assigns it a unique value in Ethereum. Users are able to navigate through a detailed interface and explore the richness of the generations. Collectors can acquire them by participating in an internal market. In this way, the collected NFT influences the values of future language-based body generations.')}</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">${highlightIndex('index speculates on how language functions within the digital framework as an object maker (objectifier) through the abstract dynamics in between the signified and the signifier in the context of markets. Value is produced on the system through a text input based on its syntax. Framework, content, and abstraction emerge as body and value, that is, as a meaning and its thing.')}</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">For each collected body, the market expands and redefines itself, and the given value for each of the text tokens changes, adding dynamics of risk, speculation, flux, and scale. The bodies, composed of node-based diagrammatic structures, from scales of representation. At the atomic level, each word functions differently depending on the characteristics of the input text, and appears with a unique geometric body—a kind of diagram of its own—depending on the activity within both the input text and the market status.</div>
+                    <div style="${itemStyle} color: ${textColor}; margin-bottom: 8px;">${highlightIndex('index critically understands the decontextualised token as the ultimate sign of representation, almost as "the closest sign of presentation", producing visual and interactive navigation that explores identity as objects and their spatiality. Value and objectivity merge through collective market in-formation, establishing a bridge between the token as a fixed entity and the system as an ever-changing dynamic process.')}</div>
                 </div>
                 
                 <div style="${boxStyle}">
@@ -21672,8 +22154,8 @@ Return format (JSON array only, no other text):
             if (panMovement.length() > 0) {
                 camera.position.add(panMovement);
                 cameraTarget.add(panMovement);
-                updateCameraPosition();
-                // Coordinates will be updated by updateCoordinatesDisplay in animate loop
+            updateCameraPosition();
+            // Coordinates will be updated by updateCoordinatesDisplay in animate loop
                 updateCoordinatesDisplay();
             }
         }
@@ -21917,8 +22399,8 @@ Return format (JSON array only, no other text):
                 }
             } else {
                 // Normal mode: Cycle through colors: AZUL -> NEGRO -> GRIS -> ROSA -> AZUL
-                backgroundColorIndex = (backgroundColorIndex + 1) % backgroundColors.length;
-                currentBackgroundColor = backgroundColors[backgroundColorIndex];
+            backgroundColorIndex = (backgroundColorIndex + 1) % backgroundColors.length;
+            currentBackgroundColor = backgroundColors[backgroundColorIndex];
             }
             
             // Update background-container (separate from 3D scene)
@@ -22276,6 +22758,7 @@ Return format (JSON array only, no other text):
             const vector = new THREE.Vector3();
             const nodeScreenData = [];
             const nodeCount = nodes.length;
+            const squareSize = 45;
             
             // Project all node positions to screen coordinates (optimized)
             for (let i = 0; i < nodeCount; i++) {
@@ -22302,12 +22785,19 @@ Return format (JSON array only, no other text):
                         nodeValue = wordData.totalScore;
                     }
                     
-                    nodeScreenData.push({
-                        x: (vector.x * 0.5 + 0.5) * window.innerWidth,
-                        y: (-vector.y * 0.5 + 0.5) * window.innerHeight,
-                        word: wordData.text,
-                        value: nodeValue
-                    });
+                    const screenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
+                    const screenY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+                    
+                    // Only include nodes that are on screen
+                    if (screenX >= -squareSize && screenX <= window.innerWidth + squareSize &&
+                        screenY >= -squareSize && screenY <= window.innerHeight + squareSize) {
+                        nodeScreenData.push({
+                            x: screenX,
+                            y: screenY,
+                            word: wordData.text,
+                            value: nodeValue
+                        });
+                    }
                 } catch (e) {
                     continue;
                 }
@@ -22333,33 +22823,81 @@ Return format (JSON array only, no other text):
                 if (val > maxValue) maxValue = val;
             }
             const valueRange = Math.max(maxValue - minValue, 1);
-            const squareSize = 45;
             
-            // Update each grid square using cached data
-            const nodeDataCount = nodeScreenData.length;
+            // PERFORMANCE OPTIMIZATION: Use spatial partitioning for large node counts
+            // Build spatial grid to quickly find nearby nodes
+            const spatialGridSize = squareSize * 2; // Grid cell size
+            const spatialGrid = new Map();
+            const maxSearchDistanceSquared = (squareSize * 3) * (squareSize * 3); // Only search within 3x square size
+            
+            // Populate spatial grid
+            for (let j = 0; j < nodeScreenDataLength; j++) {
+                const nodeData = nodeScreenData[j];
+                const gridX = Math.floor(nodeData.x / spatialGridSize);
+                const gridY = Math.floor(nodeData.y / spatialGridSize);
+                const key = `${gridX},${gridY}`;
+                
+                if (!spatialGrid.has(key)) {
+                    spatialGrid.set(key, []);
+                }
+                spatialGrid.get(key).push(nodeData);
+            }
+            
+            // Update each grid square using cached data and spatial partitioning
             const squareCount = gridSquareCache.length;
             
             for (let i = 0; i < squareCount; i++) {
                 const cached = gridSquareCache[i];
                 if (!cached || !cached.label || !cached.valueLabel || !cached.graphSVG) continue;
                 
-                // Find closest node using squared distance
+                // Find closest node using spatial grid (only check nearby cells)
                 let closestNodeData = null;
-                let minDistanceSquared = Infinity;
+                let minDistanceSquared = maxSearchDistanceSquared;
                 let closestDistance = Infinity;
                 
-                for (let j = 0; j < nodeDataCount; j++) {
-                    const nodeData = nodeScreenData[j];
-                    if (!nodeData || !nodeData.word) continue;
-                    
-                    const dx = nodeData.x - cached.centerX;
-                    const dy = nodeData.y - cached.centerY;
-                    const distanceSquared = dx * dx + dy * dy;
-                    
-                    if (distanceSquared < minDistanceSquared) {
-                        minDistanceSquared = distanceSquared;
-                        closestDistance = Math.sqrt(distanceSquared); // Calculate actual distance
-                        closestNodeData = nodeData;
+                // Determine which grid cells to check
+                const gridX = Math.floor(cached.centerX / spatialGridSize);
+                const gridY = Math.floor(cached.centerY / spatialGridSize);
+                const searchRadius = 2; // Check cells within 2 grid cells (covers 3x3 area)
+                
+                // Check nearby grid cells
+                for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+                    for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+                        const key = `${gridX + dx},${gridY + dy}`;
+                        const cellNodes = spatialGrid.get(key);
+                        
+                        if (cellNodes) {
+                            for (let j = 0; j < cellNodes.length; j++) {
+                                const nodeData = cellNodes[j];
+                                if (!nodeData || !nodeData.word) continue;
+                                
+                                const dx2 = nodeData.x - cached.centerX;
+                                const dy2 = nodeData.y - cached.centerY;
+                                const distanceSquared = dx2 * dx2 + dy2 * dy2;
+                                
+                                // Early exit: if node is very close (within square), we're done
+                                if (distanceSquared < (squareSize * 0.5) * (squareSize * 0.5)) {
+                                    minDistanceSquared = distanceSquared;
+                                    closestDistance = Math.sqrt(distanceSquared);
+                                    closestNodeData = nodeData;
+                                    break; // Found very close node, no need to check further
+                                }
+                                
+                                if (distanceSquared < minDistanceSquared) {
+                                    minDistanceSquared = distanceSquared;
+                                    closestDistance = Math.sqrt(distanceSquared);
+                                    closestNodeData = nodeData;
+                                }
+                            }
+                            
+                            // If we found a very close node, break outer loops
+                            if (closestDistance < squareSize * 0.5) {
+                                break;
+                            }
+                        }
+                    }
+                    if (closestDistance < squareSize * 0.5) {
+                        break;
                     }
                 }
                 
@@ -22399,7 +22937,9 @@ Return format (JSON array only, no other text):
                         // Pass distance and node value to affect graph height based on node distance and value
                         if (history.length >= 2) {
                             const nodeValue = closestNodeData.value || 0;
-                            drawGraph(cached.graphSVG, history, minValue, maxValue, valueRange, squareSize, closestDistance, nodeValue);
+                            // Ensure closestDistance is a valid number (not Infinity)
+                            const validDistance = isFinite(closestDistance) ? closestDistance : 0;
+                            drawGraph(cached.graphSVG, history, minValue, maxValue, valueRange, squareSize, validDistance, nodeValue);
                         }
                     }
                 } else {
@@ -23805,14 +24345,14 @@ Return format (JSON array only, no other text):
             const infoPanel = document.getElementById('leaderboard-info-panel');
             const contentElement = document.getElementById('leaderboard-info-panel-content');
             
-            if (!infoPanel || !contentElement || !purchases || purchases.length === 0) {
-                if (infoPanel) {
-                    infoPanel.classList.remove('visible');
-                }
-                if (contentElement) {
-                    contentElement.innerHTML = '';
-                }
+            if (!infoPanel || !contentElement) {
                 return;
+            }
+            
+            // If no purchases, still update colors but show empty state
+            if (!purchases || purchases.length === 0) {
+                // Still generate HTML with correct colors even if empty
+                purchases = [];
             }
             
             // Collect all top words from all purchases
@@ -23866,23 +24406,38 @@ Return format (JSON array only, no other text):
                 return dateB - dateA;
             });
             
-            // Build HTML content with blocks like TOTAL VALUE
-            const boxBg = "#000000";
-            const boxBorder = "#ffffff";
-            const textColor = "#ffffff";
+            // Build HTML content with blocks like TOTAL VALUE (with color mode support)
+            const boxBg = leaderboardMarketColorMode ? "#ffffff" : "#000000";
+            const boxBorder = leaderboardMarketColorMode ? "#000000" : "#ffffff";
+            const textColor = leaderboardMarketColorMode ? "#000000" : "#ffffff";
             const borderColor = boxBorder;
-            const dividerColor = "#333333";
+            const dividerColor = leaderboardMarketColorMode ? "#cccccc" : "#333333";
             const boxStyle = `background: ${boxBg}; border: 1px solid ${boxBorder}; padding: 4px; margin-bottom: 3px; border-radius: 0;`;
             const itemStyle = "margin: 0.5px 0;";
             
-            // Helper function to wrap numbers with white background
-            const wrapNumber = (num) => `<span class="leaderboard-info-number">${num}</span>`;
+            // Helper function to highlight numbers (same as TOTAL VALUE)
+            function highlightNumber(num) {
+                if (leaderboardMarketColorMode) {
+                    // White mode: black background, white text
+                    return `<span style="background: #000000; color: #ffffff !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;">${num}</span>`;
+                } else {
+                    // Black mode: white background, black text
+                    return `<span style="background: #ffffff; color: #000000 !important; padding: 0; display: inline-block; line-height: 1.0; vertical-align: baseline;">${num}</span>`;
+                }
+            }
             
-            let html = '';
+            // Helper function to wrap numbers (for backward compatibility, uses highlightNumber)
+            const wrapNumber = (num) => highlightNumber(num);
             
-            // Top Words Section (as block)
-            html += `<div style="${boxStyle}">`;
-            html += `<h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">TOP WORDS</h3>`;
+            // Add color mode button at the top (positioned absolutely in the top right)
+            let html = `<div id="leaderboard-market-color-btn" style="width: 16px; height: 16px; background: #808080; border: none; cursor: pointer; padding: 1px; display: flex; align-items: center; justify-content: center; border-radius: 0; margin: 0; position: absolute; top: 4px; right: 12px; z-index: 10;">`;
+            html += `<div id="leaderboard-market-color-indicator" style="width: 12px; height: 12px; background: ${leaderboardMarketColorMode ? '#ffffff' : '#000000'}; border-radius: 0;"></div>`;
+            html += `</div>`;
+            
+            // Add padding-top to first block to leave space for the button
+            // Top Words Section (as block) - with margin-top to leave space for button
+            html += `<div style="${boxStyle} margin-top: 22px;">`;
+            html += `<h3 style="font-size: 12px; margin: 0 0 2px 0; color: ${textColor}; border-bottom: 1px solid ${borderColor}; padding-bottom: 1px;">TOP NODES</h3>`;
             if (sortedTopWords.length > 0) {
                 sortedTopWords.forEach(([word, count], index) => {
                     html += `<div style="${itemStyle} color: ${textColor};"><strong>${wrapNumber(index + 1)}. ${word}:</strong> ${wrapNumber(count)} ${count === 1 ? 'purchase' : 'purchases'}</div>`;
@@ -23912,7 +24467,7 @@ Return format (JSON array only, no other text):
                 purchaseDates.slice(0, 10).forEach((purchase, index) => {
                     const valueETH = ethPriceUSD && purchase.value ? (purchase.value / ethPriceUSD).toFixed(6) : '0.000000';
                     html += `<div style="${itemStyle} color: ${textColor}; padding: 2px 0; border-top: 1px solid ${dividerColor};"><strong>${wrapNumber(index + 1)}. ${purchase.date}</strong><br>`;
-                    html += `<span style="font-size: 8px;">User: ${purchase.userId} | Value: <span class="leaderboard-info-number">${valueETH}</span> ETH</span></div>`;
+                    html += `<span style="font-size: 8px;">User: ${purchase.userId} | Value: ${highlightNumber(valueETH)} ETH</span></div>`;
                 });
             } else {
                 html += `<div style="${itemStyle} color: ${textColor};">No purchase dates available</div>`;
@@ -23929,11 +24484,54 @@ Return format (JSON array only, no other text):
             const avgValueETH = ethPriceUSD && avgValue ? (avgValue / ethPriceUSD).toFixed(6) : '0.000000';
             
             html += `<div style="${itemStyle} color: ${textColor};"><strong>Total Purchases:</strong> ${wrapNumber(totalPurchases)}</div>`;
-            html += `<div style="${itemStyle} color: ${textColor};"><strong>Total Value:</strong> <span class="leaderboard-info-number">${totalValueETH}</span> ETH</div>`;
-            html += `<div style="${itemStyle} color: ${textColor};"><strong>Average Value:</strong> <span class="leaderboard-info-number">${avgValueETH}</span> ETH</div>`;
+            html += `<div style="${itemStyle} color: ${textColor};"><strong>Total Value:</strong> ${highlightNumber(totalValueETH)} ETH</div>`;
+            html += `<div style="${itemStyle} color: ${textColor};"><strong>Average Value:</strong> ${highlightNumber(avgValueETH)} ETH</div>`;
             html += '</div>';
             
             contentElement.innerHTML = html;
+            
+            // Add event listener directly to the button after HTML is set (like INFO and TOTAL VALUE buttons)
+            // Use setTimeout to ensure DOM is ready
+            setTimeout(() => {
+                const colorBtn = document.getElementById('leaderboard-market-color-btn');
+                if (colorBtn) {
+                    // Remove old listener by cloning (prevents duplicates)
+                    const newBtn = colorBtn.cloneNode(true);
+                    colorBtn.parentNode.replaceChild(newBtn, colorBtn);
+                    // Get the new button and add listener that captures clicks anywhere on the button
+                    const finalBtn = document.getElementById('leaderboard-market-color-btn');
+                    if (finalBtn) {
+                        // Use event delegation on the button itself to catch clicks on the indicator too
+                        finalBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Leaderboard color button clicked! Current mode:', leaderboardMarketColorMode);
+                            toggleLeaderboardMarketColorMode();
+                        });
+                        // Also add listener to the indicator div to be sure
+                        const indicator = document.getElementById('leaderboard-market-color-indicator');
+                        if (indicator) {
+                            indicator.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log('Leaderboard color indicator clicked! Current mode:', leaderboardMarketColorMode);
+                                toggleLeaderboardMarketColorMode();
+                            });
+                        }
+                    }
+                } else {
+                    console.warn('leaderboard-market-color-btn not found after HTML update');
+                }
+            }, 0);
+        }
+        
+        function toggleLeaderboardMarketColorMode() {
+            leaderboardMarketColorMode = !leaderboardMarketColorMode;
+            
+            // Re-generate the content with new colors (this will also update the indicator)
+            // Always update, even if there are no purchases (colors should still change)
+            const purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
+            updateLeaderboardInfoPanel(purchases || []);
         }
         
         function createLeaderboardRightPanelVisualization() {
@@ -26913,10 +27511,14 @@ Return format (JSON array only, no other text):
                 updateNametags();
             }
             
-            // Update grid word labels (every second)
-            if (gridMode && currentTime - lastGridLabelUpdate >= GRID_LABEL_UPDATE_INTERVAL) {
-                updateGridWordLabels();
-                lastGridLabelUpdate = currentTime;
+            // Update grid word labels (dynamic interval based on node count)
+            if (gridMode) {
+                const nodeCount = nodes ? nodes.length : 0;
+                const updateInterval = nodeCount > LARGE_BODY_THRESHOLD ? GRID_LABEL_UPDATE_INTERVAL_LARGE : GRID_LABEL_UPDATE_INTERVAL;
+                if (currentTime - lastGridLabelUpdate >= updateInterval) {
+                    updateGridWordLabels();
+                    lastGridLabelUpdate = currentTime;
+                }
             }
             
             // Update coordinates display continuously (every frame)
@@ -26932,7 +27534,7 @@ Return format (JSON array only, no other text):
                             scene.background = null;
                         }
                     } else {
-                        renderer.setClearColor(currentBackgroundColor, 1);
+                    renderer.setClearColor(currentBackgroundColor, 1);
                     }
                 } catch (e) {
                     console.warn('Renderer context issue:', e);
@@ -27221,6 +27823,10 @@ import { uploadGlbToIpfs, uploadMetadataToIpfs } from "./js/ipfs.js";
 
     claimPurchaseBtn.addEventListener("click", async () => {
     try {
+      // Close INFO and TOTAL VALUE modals if open
+      if (typeof hideInfoModal === 'function') hideInfoModal();
+      if (typeof hideValueLogicSummary === 'function') hideValueLogicSummary();
+      
       claimPurchaseBtn.disabled = true;
       claimPurchaseBtn.textContent = "MINTING...";
 
